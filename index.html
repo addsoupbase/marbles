@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        canvas {
+            background-color: rgb(0, 0, 0);
+
+            margin: 0px;
+            overflow: hidden;
+            position: relative;
+            top: 0;
+            left: 0;
+            border-radius: 5px;
+        }
+
+        button {
+            color: white;
+            max-width: fit-content;
+        }
+
+        .menu {
+            overflow: hidden;
+            background-color: green;
+            right: 300;
+            max-width: 400px;
+            min-width: 300px;
+            width: 300px;
+            align-items: center;
+       
+        }
+
+        #data2,#data3,#data4 {
+            display: none;
+        }
+
+        #cont {
+            display: flex;
+            left: 30%;
+            position: relative;
+        }
+
+        body {
+            background-color: grey;
+        }
+
+        .write {
+            height: 12px;
+            margin: 10px;
+        }
+
+        label {
+            margin: 2px
+        }
+
+        .resize {
+            height: 10px;
+            width: 10px
+        }
+
+        .good {
+            border-radius: 3px;
+            border-color: rgb(63, 63, 168);
+            background-color: rgb(95, 95, 170);
+        }
+
+        .good:hover {
+            border-radius: 3px;
+            border-color: rgb(41, 41, 107);
+            background-color: rgb(70, 70, 138);
+        }
+
+        #color {
+            margin: 10px;
+        }
+
+        .bad {
+            border-radius: 3px;
+            border-color: rgb(170, 58, 58);
+            background-color: rgb(235, 26, 26);
+        }
+
+        .bad:hover {
+            border-radius: 3px;
+            border-color: rgb(129, 45, 45);
+            background-color: rgb(163, 20, 20);
+        }
+
+        #buttonholder {
+            width: 300px;
+            align-items: center;
+        }
+        #allMarbles {
+            overflow-y: scroll;
+            max-height: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cont">
+        <canvas width="500" height="500"></canvas>
+        <div id="data" class="menu"></div>
+        <div id="data2" class="menu">
+            <div id="buttonholder"></div>
+        </div>
+        <div id="data4" class="menu">
+
+        </div>
+        <div id="data3" class="menu">
+            <div id="buttonholder">
+                <button class="good" onclick="addMarble()">Add Marble</button><button class="good" id="spawnImmediately" onclick="spawnAllOfTheMarbles()">Spawn All</button><button class="bad"  onclick="killAllOfTheMarbles()">Kill All</button>
+
+            </div>
+            <div id="allMarbles"></div>
+        </div>
+
+    </div>
+    <div>
+        <input id="field">
+        <button class="good"
+            onclick="window.select = 'pick'; menu('data2'); editorMode || (Text = 'Exit editor mode first!!!#ff0000');">Put</button>
+        <button class="good"
+            onclick="window.select = 'edit'; menu('data'); editorMode || (Text = 'Exit editor mode first!!!#ff0000');">Edit</button>
+            <button class="good"
+            onclick="window.select = 'edit'; menu('data3'); editorMode || (Text = 'Exit editor mode first!!!#ff0000');">Marbles</button>
+     
+        <button class="good" onclick="startGame()">Start</button>
+        <button class="good" onclick="save()">Save</button>
+        <button class="good" onclick="Load()">Load</button>
+    </div>
+
+
+</body>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="matter.js"></script>
+<script src="decomp.js"></script>
+<script src="script.js" type="module"></script>
+
+</html>

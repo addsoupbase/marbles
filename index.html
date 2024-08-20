@@ -30,10 +30,12 @@
             min-width: 300px;
             width: 300px;
             align-items: center;
-       
+
         }
 
-        #data2,#data3,#data4 {
+        #data2,
+        #data3,
+        #data4 {
             display: none;
         }
 
@@ -93,6 +95,7 @@
             width: 300px;
             align-items: center;
         }
+
         #allMarbles {
             overflow-y: scroll;
             max-height: 300px;
@@ -102,7 +105,7 @@
 
 <body>
     <div id="cont">
-        <canvas width="500" height="500"></canvas>
+        <canvas width="500" height="500" id="can"></canvas>
         <div id="data" class="menu"></div>
         <div id="data2" class="menu">
             <div id="buttonholder"></div>
@@ -112,7 +115,8 @@
         </div>
         <div id="data3" class="menu">
             <div id="buttonholder">
-                <button class="good" onclick="addMarble()">Add Marble</button><button class="good" id="spawnImmediately" onclick="spawnAllOfTheMarbles()">Spawn All</button><button class="bad"  onclick="killAllOfTheMarbles()">Kill All</button>
+                <button id="marbleAdder" class="good">Add Marble</button><button class="good"
+                    id="spawnImmediately">Spawn All</button><button class="bad" id="killAll">Destroy All</button>
 
             </div>
             <div id="allMarbles"></div>
@@ -121,16 +125,13 @@
     </div>
     <div>
         <input id="field">
-        <button class="good"
-            onclick="window.select = 'pick'; menu('data2'); editorMode || (Text = 'Exit editor mode first!!!#ff0000');">Put</button>
-        <button class="good"
-            onclick="window.select = 'edit'; menu('data'); editorMode || (Text = 'Exit editor mode first!!!#ff0000');">Edit</button>
-            <button class="good"
-            onclick="window.select = 'edit'; menu('data3'); editorMode || (Text = 'Exit editor mode first!!!#ff0000');">Marbles</button>
-     
-        <button class="good" onclick="startGame()">Start</button>
-        <button class="good" onclick="save()">Save</button>
-        <button class="good" onclick="Load()">Load</button>
+        <button class="good" id="put">Put</button>
+        <button class="good" id="edit">Edit</button>
+        <button class="good" id="marble">Marbles</button>
+
+        <button class="good" id="startButton">Start</button>
+        <button class="good" id="saveButton">Save</button>
+        <button class="good" id="loadButton">Load</button>
     </div>
 
 

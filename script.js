@@ -1,94 +1,109 @@
 import { Images } from "./img.js"
-import { darkenHexColor, choose, frange, range, Colors as c, Colors } from "./utils.js"
-window.select = "edit"
-window.current = null
-window.editorMode = true
-window.following = null
-window.options = null
-window.chosenEntity = "Block1"
-window.text = ""
-window.smooth = 0
-window.textColor = "#000000"
-window.saved = ""
-window.existingCam = false
-window.Del = function (num) {
+import { darkenHexColor, choose, frange, range, Colors as c } from "./utils.js"
+let select = "edit",
+    current = null,
+    inx = 0
+    , editorMode = true
+    , following = null
+    , options = null
+    , chosenEntity = "Block1"
+    , text = ""
+    , smooth = 0
+    , textColor = "#000000"
+    , saved = "", existingCam = false;
+const Del = function (num) {
     let foundyou = null
     for (let o of Entity.toSpawn) {
-        if (o.id === num) {
+        if (o.id === +num) {
             foundyou = o
             break
         }
     }
+    console.log(foundyou, num)
     Entity.toSpawn.deleteWithin(foundyou)
     $(`[name='${foundyou.id}']`).each(function () {
         $(this).remove()
     })
-}
-window.spawnAllOfTheMarbles = () => {
-    for (let o of Entity.toSpawn) {
-        new Marble(o)
-    }
-}
-window.killAllOfTheMarbles = () => {
-    for (let o of Entity.all) {
-        if (o.CREATOR === Marble) {
-            o.kill()
-        }
-    }
-}
-window.Spawn = function (num) {
-    let foundyou = null
-    for (let o of Entity.toSpawn) {
-        if (o.id === num) {
-            foundyou = o
-            break
-        }
-    }
-    new Marble(foundyou)
-}
-window.addMarble = function () {
-    let me = new Marble({ size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ })
-    let inp = document.createElement("input")
-    inp.value = me.Name
-    inp.placeholder = "Name"
-    inp.name = me.id
-    $(inp).on({
-        focusout: function () {
-            let foundYou = null
-            for (let o of Entity.toSpawn) {
-                if (o.id === +this.name) {
-                    foundYou = o
-                    break
-                }
-            }
-            foundYou.Name = this.value
-        }
-    })
-    $("#allMarbles").append(`<input name='${me.id}'type='file' id='mrbl${me.id}'>`)
-    $(`#mrbl${me.id}`)[0].addEventListener("change", function (o) {
-        let reader = new FileReader();
-        reader.readAsDataURL(o.target.files[0]);
-        reader.onload = (f) => {
+},
 
-            let foundYou = null
-            console.log(this)
-            for (let o of Entity.toSpawn) {
-                if (o.id === +this.name) {
-                    foundYou = o
-                    break
-                }
-            }
-            foundYou.img = new Image()
-            foundYou.img.src = f.target.result
-            foundYou.customImage = true
-            //showData(window.current)
+    spawnAllOfTheMarbles = () => {
+        for (let o of Entity.toSpawn) {
+            new Marble(o)
         }
-    })
-    $("#allMarbles").append(inp)
-    $("#allMarbles").append(`<button class="good" onclick="Spawn(${me.id})" name='${me.id}'>Spawn</button><button class="bad" onclick="Del(${me.id})" name='${me.id}'>🗑️</button>`)
-    me.kill()
-    Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: null })
-}
+    },
+    killAllOfTheMarbles = () => {
+        for (let o of Entity.all) {
+            if (o.CREATOR === Marble) {
+                o.kill()
+            }
+        }
+    }
+    , Spawn = function (num) {
+        let foundyou = null
+        for (let o of Entity.toSpawn) {
+            if (o.id === num) {
+                foundyou = o
+                break
+            }
+        }
+        new Marble(foundyou)
+    },
+    addMarble = function () {
+        let me = new Marble({ size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ })
+        let inp = document.createElement("input")
+        inp.value = me.Name
+        inp.placeholder = "Name"
+        inp.name = me.id
+        $(inp).on({
+            focusout: function () {
+                let foundYou = null
+                for (let o of Entity.toSpawn) {
+                    if (o.id === +this.name) {
+                        foundYou = o
+                        break
+                    }
+                }
+                foundYou.Name = this.value
+            }
+        })
+        $("#allMarbles").append(`<input name='${me.id}'type='file' id='mrbl${me.id}'>`)
+        $(`#mrbl${me.id}`)[0].addEventListener("change", function (o) {
+            let reader = new FileReader();
+            reader.readAsDataURL(o.target.files[0]);
+            reader.onload = (f) => {
+
+                let foundYou = null
+                console.log(this)
+                for (let o of Entity.toSpawn) {
+                    if (o.id === +this.name) {
+                        foundYou = o
+                        break
+                    }
+                }
+                foundYou.img = new Image()
+                foundYou.img.src = f.target.result
+                foundYou.customImage = true
+                //showData(current)
+            }
+        })
+        $("#allMarbles").append(inp)
+        let index1 = getIndex(),
+            index2 = getIndex()
+        $("#allMarbles").append(`
+                <button class="good" name="${me.id}" id="spawn${index1}">Spawn</button>
+                <button name="${me.id}" id="Del${index2}" class="bad">🗑️</button>
+            `);
+        for (let [id, event] of [
+            [`spawn${index1}`, () => Spawn(me.id)],
+            [`Del${index2}`, () => Del(me.id)]
+        ]) {
+            $(`#${id}`).on({
+                click: event
+            })
+        }
+        me.kill()
+        Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: null })
+    }
 function shapeToImage(ball) {
     const c = document.createElement("canvas")
     c.width = 200
@@ -104,15 +119,14 @@ function shapeToImage(ball) {
     ball.img.src = c.toDataURL("image/png")
 
 }
-window.bounds = {
+const bounds = {
     x: 3000,
     y: 3000,
     get center() {
         return { x: this.x / 2, y: this.y / 2 }
     }
-}
-window.save = function () {
-    !editorMode && startGame()
+}, save = function () {
+    editorMode || startGame()
     let arr = []
     for (let o of a.all) {
         //console.log(o)
@@ -120,9 +134,8 @@ window.save = function () {
     }
 
     console.log(JSON.stringify(arr))
-}
-window.Load = function () {
-    !editorMode && startGame()
+}, Load = function () {
+    editorMode || startGame()
     let data = JSON.parse($("#field")[0].value)
     Entity.all.length = 0
     for (let o of Matter.Composite.allBodies(world)) {
@@ -136,16 +149,14 @@ window.Load = function () {
         //suize.height = item[2].height ?? item[2].start.height
         //suize.width = item[2].width ?? item[2].start.width
         console.log(item[1])
-        let x = new window[item[1]](suize)
+        let x = new Entity[item[1]](suize)
         x.start = suize
         debugger
     }
-}
-window.menu = function (type) {
+}, menu = function (type) {
     $(".menu").each(function () { $(this).hide() })
     $("#" + type).show()
-}
-window.delete = (o) => {
+}, deleteFrom = (o) => {
     if (!editorMode) {
         return Text = "Exit play mode first!!!#ff0000"
     }
@@ -155,7 +166,26 @@ window.delete = (o) => {
     }
 
 }
-
+for (let [key, id] of [["data2", "put"], ["data", "edit"], ["data3", "marble"]]) {
+    $(`#${id}`).on({
+        click() {
+            select = id
+            menu(key)
+        }
+    })
+}
+for (let [id, event] of [
+    ["marbleAdder", addMarble],
+    ["spawnImmediately", spawnAllOfTheMarbles],
+    ["killAll", killAllOfTheMarbles],
+    ["startButton", startGame],
+    ["saveButton", save],
+    ["loadButton", Load]
+]) {
+    $(`#${id}`).on({
+        click: event
+    })
+}
 Object.defineProperty(window, "Text", {
     set: function (o) {
         let col = o.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g)
@@ -171,12 +201,27 @@ Object.defineProperty(window, "Text", {
         smooth = 0
     }
 })
+{
+    let id1 = getIndex(),
+        id2 = getIndex(),
+        id3 = getIndex();
+    $("#buttonholder").append(`<button class="good" id="block${id1}">Block</button>`)
+    $("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
+    $("#buttonholder").append(`<button class="good" id="motor${id3}">Motor</button>`)
+    for (let [id, event] of [
+        [`block${id1}`, () => chosenEntity = "Block"],
+        [`beam${id2}`, () => chosenEntity = "Beam"],
+        [`motor${id3}`, () => chosenEntity = "Motor"]
+    ]) {
+        //dis aint working but im going to sleep 
+        $(`#${id}`).on({
+            click: event
+        })
+    }
 
 
-$("#buttonholder").append(`<button class="good" onclick="chosenEntity='Block'">Block</button>`)
-$("#buttonholder").append(`<button class="good" onclick="chosenEntity='Beam'">Beam</button>`)
-$("#buttonholder").append(`<button class="good" onclick="chosenEntity='Motor'">Motor</button>`)
 
+}
 let sizes = ["Small", "Medium", "Big", "Large", "Huge"]
 let finalSize = "Small"
 for (let o of sizes) {
@@ -189,7 +234,6 @@ $("#buttonholder").append(`<button class="good" onclick="chosenEntity='Spawner'"
 
 function place(entity) {
     let modifier = +$("input[type='radio'][name='bleh']:checked")[0].value
-    console.log(modifier)
     if (modifier === 10) {
         modifier = 15
     }
@@ -223,10 +267,11 @@ function place(entity) {
         showData(baby)
 
     }
+    console.log(entity.all)
 }
 const canvas = $('canvas')[0],
     ctx = canvas.getContext('2d');
-window.cam = {
+const cam = {
     x: 0,
     y: 0,
     angle: 0,
@@ -252,11 +297,10 @@ const Engine = Matter.Engine,
 
 const engine = Engine.create();
 const world = engine.world;
-window.click = {
+const click = {
     x: NaN,
     y: NaN
-}
-window.apply = () => {
+}, apply = () => {
     if (!editorMode) {
         //return Text = "Exit play mode first!!!#ff0000"
         startGame()
@@ -273,9 +317,9 @@ window.apply = () => {
     }
     for (let name in idNames) {
 
-        if (name in window.current) {
+        if (name in current) {
             if (name === "angle") {
-                Body.setAngle(window.current, (+(idNames[name]) * Math.PI / 180) || 0)
+                Body.setAngle(current, (+(idNames[name]) * Math.PI / 180) || 0)
                 current.start[name] = +(idNames[name]) * Math.PI / 180 || 0
 
             }
@@ -284,7 +328,7 @@ window.apply = () => {
                 cam.speed = +idNames[name]
             }
             if (name === "mass") {
-                Body.setMass(window.current, +idNames[name])
+                Body.setMass(current, +idNames[name])
                 current.start[name] = +idNames[name]
 
             }
@@ -294,41 +338,41 @@ window.apply = () => {
 
             }
             if (name === "Name") {
-                window.current.Name = window.current.start.Name = idNames[name]
+                current.Name = current.start.Name = idNames[name]
             }
             /*  if (name === "angularSpeed") {
-                  Body.setAngularSpeed(window.current, (+(idNames[name])) || 0)
+                  Body.setAngularSpeed(current, (+(idNames[name])) || 0)
                   current.start[name] = +(idNames[name])
   
               }
               if (name === "angularVelocity") {
-                  Body.setAngularVelocity(window.current, (+(idNames[name])) || 0)
+                  Body.setAngularVelocity(current, (+(idNames[name])) || 0)
                   current.start[name] = +(idNames[name])
   
               }*/
             if (name.match(/restitution|frictionAir/)) {
-                window.current[name] = +(idNames[name])
+                current[name] = +(idNames[name])
                 current.start[name] = +(idNames[name])
 
             }
             if (name.match(/inertia/)) {
-                Body.setInertia(window.current, +(idNames[name]) || 0.1)
+                Body.setInertia(current, +(idNames[name]) || 0.1)
                 current.start[name] = +(idNames[name]) || 0.1
 
             }
             if (name.match(/width|height/)) {
                 if (name === "width") {
-                    Body.scale(window.current, +(idNames[name]) || 1, 1)
+                    Body.scale(current, +(idNames[name]) || 1, 1)
 
                 }
                 else {
-                    Body.scale(window.current, 1, +(idNames[name]) || 1)
+                    Body.scale(current, 1, +(idNames[name]) || 1)
                 }
 
             }
             if (name === "color") {
-                window.current.start.color = window.current.color = idNames[name]
-                window.current.start.dark = window.current.dark = darkenHexColor(idNames[name], 40)
+                current.start.color = current.color = idNames[name]
+                current.start.dark = current.dark = darkenHexColor(idNames[name], 40)
                 if (!current.customImage) {
                     current.img = new Image()
                     showData(current)
@@ -346,7 +390,7 @@ Matter.Runner.run(engine)
 function update() {
     requestAnimationFrame(update)
 
-
+  
     frame++
     smooth++
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -432,8 +476,8 @@ function update() {
     ctx.fillStyle = textColor
     ctx.strokeStyle = darkenHexColor(textColor, 40)
     ctx.lineWidth = 1
-    ctx.fillText(window.text, 0, Math.min(-30, -(smooth - 100) * 4))
-    ctx.strokeText(window.text, 0, Math.min(-30, -(smooth - 100) * 4))
+    ctx.fillText(text, 0, Math.min(-30, -(smooth - 100) * 4))
+    ctx.strokeText(text, 0, Math.min(-30, -(smooth - 100) * 4))
     ctx.restore()
     ctx.save()
     ctx.translate(cam.x, cam.y)
@@ -444,21 +488,21 @@ function update() {
     ctx.fillRect(0, 0, bounds.x, bounds.y)
     ctx.restore()
     ctx.save()
-    let width = canvas.width/cam.zoom/5
-    ctx.translate(canvas.width-110, canvas.height-110)
+    let width = canvas.width / cam.zoom / 5
+    ctx.translate(canvas.width - 110, canvas.height - 110)
     ctx.lineWidth = 1
-    ctx.strokeRect(0, 0, (canvas.width*cam.zoom)/5, (canvas.width*cam.zoom)/5)
-    ctx.scale(.2,.2)
-    ctx.fillRect((-cam.x*cam.zoom)/(5*cam.zoom),(-cam.y*cam.zoom)/(5*cam.zoom),20/cam.zoom,20/cam.zoom  )
+    ctx.strokeRect(0, 0, (canvas.width * cam.zoom) / 5, (canvas.width * cam.zoom) / 5)
+    ctx.scale(.2, .2)
+    ctx.fillRect((-cam.x * cam.zoom) / (5 * cam.zoom), (-cam.y * cam.zoom) / (5 * cam.zoom), 20 / cam.zoom, 20 / cam.zoom)
     for (let o of Entity.all) {
-        if (!o.isMarble || o.collisionFilter===-1) {
-            continue    
+        if (!o.isMarble || o.collisionFilter === -1) {
+            continue
         }
         ctx.beginPath()
-        ctx.arc((o.position.x/5)-35,(o.position.y/5)-35,o.circleRadius/5,0,Math.PI*2)
+        ctx.arc((o.position.x / 5) - 35, (o.position.y / 5) - 35, o.circleRadius / 5, 0, Math.PI * 2)
         ctx.fillStyle = o.color
         ctx.fill()
-        ctx.strokeStyle=c.black
+        ctx.strokeStyle = c.black
         ctx.lineWidth = 0.1
         ctx.stroke()
     }
@@ -623,7 +667,7 @@ class Entity {
                 Body.setPosition(this, { y: 0, x: this.position.x })
                 this.outOfBounds?.()
             }
-            if (window.following) {
+            if (following) {
                 cam.x = (-following.position.x * cam.zoom) + ((canvas.width * cam.zoom) / 2) / cam.zoom
                 cam.y = (-following.position.y * cam.zoom) + ((canvas.height * cam.zoom) / 2) / cam.zoom
             }
@@ -666,7 +710,7 @@ class Entity {
                 if (!Entity.all.some(o => o.selected)) {
                     this.onclick?.()
                     this.selected = true
-                    window.current = this
+                    current = this
                     menu("data")
                     showData(this)
 
@@ -687,7 +731,7 @@ class Entity {
 
             }
             if (ctx.isPointInPath(mouse.x, mouse.y) && click.x && click.y && !editorMode && this.isMarble) {
-                window.following = this
+                following = this
             }
             ctx.restore()
 
@@ -948,18 +992,16 @@ function temp(x, y, width, height) {
 //temp(-10, 50, 20, 1000).passive = true
 //temp(520, 50, 20, 1000).passive = true
 
-$('canvas').on({
+$("#can").on({
     mousedown: function (e) {
-
+        
         click.x = e.offsetX
         click.y = e.offsetY
         if (select === "pick" && editorMode) {
             place(chosenEntity)
-
-
         }
         if (select === "edit") {
-            editorMode && (window.following = null)
+            editorMode && (following = null)
         }
     },
     mousemove: function (e) {
@@ -971,8 +1013,7 @@ $('canvas').on({
     },
 
 })
-
-window.startGame = function () {
+function startGame() {
     if (!editorMode) {
         frame = 0
         Entity.gameSpawns = [...Entity.toSpawn]
@@ -1018,13 +1059,24 @@ window.startGame = function () {
 
     editorMode = !editorMode
 }
-window.showData = function (stats) {
+function showData(stats) {
     $("#data").empty()
     if (!stats) {
         return
     }
-    $("#data").append(`<button class="good" onclick="window.apply()">Apply Changes</button><button class="bad" onclick="window.delete(window.current)">Delete</button>`)
-
+    let index1 = getIndex(),
+        index2 = getIndex()
+    $("#data").append(`<button class="good" id="apply${index1}">Apply Changes</button><button class="bad" id="delete${index2}">Delete</button>`)
+    for (let [id, event] of [
+        [index1, apply],
+        [index2, () => deleteFrom(current)]
+    ]) {
+        $(`#${id}`).on({
+            click() {
+                event()
+            }
+        })
+    }
     for (let name of stats.toggleable) {
         if ((typeof stats[name] !== "object") && !(name in stats)) {
             continue
@@ -1098,9 +1150,9 @@ window.showData = function (stats) {
                 reader.readAsDataURL(o.target.files[0]);
                 reader.onload = (o) => {
                     debugger
-                    window.current.img.src = o.target.result
-                    window.current.customImage = true
-                    showData(window.current)
+                    current.img.src = o.target.result
+                    current.customImage = true
+                    showData(current)
                 }
             })
 
@@ -1148,40 +1200,40 @@ $(window).on({
 
         const key = e.key.toLowerCase()
         if (key === "w") {
-            window.cam.key.w = false
+            cam.key.w = false
         }
         if (key === "s") {
-            window.cam.key.s = false
+            cam.key.s = false
         }
         if (key === "a") {
-            window.cam.key.a = false
+            cam.key.a = false
         }
         if (key === "d") {
-            window.cam.key.d = false
+            cam.key.d = false
         }
     },
     keydown: function (e) {
 
-        window.following = null
+        following = null
         const key = e.key.toLowerCase()
         if (key === "w") {
-            window.cam.key.w = true
-            window.cam.key.s = false
+            cam.key.w = true
+            cam.key.s = false
 
         }
         if (key === "s") {
-            window.cam.key.s = true
-            window.cam.key.w = false
+            cam.key.s = true
+            cam.key.w = false
 
         }
         if (key === "a") {
-            window.cam.key.a = true
-            window.cam.key.d = false
+            cam.key.a = true
+            cam.key.d = false
 
         }
         if (key === "d") {
-            window.cam.key.d = true
-            window.cam.key.s = false
+            cam.key.d = true
+            cam.key.s = false
 
         }
     }
@@ -1192,5 +1244,8 @@ cam.y = -bounds.center.y + canvas.height / 2
 
 cam.zoom = 1
 for (let className of [Entity, Wall, Marble, Blade, Cam, Beam]) {
-    window[className.name] = className
+    Entity[className]
+}
+function getIndex() {
+    return inx++
 }

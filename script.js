@@ -1,5 +1,12 @@
 import { Images } from "./img.js"
 import { darkenHexColor, choose, frange, range, Colors as c } from "./utils.js"
+/* replit alt: 
+*codepen.io
+*codesandbox.io
+*codeanywhere.com
+*eclipse.dev
+*koding.com
+*/
 let select = "edit",
     current = null,
     inx = 0

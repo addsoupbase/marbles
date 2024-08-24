@@ -3,14 +3,15 @@ import { darkenHexColor, choose, frange, range, Colors as c } from "./utils.js"
 let select = "edit",
     current = null,
     inx = 0
-    , editorMode = true
+    , editorMode = true,
+    debugMode = false
     , following = null
     , options = null
     , chosenEntity = "Block1"
     , text = ""
     , smooth = 0
     , textColor = "#000000"
-    , saved = "", existingCam = false;
+    , saved = "", existingCam = null;
 const Del = function (num) {
     let foundyou = null
     for (let o of Entity.toSpawn) {
@@ -28,6 +29,8 @@ const Del = function (num) {
 
     spawnAllOfTheMarbles = () => {
         for (let o of Entity.toSpawn) {
+            o.restitution = +$('#bounciness')[0].value
+        
             new Marble(o)
         }
     },
@@ -46,13 +49,23 @@ const Del = function (num) {
                 break
             }
         }
+       // foundyou.img = new Image()
+        foundyou.img.src = foundyou.imgSrc
+        console.log(foundyou)
+        foundyou.restitution = +$('#bounciness')[0].value ?? 1
         new Marble(foundyou)
     },
-    addMarble = function () {
-        let me = new Marble({ size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ })
+    addMarble = function (settings) {
+        let params = { Name: settings.Name,restitution: +$('#bounciness')[0].value ?? 0, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ }
+
+        let me = new Marble(params)
+        me.imgSrc = settings.imgSrc ?? ''
+        me.img = new Image()
+        me.img.src = me.imgSrc
         let inp = document.createElement("input")
         inp.value = me.Name
         inp.placeholder = "Name"
+        inp.id = `shh${me.id}`
         inp.name = me.id
         $(inp).on({
             focusout: function () {
@@ -66,33 +79,53 @@ const Del = function (num) {
                 foundYou.Name = this.value
             }
         })
-        $("#allMarbles").append(`<input name='${me.id}'type='file' id='mrbl${me.id}'>`)
-        $(`#mrbl${me.id}`)[0].addEventListener("change", function (o) {
-            let reader = new FileReader();
-            reader.readAsDataURL(o.target.files[0]);
-            reader.onload = (f) => {
-
-                let foundYou = null
-                console.log(this)
-                for (let o of Entity.toSpawn) {
-                    if (o.id === +this.name) {
-                        foundYou = o
-                        break
-                    }
-                }
-                foundYou.img = new Image()
-                foundYou.img.src = f.target.result
-                foundYou.customImage = true
-                //showData(current)
+        $('#allMarbles').append(`<div class='separate' id='div${me.id}'></div>`)
+      
+        $('#div'+me.id).append(`<input name='${me.id}' type='url' id='mrbl${me.id}' placeholder='Image Url' value='${me.imgSrc??''}'>`)
+        $(`#mrbl${me.id}`).on('focusout', function () {
+            if (!this.value.length) {
+                return
             }
+            let foundYou = null
+            for (let o of Entity.toSpawn) {
+                if (o.id === +this.name) {
+                    foundYou = o
+                    break
+                }
+            }
+            console.log(foundYou)
+            foundYou.img = new Image()
+            foundYou.img.src = this.value
+            foundYou.imgSrc = this.value
+            foundYou.customImage = true
         })
+        /*   $("#allMarbles").append(`<input name='${me.id}'type='file' id='mrbl${me.id}'>`)
+           $(`#mrbl${me.id}`)[0].addEventListener("change", function (o) {
+               let reader = new FileReader();
+               reader.readAsDataURL(o.target.files[0]);
+               reader.onload = (f) => {
+   
+                   let foundYou = null
+                   console.log(this)
+                   for (let o of Entity.toSpawn) {
+                       if (o.id === +this.name) {
+                           foundYou = o
+                           break
+                       }
+                   }
+                   foundYou.img = new Image()
+                   foundYou.img.src = f.target.result
+                   foundYou.customImage = true
+                   //showData(current)
+               }
+           })*/
         $("#allMarbles").append(inp)
         let index1 = getIndex(),
             index2 = getIndex()
         $("#allMarbles").append(`
                 <button class="good" name="${me.id}" id="spawn${index1}">Spawn</button>
                 <button name="${me.id}" id="Del${index2}" class="bad">🗑️</button>
-            `);
+            `); //kill marble
         for (let [id, event] of [
             [`spawn${index1}`, () => Spawn(me.id)],
             [`Del${index2}`, () => Del(me.id)]
@@ -102,8 +135,20 @@ const Del = function (num) {
             })
         }
         me.kill()
-        Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: null })
+        Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
     }
+function fill(color) {
+    let old = ctx.fillStyle
+    ctx.fillStyle = color ?? old
+    ctx.fill()
+    ctx.fillStyle = old
+}
+function stroke(color) {
+    let old = ctx.strokeStyle
+    ctx.strokeStyle = color ?? old
+    ctx.stroke()
+    ctx.strokeStyle = old
+}
 function shapeToImage(ball) {
     const c = document.createElement("canvas")
     c.width = 200
@@ -130,34 +175,58 @@ const bounds = {
     let arr = []
     for (let o of a.all) {
         //console.log(o)
+    //    o.start.imgSrc = o.start.img.src
+   //     delete o.start.img 
+   if (o.CREATOR.name === 'Marble') {
+    continue
+   }
         arr.push([o.start, o.CREATOR.name])
     }
-
-    console.log(JSON.stringify(arr))
+    for (let o of Entity.toSpawn) {
+        arr.push(o)
+    }
+  
+$('#textData')[0].value = JSON.stringify(arr)
 }, Load = function () {
     editorMode || startGame()
     let data = JSON.parse($("#field")[0].value)
-    Entity.all.length = 0
+    Entity.all.length = Entity.toSpawn.length = Entity.graveyard.length = Entity.gameSpawns.length = Entity.temporarilyDead.length = 0
+  $('#allMarbles').empty()
     for (let o of Matter.Composite.allBodies(world)) {
         World.remove(world, o)
     }
     for (let item of data) {
         //console.log(item)
         // console.log(item[0], item[1])
+        if ('game' in item) {
+            console.log(item)
+            Entity.toSpawn.push(item)
+            addMarble(item)
+            continue
+        } 
         let suize = item[0]
+ 
         console.log(suize)
         //suize.height = item[2].height ?? item[2].start.height
         //suize.width = item[2].width ?? item[2].start.width
-        console.log(item[1])
-        let x = new Entity[item[1]](suize)
+        suize.img = new Image()
+        suize.img.src = suize.imgSrc
+     
+        let x = new Entity.allClasses[item[1]](suize)
         x.start = suize
         debugger
+    }
+    for (let o of Entity.toSpawn) {
+        if (o.img.src !== o.imgSrc) {
+            Entity.toSpawn.deleteWithin(o)
+        }
     }
 }, menu = function (type) {
     $(".menu").each(function () { $(this).hide() })
     $("#" + type).show()
 }, deleteFrom = (o) => {
     if (!editorMode) {
+        console.warn('Edit')
         return Text = "Exit play mode first!!!#ff0000"
     }
     else {
@@ -189,7 +258,6 @@ for (let [id, event] of [
 Object.defineProperty(window, "Text", {
     set: function (o) {
         let col = o.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g)
-        console.log(col)
         if (col) {
             o = o.replace(col[0], "")
             textColor = col[0]
@@ -204,18 +272,32 @@ Object.defineProperty(window, "Text", {
 {
     let id1 = getIndex(),
         id2 = getIndex(),
-        id3 = getIndex();
+        id3 = getIndex(),
+        id4 = getIndex(),
+        id5 = getIndex(),
+        id6 = getIndex()
+
     $("#buttonholder").append(`<button class="good" id="block${id1}">Block</button>`)
     $("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
     $("#buttonholder").append(`<button class="good" id="motor${id3}">Motor</button>`)
+    $("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
+    $("#buttonholder").append(`<button class="good" id='spawner${id5}'>Spawner</button>`)
+    $("#buttonholder").append(`<button class="good" id='wind${id6}'>Wind Zone</button>`)
+
     for (let [id, event] of [
         [`block${id1}`, () => chosenEntity = "Block"],
         [`beam${id2}`, () => chosenEntity = "Beam"],
-        [`motor${id3}`, () => chosenEntity = "Motor"]
+        [`motor${id3}`, () => chosenEntity = "Motor"],
+        [`cam${id4}`, () => chosenEntity = "Cam"],
+        [`spawner${id5}`, () => chosenEntity = "Spawner"],
+        [`wind${id6}`, () => chosenEntity = "WindZone"]
+
     ]) {
         //dis aint working but im going to sleep 
         $(`#${id}`).on({
-            click: event
+            click() {
+                event()
+            }
         })
     }
 
@@ -229,8 +311,6 @@ for (let o of sizes) {
     $("#data2").append(`<input type='radio' id="radio${index}" value='${index * 2}' name="bleh" ${index === 1 ? "checked" : ""}><label for="radio${index}">${o}</label><br>`)
 
 }
-$("#buttonholder").append(`<button class="good" onclick="chosenEntity='Cam'">Camera</button>`)
-$("#buttonholder").append(`<button class="good" onclick="chosenEntity='Spawner'">Spawner</button>`)
 
 function place(entity) {
     let modifier = +$("input[type='radio'][name='bleh']:checked")[0].value
@@ -267,7 +347,12 @@ function place(entity) {
         showData(baby)
 
     }
-    console.log(entity.all)
+    if (entity.includes("WindZone")) {
+        let baby = new WindZone({ height: 30 * modifier, width: 30 * modifier, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
+        current = baby
+        showData(baby)
+
+    }
 }
 const canvas = $('canvas')[0],
     ctx = canvas.getContext('2d');
@@ -311,9 +396,13 @@ const click = {
     }
     for (let element of $("#data").children()) {
         let mine = $(element)[0]
-        if (mine.value != null && mine.id) {
+        if ((mine.value != null || 'checked' in mine) && mine.id) {
             idNames[mine.id] = mine.value
         }
+    }
+    for (let o of Entity.toSpawn) {
+        console.log($(`#name${o.id}`))
+        $(`#shh${o.id}`)[0].value = o.Name
     }
     for (let name in idNames) {
 
@@ -327,11 +416,17 @@ const click = {
                 console.log(idNames)
                 cam.speed = +idNames[name]
             }
+
             if (name === "mass") {
                 Body.setMass(current, +idNames[name])
                 current.start[name] = +idNames[name]
 
             }
+            if (name === "windSpeed") {
+                current.start[name] = current[name] = +idNames[name] / 100
+
+            }
+
             if (name === "interval") {
                 current[name] = +idNames[name]
                 current.start[name] = +idNames[name]
@@ -339,6 +434,9 @@ const click = {
             }
             if (name === "Name") {
                 current.Name = current.start.Name = idNames[name]
+            }
+            if (name === "opacity") {
+                current.opacity = current.start.opacity = idNames[name]
             }
             /*  if (name === "angularSpeed") {
                   Body.setAngularSpeed(current, (+(idNames[name])) || 0)
@@ -383,16 +481,17 @@ const click = {
         }
 
     }
-
+    showData(current)
 }
 let frame = 0
 Matter.Runner.run(engine)
 function update() {
     requestAnimationFrame(update)
 
-  
+
     frame++
     smooth++
+
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     //   ctx.fillRect(0,0,1e301,1e301)
     /*
@@ -440,7 +539,7 @@ function update() {
     }
 
     Entity.toKill = []
-
+    existingCam = null
     for (const fr of Entity) {
         if (fr.CREATOR === Cam && !existingCam) {
             existingCam = fr
@@ -482,11 +581,12 @@ function update() {
     ctx.save()
     ctx.translate(cam.x, cam.y)
     ctx.scale(cam.zoom, cam.zoom)
-    ctx.rotate(existingCam.angle ?? 0)
+    ctx.rotate(existingCam?.angle ?? 0)
     ctx.fillStyle = c.lightblue
     ctx.globalCompositeOperation = "destination-over"
     ctx.fillRect(0, 0, bounds.x, bounds.y)
     ctx.restore()
+    /*
     ctx.save()
     let width = canvas.width / cam.zoom / 5
     ctx.translate(canvas.width - 110, canvas.height - 110)
@@ -506,13 +606,29 @@ function update() {
         ctx.lineWidth = 0.1
         ctx.stroke()
     }
-    ctx.restore()
+    ctx.restore()*/
+    if (debugMode) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.arc(click.x, click.y, 15, 0, Math.PI * 2)
+        ctx.strokeStyle = c.red
+        ctx.stroke()
+        ctx.fillText(`x: ${mouse.x} y: ${mouse.y}`, mouse.x, mouse.y - 30)
+        ctx.fillStyle = c.red
+        ctx.fillText(`x: ${click.x} y: ${click.y}`, click.x - 70, click.y + 30)
+        ctx.restore()
+    }
+
 }
 
 class Entity {
 
     static all = Matter.Composite.allBodies(world)
     static toKill = []
+    static allClasses = {}
     static graveyard = []
     static temporarilyDead = []
     static Images = []
@@ -536,7 +652,9 @@ class Entity {
         let center = bounds.center
         if (opts.shape === "circle") {
             out = Bodies.circle(opts.x ?? center.x, opts.y ?? center.y, opts.size ?? 30, {
-                friction: 0,
+                friction: 0.02,
+                //frictionStatic: 0,
+                inertia: 1000,
                 isStatic: opts.isStatic ?? false,
                 restitution: opts.bounce ?? opts.restitution ?? 0,
                 frictionAir: opts.frictionAir ?? 0.01,
@@ -559,7 +677,10 @@ class Entity {
                 //  height: opts.height
             })
         }
-
+        else {
+            console.error(this)
+            throw TypeError('GIVE ME A FUCKING SHAPE')
+        }
         /* else if (opts.shape === "blade") {
              let mod = opts
              mod.width = opts.size
@@ -576,7 +697,7 @@ class Entity {
          }*/
         out.CREATOR = new.target
         if (new.target !== Marble) out.collisionFilter.group = -1;
-        out.Name = opts.name || `${new.target.name} ${out.id}`
+        out.Name = opts.Name || `${new.target.name} ${out.id}`
         out.shape = opts.shape
         out.isSleeping = true
         World.add(world, out)
@@ -585,12 +706,16 @@ class Entity {
         out.color ||= choose(...colours)
         out.dead = false
         Body.setAngle(out, opts.angle ?? 0)
-        out.img = new Image()
-        out.img.src = ""
+        out.img = opts.img ?? new Image()
+        if (!opts.img) {out.img.src = ""}
+
+        out.imgSrc = out.img.src
         out.dark = darkenHexColor(out.color, 40)
         out.selected = false
         out.isCustom = true
-        out.toggleable = ["angle", "SIZE", "Name", "circleRadius", "restitution", "color",]
+        out.toggleable = ["angle", "SIZE", "Name", "circleRadius", "restitution", "color", 'opacity']
+        out.opacity = 1
+
         out.start = {
             x: out.position.x,
             y: out.position.y,
@@ -599,6 +724,8 @@ class Entity {
             height: opts.height,
             width: opts.width,
             angle: opts.angle ?? 0,
+            img: out.img,
+            imgSrc: out.img.src,
             // angularSpeed: Body.getAngularSpeed(out),
             //  angularVelocity: Body.getAngularVelocity(out),
             frictionAir: out.frictionAir,
@@ -606,7 +733,8 @@ class Entity {
             mass: opts.mass,
             color: out.color,
             dark: out.dark,
-            Name: out.Name
+            Name: out.Name,
+            opacity: out.opacity
         }
         // opts;
         out.SIZE ?? Object.defineProperty(out, "SIZE", {
@@ -624,12 +752,11 @@ class Entity {
                 }
             }
         })
-        out.width ?? Object.defineProperty(out, "width", { get: function () { return this.SIZE.x } })
-        out.height ?? Object.defineProperty(out, "height", { get: function () { return this.SIZE.y } })
+        out.width ?? Object.defineProperty(out, "width", { get: function () { return this.start.width } })
+        out.height ?? Object.defineProperty(out, "height", { get: function () { return this.start.height } })
 
         Entity.all.push(out)
         //Defs
-        out.opacity = 1
         out.reset = function () {
             this.isSleeping = true
 
@@ -644,12 +771,23 @@ class Entity {
             //  console.log(this.start)
 
             // Body.setInertia(this, this.start.inertia)
+            Body.setVelocity(this, { x: 0, y: 0 })
             Body.setAngularVelocity(this, 0)
             Body.setAngularSpeed(this, 0)
             Body.setAngle(this, this.start.angle)
             Body.setPosition(this, { x: this.start.x, y: this.start.y })
         }
         out.constructor.prototype.draw = out.draw = function (fr) {
+            if (isNaN(this.position.x) || isNaN(this.position.y)) {
+                this.kill()
+                editorMode || startGame()
+                console.error('NaN: ', this)
+                showData()
+                Text = 'Check logs please :(#FF0000'
+                this.isTemporary &&= false
+                throw RangeError('NaN Position detected')
+
+            }
             ctx.save()
             if (this.position.x > bounds.x) {
                 Body.setPosition(this, { x: bounds.x, y: this.position.y })
@@ -674,17 +812,24 @@ class Entity {
             ctx.translate(cam.x, cam.y)
             ctx.scale(cam.zoom, cam.zoom)
 
-            ctx.rotate(existingCam.angle ?? 0)
+            ctx.rotate(existingCam?.angle ?? 0)
             ctx.translate(this.position.x, this.position.y)
 
             this.circleRadius && ctx.rotate(this.angle)
 
             ctx.beginPath()
-            if (this.selected) {
-                this.opacity &&= 0.6
+            if (editorMode) {
+
+                if (this.selected) {
+                    this.opacity = 0.6
+                }
+                else {
+                    this.opacity = this.start.opacity
+                }
+
             }
             else {
-                this.opacity &&= 1
+                this.opacity = this.start.opacity
             }
             if (this.selected) {
                 if (true/* Math.abs(mouse.x - this.start.x) > this.SIZE.x / 4 && Math.abs(mouse.y - this.start.y) > this.SIZE.y / 4 */) {
@@ -692,8 +837,8 @@ class Entity {
                         Body.setStatic(this, false)
                     }
                     Body.setPosition(this, { x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
-                    this.start.x = Infinity
-                    this.start.y = Infinity
+                    //this.start.x = Infinity
+                    //this.start.y = Infinity
 
                 }
                 this.velocity.x = 0;
@@ -704,9 +849,22 @@ class Entity {
                 ctx.shadowBlur = 30
                 ctx.shadowColor = c.green
             }
-            ctx.globalAlpha = this.opacity
+            for (let oj of Entity.all) {
+                if (editorMode) {
+                    break
+                }
+                if (oj === this || !oj.isSensor) {
+                    continue
+                }
+                else if (Collision.collides(this, oj)) {
+                    oj.collision?.(this)
+                }
+            }
+            if (!editorMode) {
+                ctx.globalAlpha = this.opacity
+            }
             this.illustrate?.(fr)
-            if (editorMode && select === "edit" && ctx.isPointInPath(mouse.x, mouse.y) && click.x && click.y) {
+            if (editorMode && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (click.x && click.y)) {
                 if (!Entity.all.some(o => o.selected)) {
                     this.onclick?.()
                     this.selected = true
@@ -745,7 +903,10 @@ class Entity {
             Entity.toKill.push(this)
         }
         out.tempKill = function () {
-            Entity.temporarilyDead.push(this)
+            if (!editorMode) {
+
+                Entity.temporarilyDead.push(this)
+            }
 
 
         }
@@ -760,8 +921,11 @@ class Entity {
 
 
 }
-
+window.a = Entity
 class Marble extends Entity {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(opts) {
         opts.shape = "circle"
         super(opts)
@@ -778,11 +942,30 @@ class Marble extends Entity {
         this.collisionFilter.group = 0
         this.isMarble = true
         this.toggleable.push("img")
+        this.toggleable.deleteWithin('angle')
         Marble.prototype.illustrate = this.illustrate = function (frame) {
+            if (editorMode) {
+                ctx.save()
+                ctx.textBaseline = 'middle'
+                ctx.textAlign = 'center'
+                ctx.fillText(this.Name, 0, -50)
+                ctx.beginPath()
+                ctx.lineWidth = 1
+                ctx.moveTo(5, -40)
+                ctx.lineTo(-5, -40)
+                ctx.lineTo(-0, -36)
+                ctx.closePath()
+
+                ctx.stroke()
+                ctx.restore()
+            }
+            ctx.beginPath()
             ctx.arc(0, 0, this.circleRadius, 0, Math.PI * 2)
             ctx.clip()
             ctx.fillStyle = this.color
             ctx.strokeStyle = this.dark
+            ctx.fill()
+            ctx.stroke()
 
             if (this.img && this.customImage) {
                 let { width, height } = this.img
@@ -795,15 +978,14 @@ class Marble extends Entity {
                         this.circleRadius * 2)
                 }
                 catch (e) {
-                    Text = "ERROR!!!#ff0000"
+                    Text = 'Check logs please :(#FF0000'
+                    console.error('This "image", if you can even call it that, is broken: ', this.img)
                     this.customImage = false
                 }
 
-            } else {
-                ctx.fill()
-                ctx.stroke()
-
-            }
+            } 
+            
+            
 
 
         }
@@ -817,6 +999,9 @@ class Marble extends Entity {
 }
 
 class Wall extends Entity {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(opts) {
         opts.shape = "rect"
         opts.friction = 0
@@ -846,6 +1031,9 @@ class Wall extends Entity {
     }
 }
 class Blade extends Wall {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(opts) {
         let mod = opts
         mod.width = opts.size * 0.9
@@ -871,12 +1059,107 @@ class Blade extends Wall {
     }
 }
 class Beam extends Wall {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(o) {
         super(o)
-        this.CREATOR = Beam
+        //  this.CREATOR = Beam
+    }
+}
+class WindZone extends Wall {
+    static {
+        Entity.allClasses[this.name] = this
+    }
+    constructor(o) {
+        o.shape = 'rect'
+        o.isStatic = true
+
+        o.color = c.blue
+        super(o)
+        this.windSpeed = 0.01
+        this.isSensor = true
+        this.winds = []
+        for (let i = 0; i < 20; i++) {
+            this.winds.push({
+                x: (Math.random() * o.width) - o.width / 2,
+                y: (Math.random() * o.height) - o.height / 2,
+                radius: Math.random() * this.width / 20
+            })
+        }
+        this.collision = function (coll) {
+            if (!coll.isMarble) {
+                return
+            }
+            const angleRadians = this.angle - Math.PI / 2
+
+            // Define the magnitude of the force
+            const forceMagnitude = this.windSpeed; // Adjust as needed
+
+            // Calculate the force components
+            const forceX = forceMagnitude * Math.cos(angleRadians);
+            const forceY = forceMagnitude * Math.sin(angleRadians);
+
+            Body.applyForce(coll, this.position,
+                { x: forceX, y: forceY }
+            )
+        }
+        this.illustrate = function (fr) {
+
+            ctx.rotate(this.angle)
+
+            ctx.moveTo(this.vertices[0].x - this.position.x, this.vertices[0].y - this.position.y)
+            for (let i = 0; i < this.vertices.length; i++) {
+                ctx.lineTo(this.vertices[i].x - this.position.x, this.vertices[i].y - this.position.y)
+
+            }
+            ctx.closePath()
+            ctx.clip()
+            ctx.beginPath()
+
+            ctx.shadowBlur = 0
+
+            ctx.fillStyle = this.color
+
+            for (let wind of this.winds) {
+                wind.y -= 1 * this.windSpeed * 160
+                if (Math.abs(wind.y) > this.height / 2 + 10) {
+                    wind.y = this.height / 2
+
+                }
+                ctx.beginPath()
+                ctx.arc(wind.x, wind.y, wind.radius, 0, Math.PI * 2)
+                ctx.fill()
+
+            }
+            //     ctx.stroke()
+            if (editorMode) {
+                ctx.beginPath()
+                ctx.moveTo(-5, 20 - 20)
+                ctx.lineTo(5, 20 - 20)
+                ctx.lineTo(-0, 16 - 20)
+                ctx.closePath()
+                ctx.stroke()
+            }
+            ctx.beginPath()
+            ctx.moveTo(this.vertices[0].x - this.position.x, this.vertices[0].y - this.position.y)
+            for (let i = 0; i < this.vertices.length; i++) {
+                ctx.lineTo(this.vertices[i].x - this.position.x, this.vertices[i].y - this.position.y)
+
+            }
+            if (editorMode) {
+                ctx.closePath()
+                ctx.stroke()
+            }
+
+        }
+
     }
 }
 class MotorBlade extends Wall {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(opts) {
         let mod = opts
         mod.isStatic = false
@@ -894,14 +1177,18 @@ class MotorBlade extends Wall {
     }
 }
 class Cam extends Entity {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(opts) {
+
+        opts.shape = "circle"
+        super(opts)
         for (let o of Entity.all) {
-            if (o.CREATOR === Cam) {
+            if (o.CREATOR === Cam && o !== this) {
                 o.kill()
             }
         }
-        opts.shape = "circle"
-        super(opts)
         this.isSensor = true
         this.toggleable.push("speed")
         this.toggleable.deleteWithin("Name")
@@ -922,7 +1209,11 @@ class Cam extends Entity {
     }
 }
 class Spawner extends Entity {
+    static {
+        Entity.allClasses[this.name] = this
+    }
     constructor(opts) {
+        opts.shape = 'circle'
         super(opts)
         this.interval = opts.interval || 50
         this.isSensor = true
@@ -935,12 +1226,13 @@ class Spawner extends Entity {
 
             if (!editorMode) {
                 if (!(e % this.interval) && !editorMode) {
+                    Entity.gameSpawns = Entity.gameSpawns.shuffle()
                     let op = Entity.gameSpawns.pop()
 
-                    console.log(op)
                     if (op) {
                         op.x = this.start.x + (Math.random() * this.circleRadius / 1.2 * choose(1, -1))
                         op.y = this.start.y + (Math.random() * this.circleRadius / 1.2 * choose(1, -1))
+                        op.restitution = +$('#bounciness')[0].value ?? 1
                         let mexico = new Marble(op)
                         mexico.isTemporary = true
 
@@ -951,10 +1243,11 @@ class Spawner extends Entity {
 
             ctx.arc(0, 0, this.circleRadius, 0, Math.PI * 2)
             ctx.stroke()
-            ctx.textBaseline = "middle"
-            ctx.textAlign = "center"
-            ctx.font = "30px serif"
-            ctx.strokeText("🐣", 0, 0)
+            /*     ctx.textBaseline = "middle"
+                 ctx.textAlign = "center"
+                 ctx.font = "30px serif"
+                 ctx.strokeText("🐣", 0, 0)*/
+            fill('rgb(100,0,255,0.3)')
 
         }
 
@@ -994,10 +1287,10 @@ function temp(x, y, width, height) {
 
 $("#can").on({
     mousedown: function (e) {
-        
         click.x = e.offsetX
         click.y = e.offsetY
-        if (select === "pick" && editorMode) {
+        //      console.log(chosenEntity)
+        if (select === "put" && editorMode) {
             place(chosenEntity)
         }
         if (select === "edit") {
@@ -1007,6 +1300,7 @@ $("#can").on({
     mousemove: function (e) {
         mouse.x = e.offsetX
         mouse.y = e.offsetY
+
     },
     mouseup: function () {
         click.x = click.y = NaN
@@ -1016,6 +1310,8 @@ $("#can").on({
 function startGame() {
     if (!editorMode) {
         frame = 0
+        following = null
+
         Entity.gameSpawns = [...Entity.toSpawn]
         for (let o of Entity.graveyard) {
             Entity.all.push(o)
@@ -1034,6 +1330,11 @@ function startGame() {
         }
     }
     else {
+        //Enter Play Mode
+        following = current = null
+        for (let o of Entity.all) {
+            o.selected = false
+        }
         Entity.gameSpawns = [...Entity.toSpawn]
 
         Entity.all.push(...Entity.graveyard)
@@ -1068,8 +1369,8 @@ function showData(stats) {
         index2 = getIndex()
     $("#data").append(`<button class="good" id="apply${index1}">Apply Changes</button><button class="bad" id="delete${index2}">Delete</button>`)
     for (let [id, event] of [
-        [index1, apply],
-        [index2, () => deleteFrom(current)]
+        ['apply' + index1, apply],
+        ['delete' + index2, () => deleteFrom(current)]
     ]) {
         $(`#${id}`).on({
             click() {
@@ -1096,6 +1397,25 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = +cam.speed
+            $("#data").append(bar)
+            $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+
+        }
+
+        if (name === "wind") {
+            let bar = document.createElement("input")
+            bar.id = name
+            bar.className = "write"
+            bar.value = stats[name] * 100
+            $("#data").append(bar)
+            $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+
+        }
+        if (name === "opacity") {
+            let bar = document.createElement("input")
+            bar.id = name
+            bar.className = "write"
+            bar.value = stats[name]
             $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
 
@@ -1149,8 +1469,11 @@ function showData(stats) {
                 let reader = new FileReader();
                 reader.readAsDataURL(o.target.files[0]);
                 reader.onload = (o) => {
-                    debugger
+                    
                     current.img.src = o.target.result
+                    current.imgSrc = o.target.result
+                    current.start.img.src = o.target.result
+                    current.start.imgSrc = o.target.result
                     current.customImage = true
                     showData(current)
                 }
@@ -1191,6 +1514,7 @@ function showData(stats) {
 
     }
 }
+window.ctx = ctx
 $(window).on({
     mousewheel: function (e) {
         cam.zoom -= (e.originalEvent.deltaY / 8000)

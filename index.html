@@ -4,140 +4,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Improved Design</title>
     <style>
-        canvas {
-            background-color: rgb(0, 0, 0);
-
-            margin: 0px;
-            overflow: hidden;
-            position: relative;
-            top: 0;
-            left: 0;
-            border-radius: 5px;
-        }
-
-        button {
-            color: white;
-            max-width: fit-content;
-        }
-
-        .menu {
-            overflow: hidden;
-            background-color: green;
-            right: 300;
-            max-width: 400px;
-            min-width: 300px;
-            width: 300px;
+        body {
+            background-color: #494949;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-
-        }
-
-        #data2,
-        #data3,
-        #data4 {
-            display: none;
+            justify-content: center;
         }
 
         #cont {
             display: flex;
-            left: 30%;
-            position: relative;
+            align-items: flex-start;
+            gap: 20px;
         }
 
-        body {
-            background-color: grey;
+        canvas {
+            background-color: #000;
+            border-radius: 5px;
         }
 
-        .write {
-            height: 12px;
-            margin: 10px;
+        .menu {
+            background-color: #28a745;
+            color: white;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        label {
-            margin: 2px
+        .menu.hidden {
+            display: none;
         }
 
-        .resize {
-            height: 10px;
-            width: 10px
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3
+        }
+        button:hover {
+            background-color: #0056b3;
         }
 
         .good {
-            border-radius: 3px;
-            border-color: rgb(63, 63, 168);
-            background-color: rgb(95, 95, 170);
+            background-color: #007bff;
         }
 
         .good:hover {
-            border-radius: 3px;
-            border-color: rgb(41, 41, 107);
-            background-color: rgb(70, 70, 138);
-        }
-
-        #color {
-            margin: 10px;
+            background-color: #0056b3;
         }
 
         .bad {
-            border-radius: 3px;
-            border-color: rgb(170, 58, 58);
-            background-color: rgb(235, 26, 26);
+            background-color: #dc3545;
         }
 
         .bad:hover {
-            border-radius: 3px;
-            border-color: rgb(129, 45, 45);
-            background-color: rgb(163, 20, 20);
+            background-color: #c82333;
         }
 
         #buttonholder {
-            width: 300px;
+            display:inline-table;
+            flex-direction: row;
+            gap: 10px;
             align-items: center;
         }
 
         #allMarbles {
-            overflow-y: scroll;
-            max-height: 300px;
+            overflow-y: auto;
+            max-height: 200px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
         }
+
+        .hold {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        input.write,
+        input#field {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        label {
+            margin-left: 5px;
+            color: #333;
+        }
+
+        p {
+            margin: 10px 0;
+            color: #666;
+            text-align: center;
+        }
+
+        .separate {
+            margin-top: 20px;
+        }
+
     </style>
 </head>
 
 <body>
     <div id="cont">
         <canvas width="500" height="500" id="can"></canvas>
-        <div id="data" class="menu"></div>
-        <div id="data2" class="menu">
-            <div id="buttonholder"></div>
-        </div>
-        <div id="data4" class="menu">
 
+        <div id="data" class="menu">
+            <!-- Menu content -->
         </div>
-        <div id="data3" class="menu">
+
+        <div id="data2" class="menu hidden">
             <div id="buttonholder">
-                <button id="marbleAdder" class="good">Add Marble</button><button class="good"
-                    id="spawnImmediately">Spawn All</button><button class="bad" id="killAll">Destroy All</button>
-
+                <!-- Buttons or other content for menu 2 -->
             </div>
+        </div>
+
+        <div id="data4" class="menu hidden">
+            <!-- Content for menu 4 -->
+        </div>
+
+        <div id="data3" class="menu hidden">
+            <div>
+                <button id="marbleAdder" class="good">Add Marble</button>
+                <button id="spawnImmediately" class="good">Spawn All</button>
+                <button id="killAll" class="bad">Destroy All</button>
+                <div class="separate">
+                    <input id="bounciness" class="write" type="number" value="0" min="0" max="1" step="0.1">
+                    <label for="bounciness">Marble bounce</label>
+                </div>
+            </div>
+            <p>Local images will NOT be saved!!</p>
             <div id="allMarbles"></div>
         </div>
-
     </div>
-    <div>
-        <input id="field">
+
+    <div class="hold">
+        <button class="good" onclick="navigator.clipboard.writeText($('#textData')[0].value)">Copy</button>
+        <textarea id="textData" placeholder="Data"></textarea>
         <button class="good" id="put">Put</button>
         <button class="good" id="edit">Edit</button>
         <button class="good" id="marble">Marbles</button>
-
         <button class="good" id="startButton">Start</button>
         <button class="good" id="saveButton">Save</button>
         <button class="good" id="loadButton">Load</button>
     </div>
 
-
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="matter.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="matter.js"></script>
-<script src="script.js" type="module"></script>
-
 </html>

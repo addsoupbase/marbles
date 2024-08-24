@@ -231,6 +231,10 @@ $('#textData')[0].value = JSON.stringify(arr)
 }, menu = function (type) {
     $(".menu").each(function () { $(this).hide() })
     $("#" + type).show()
+    if (!$(`#${type}`).children().length) {
+        $(`#${type}`).append('<p>Nothing selected...</p>')
+
+    }
 }, deleteFrom = (o) => {
     if (!editorMode) {
         console.warn('Edit')

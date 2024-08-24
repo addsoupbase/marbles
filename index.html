@@ -128,6 +128,7 @@
 
         <div id="data" class="menu">
             <!-- Menu content -->
+             <p>Nothing selected...</p>
         </div>
 
         <div id="data2" class="menu hidden">
@@ -156,15 +157,16 @@
     </div>
 
     <div class="hold">
+        <button class="good" id="saveButton">Save</button>
+        <button class="good" id="loadButton">Load</button>
+    
         <button class="good" onclick="navigator.clipboard.writeText($('#textData')[0].value)">Copy</button>
         <textarea id="textData" placeholder="Data"></textarea>
         <button class="good" id="put">Put</button>
         <button class="good" id="edit">Edit</button>
         <button class="good" id="marble">Marbles</button>
         <button class="good" id="startButton">Start</button>
-        <button class="good" id="saveButton">Save</button>
-        <button class="good" id="loadButton">Load</button>
-    </div>
+      </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="matter.js"></script>

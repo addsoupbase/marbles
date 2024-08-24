@@ -1346,6 +1346,8 @@ function startGame() {
         for (let o of Entity.all) {
             o.selected = false
         }
+        select = null
+        showData()
         Entity.gameSpawns = [...Entity.toSpawn]
 
         Entity.all.push(...Entity.graveyard)
@@ -1374,6 +1376,7 @@ function startGame() {
 function showData(stats) {
     $("#data").empty()
     if (!stats) {
+        $('#data').append(`<p>Nothing selected...</p>`)
         return
     }
     let index1 = getIndex(),

@@ -56,10 +56,10 @@ const Del = function (num) {
         new Marble(foundYou)
     },
     addMarble = function (settings) {
-        let params = { Name: settings.Name, restitution: +$('#bounciness')[0].value ?? 0, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ }
+        let params = { Name: settings?.Name, restitution: +$('#bounciness')[0].value ?? 0, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ }
 
         let me = new Marble(params)
-        me.imgSrc = settings.imgSrc ?? ''
+        me.imgSrc = settings?.imgSrc ?? ''
         me.img = new Image()
         me.img.src = me.imgSrc
         let inp = document.createElement("input")

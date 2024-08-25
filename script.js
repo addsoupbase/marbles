@@ -184,8 +184,15 @@ const bounds = {
    if (o.CREATOR.name === 'Marble') {
     continue
    }
-        arr.push([o.start, o.CREATOR.name])
+   let info = o.start
+   for (let o in info) {
+    if (info[o] === undefined) {
+        delete info[o]
     }
+   }
+   arr.push([o.start, o.CREATOR.name])
+    }
+ 
     for (let o of Entity.toSpawn) {
         arr.push(o)
     }
@@ -703,7 +710,8 @@ class Entity {
         }
         else {
             console.error(this)
-            throw TypeError('GIVE ME A FUCKING SHAPE')
+            Text = 'Check logs please :(#FF0000'
+            throw TypeError('No shape was provided.')
         }
         /* else if (opts.shape === "blade") {
              let mod = opts
@@ -1008,7 +1016,7 @@ class Marble extends Entity {
                 }
                 catch (e) {
                     Text = 'Check logs please :(#FF0000'
-                    console.error('This "image", if you can even call it that, is broken: ', this.img)
+                    console.error('The following "image" is broken: ', this.img)
                     this.customImage = false
                 }
 

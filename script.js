@@ -180,7 +180,7 @@ const bounds = {
         }
         let info = o.start
         for (let o in info) {
-            if (info[o] == undefined || (o.match(/restitution|friction/)) || o === 'img' || o == null || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
+            if (info[o] == undefined || /*(o.match(/restitution|friction/)) ||*/ o === 'img' || o == null || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
                 delete info[o]
             }
 
@@ -835,6 +835,7 @@ class Entity {
         out.toggleable = ["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width', 'height']
         out.opacity = opts.opacity ?? 1
         out.interval = opts.interval ?? 50
+        out.restitution = opts.restitution ?? 0
         out.start = {
             x: out.position.x,
             y: out.position.y,

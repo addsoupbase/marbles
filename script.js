@@ -1,16 +1,16 @@
 import { Images } from "./img.js"
 import { darkenHexColor, choose, frange, range, Colors as c } from "./utils.js"
 let reqFrame = requestAnimationFrame || window.requestAnimationFrame ||
-window.webkitRequestAnimationFrame ||
-window.mozRequestAnimationFrame ||
-window.oRequestAnimationFrame ||
-window.msRequestAnimationFrame || ((func)=>{setTimeout(func,10)})
+    window.webkitRequestAnimationFrame ||
+    window.mozRequestAnimationFrame ||
+    window.oRequestAnimationFrame ||
+    window.msRequestAnimationFrame || ((func) => { setTimeout(func, 10) })
 let select = "edit",
     current = null
     , editorMode = true,
     debugMode = false
     , options = null
-    , chosenEntity = "Block1"
+    , chosenEntity = "Block"
     , text = ""
     , smooth = 0
     , textColor = "#000000";
@@ -148,6 +148,7 @@ const bounds = {
 }, save = function () {
     editorMode || startGame()
     let arr = []
+    arr.push({ bounciness: $('#bounciness')[0].value })
     for (let o of a.all) {
         //console.log(o)
         //    o.start.imgSrc = o.start.img.src
@@ -157,7 +158,7 @@ const bounds = {
         }
         let info = o.start
         for (let o in info) {
-            if (info[o] === undefined || (o.match(/restitution|friction/))||o==='img' || (o==='imgSrc' && info[o] === location.href)) {
+            if (info[o] == undefined || (o.match(/restitution|friction/)) || o === 'img' || o == null || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
                 delete info[o]
             }
         }
@@ -182,8 +183,12 @@ const bounds = {
         for (let item of data) {
             //console.log(item)
             // console.log(item[0], item[1])
+
+            if ('bounciness' in item) {
+                $('#bounciness')[0].value = item.bounciness
+                continue
+            }
             if ('game' in item) {
-                console.log(item)
                 Entity.toSpawn.push(item)
                 addMarble(item)
                 continue
@@ -304,13 +309,12 @@ for (let o of sizes) {
 }
 */
 function place(entity) {
-    let modifier = 1
     /*+$("input[type='radio'][name='bleh']:checked")[0].value
    if (modifier === 10) {
        modifier = 15
    }*/
     if (entity.includes("Block")) {
-        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, width: 30 * (modifier), height: 30 * (modifier), isStatic: true })
+        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, width: 30, height: 30, isStatic: true })
         current = baby
         showData(baby)
 
@@ -322,7 +326,7 @@ function place(entity) {
 
     }*/
     if (entity.includes("Motor")) {
-        let baby = new Blade({ frictionAir: 0, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.yellow, size: 100 * modifier, isStatic: false })
+        let baby = new Blade({ frictionAir: 0, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.yellow, size: 100, isStatic: false })
         current = baby
         showData(baby)
 
@@ -334,13 +338,13 @@ function place(entity) {
 
     }
     if (entity.includes("Spawner")) {
-        let baby = new Spawner({ size: 30 * modifier, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
+        let baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
         current = baby
         showData(baby)
 
     }
     if (entity.includes("WindZone")) {
-        let baby = new WindZone({ height: 30 * modifier, width: 30 * modifier, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
+        let baby = new WindZone({ height: 50, width: 50, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
         current = baby
         showData(baby)
 
@@ -351,6 +355,13 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    easterEggs: {
+        acidMode: false,
+        compop: 'source-over',
+        showNamesInPlayMode: true,
+        gameFont: 'Courier New',
+        messageFont: 'Verdana,monospace'
+    },
     click: {
         x: NaN,
         y: NaN
@@ -491,7 +502,7 @@ function update() {
     frame++
     smooth++
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (!cam.easterEggs.acidMode) ctx.clearRect(0, 0, canvas.width, canvas.height);
     //   ctx.fillRect(0,0,1e301,1e301)
     /*
         for (let gridSize = 200, i = ((canvas.width / cam.zoom) - cam.x / 2) % gridSize; i < canvas.width / cam.zoom; i += gridSize) {
@@ -575,12 +586,13 @@ function update() {
     }
     ctx.save()
     ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.font = "30px lexend"
+    ctx.font = "30px "+cam.easterEggs.gameFont
     ctx.textBaseline = "middle"
     ctx.textAlign = "center"
     ctx.fillStyle = textColor
     ctx.strokeStyle = darkenHexColor(textColor, 40)
     ctx.lineWidth = 1
+    ctx.font = `30px ${cam.easterEggs.messageFont}`
     ctx.fillText(text, 0, Math.min(-30, -(smooth - 100) * 4))
     ctx.strokeText(text, 0, Math.min(-30, -(smooth - 100) * 4))
     ctx.restore()
@@ -727,7 +739,7 @@ class Entity {
         out.isCustom = true
         out.toggleable = ["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width', 'height']
         out.opacity = opts.opacity ?? 1
-
+        out.interval = opts.interval ?? 50
         out.start = {
             x: out.position.x,
             y: out.position.y,
@@ -747,7 +759,8 @@ class Entity {
             dark: out.dark,
             Name: out.Name,
             opacity: out.opacity,
-            windSpeed: out.windSpeed
+            windSpeed: out.windSpeed,
+            interval: opts.interval ?? 50
         }
         // opts;
         out.SIZE ?? Object.defineProperty(out, "SIZE", {
@@ -859,8 +872,8 @@ class Entity {
             }
 
             if (this === current) {
-                ctx.shadowBlur = 30
-                ctx.shadowColor = c.green
+                ctx.shadowBlur = 15 + Math.sin(frame/40)
+                ctx.shadowColor = c.blue
             }
             for (let oj of Entity.all) {
                 if (editorMode) {
@@ -876,6 +889,7 @@ class Entity {
             if (!editorMode) {
                 ctx.globalAlpha = this.opacity
             }
+            ctx.globalCompositeOperation = cam.easterEggs.compop
             this.illustrate?.(fr)
             if (editorMode && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
                 if (!Entity.all.some(o => o.selected)) {
@@ -961,18 +975,19 @@ class Marble extends Entity {
 
 
         Marble.prototype.illustrate = this.illustrate = function (frame) {
-            if (editorMode) {
+            if (editorMode || cam.easterEggs.showNamesInPlayMode) {
                 ctx.save()
+                ctx.rotate(-this.angle)
+                ctx.font = `10px ${cam.easterEggs.gameFont}`
                 ctx.textBaseline = 'middle'
                 ctx.textAlign = 'center'
                 ctx.fillText(this.Name, 0, -50)
-                ctx.beginPath()
                 ctx.lineWidth = 1
+                ctx.beginPath()
                 ctx.moveTo(5, -40)
                 ctx.lineTo(-5, -40)
                 ctx.lineTo(-0, -36)
                 ctx.closePath()
-
                 ctx.stroke()
                 ctx.restore()
             }
@@ -1222,7 +1237,7 @@ class Cam extends Entity {
             ctx.stroke()
             ctx.textBaseline = "middle"
             ctx.textAlign = "center"
-            ctx.font = "30px serif"
+            ctx.font = "30px "+cam.easterEggs.gameFont
             ctx.strokeText("🎥", 0, 0)
         }
 
@@ -1233,7 +1248,8 @@ class Spawner extends Entity {
         Entity.allClasses[this.name] = this
     }
     constructor(opts) {
-        opts.shape = 'circle'
+        opts.shape = 'rect'
+        opts.isStatic = true
         super(opts)
         this.interval = opts.interval || 50
         this.isSensor = true
@@ -1250,8 +1266,8 @@ class Spawner extends Entity {
                     let child = Entity.gameSpawns.pop()
 
                     if (child) {
-                        child.x = this.start.x + (Math.random() * this.circleRadius / 1.2 * choose(1, -1))
-                        child.y = this.start.y + (Math.random() * this.circleRadius / 1.2 * choose(1, -1))
+                        child.x = this.position.x + range(-this.SIZE.x / 2, this.SIZE.x / 2)
+                        child.y = this.position.y + range(-this.SIZE.y / 2, this.SIZE.y / 2)
                         child.restitution = +$('#bounciness')[0].value ?? 1
                         let instance = new Marble(child)
                         instance.isTemporary = true
@@ -1261,8 +1277,17 @@ class Spawner extends Entity {
                 return
             }
 
-            ctx.arc(0, 0, this.circleRadius, 0, Math.PI * 2)
+            ctx.moveTo(this.vertices[0].x - this.position.x, this.vertices[0].y - this.position.y)
+            for (let i = 0, len = this.vertices.length; i < len; i++) {
+                ctx.lineTo(this.vertices[i].x - this.position.x, this.vertices[i].y - this.position.y)
+
+            }
+            ctx.closePath()
             ctx.stroke()
+            /*      ctx.beginPath()
+                  ctx.arc(range(-this.SIZE.x+30,this.SIZE.x-30), range(-this.SIZE.y+30,this.SIZE.y-30),30,0,Math.PI*2)
+                  ctx.stroke()
+             */
             /*     ctx.textBaseline = "middle"
                  ctx.textAlign = "center"
                  ctx.font = "30px serif"
@@ -1314,7 +1339,7 @@ $("#can").on({
             place(chosenEntity)
         }
         if (select === "edit") {
-        //    editorMode && (cam.following = null)
+            //    editorMode && (cam.following = null)
         }
     },
     mousemove: function (e) {
@@ -1329,8 +1354,7 @@ $("#can").on({
 })
 function startGame() {
     if (!editorMode) {
-        frame = 0
-    //    cam.following = null
+        //    cam.following = null
 
         Entity.gameSpawns = [...Entity.toSpawn]
         for (let o of Entity.graveyard) {
@@ -1351,6 +1375,7 @@ function startGame() {
     }
     else {
         //Enter Play Mode
+        frame = 0
         /*cam.following =*/ current = null
         for (let o of Entity.all) {
             o.selected = false
@@ -1447,7 +1472,7 @@ function showData(stats) {
             $("#data").append(bar)
 
         }
-        if (name.match( /opacity|restitution|mass|frictionAir|Name|interval|width|height/)) {
+        if (name.match(/opacity|restitution|mass|frictionAir|Name|interval|width|height/)) {
             let bar = document.createElement("input")
             bar.id = name
             bar.className = "write"
@@ -1456,7 +1481,7 @@ function showData(stats) {
             $("#data").append(bar)
 
         }
-       
+
         /* if (name.match(/angularVelocity/)) {
              let bar = document.createElement("input")
              bar.id = name
@@ -1484,7 +1509,7 @@ function showData(stats) {
             bar.type = "file"
             bar.style.display = "none"
             bar.accept = ".png, .jpeg, .jpg, .webp"
-            bar.addEventListener(`change`, () => fileChange(o))
+            bar.addEventListener(`change`, fileChange)
 
             if (!stats.customImage) {
                 shapeToImage(stats)
@@ -1626,11 +1651,18 @@ function deleteEvent(id) {
 }
 function clone() {
 
-    let params = current.start
+    let params = { ...current.start }
     params.x += 100
     params.y += 100
     let clone = new current.CREATOR(params)
     current = select = clone
+    //current.start = {...params}
     showData(clone)
+    /*for (let o of Entity.all) {
+        o.selected = false;
+        if (o === clone) {
+            o.selected = true
+        }
+    }*/
 
 }

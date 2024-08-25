@@ -160,6 +160,12 @@ const bounds = {
         if (o.start.opacity === 1) {
             delete o.start.opacity
         }
+        if (o.start.Name?.includes?.(o.CREATOR.name)) {
+            delete o.start.Name
+        }
+        if (o.start.restitution === 0) {
+            delete o.start.restitution
+        }
         if (o.start.size === o.CREATOR.defaultSize) {
             delete o.start.size
         }
@@ -815,7 +821,7 @@ class Entity {
  
          }*/
         out.CREATOR = new.target
-        if (new.target !== Marble || new.target !== MoveableWall) out.collisionFilter.group = -1;
+        if (!new.target.name.match(/Marble|MoveableWall/)) out.collisionFilter.group = -1;
         out.Name = opts.Name || `${new.target.name} ${out.id}`
         out.shape = opts.shape
         out.isSleeping = true
@@ -854,7 +860,7 @@ class Entity {
             color: out.color,
             dark: out.dark,
             Name: out.Name,
-            opacity: out.opacity,
+            opacity: out.opacity??opts.opacity??1,
             windSpeed: out.windSpeed,
             interval: opts.interval ?? 50
         }
@@ -946,12 +952,12 @@ class Entity {
                     this.opacity = 0.6
                 }
                 else {
-                    this.opacity = this.start.opacity
+                    this.opacity = this.start.opacity ?? this.opacity
                 }
 
             }
             else {
-                this.opacity = this.start.opacity
+                this.opacity = this.start.opacity ?? this.opacity
             }
             if (this.selected) {
                 if (true/* Math.abs(mouse.x - this.start.x) > this.SIZE.x / 4 && Math.abs(mouse.y - this.start.y) > this.SIZE.y / 4 */) {

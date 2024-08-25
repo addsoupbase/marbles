@@ -1819,7 +1819,7 @@ const params = new URLSearchParams(url.search);
 const aValue = params.get('level');
 if (aValue) {
     (async function () {
-        let levelData = await fetch('/levels/' + aValue + '.txt')
+        let levelData = await fetch('/marbles/levels/' + aValue + '.txt')
         let text = await levelData.text()
 
         Load(text)

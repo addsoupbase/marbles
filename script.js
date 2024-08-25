@@ -301,14 +301,18 @@ Object.defineProperty(window, "Text", {
         id3 = getIndex(),
         id4 = getIndex(),
         id5 = getIndex(),
-        id6 = getIndex()
+        id6 = getIndex(),
+        id7 = getIndex()
 
     $("#buttonholder").append(`<button class="good" id="block${id1}">Block</button>`)
     //$("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
     $("#buttonholder").append(`<button class="good" id="motor${id3}">Motor</button>`)
+    
     //$("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
     $("#buttonholder").append(`<button class="good" id='spawner${id5}'>Spawner</button>`)
     $("#buttonholder").append(`<button class="good" id='wind${id6}'>Wind Zone</button>`)
+    $("#buttonholder").append(`<button class="good" id="movableWall${id7}">Movable Block</button>`)
+
 
     for (let [id, event] of [
         [`block${id1}`, () => chosenEntity = "Block"],
@@ -316,7 +320,9 @@ Object.defineProperty(window, "Text", {
         [`motor${id3}`, () => chosenEntity = "Motor"],
         // [`cam${id4}`, () => chosenEntity = "Cam"],
         [`spawner${id5}`, () => chosenEntity = "Spawner"],
-        [`wind${id6}`, () => chosenEntity = "WindZone"]
+        [`wind${id6}`, () => chosenEntity = "WindZone"],
+        [`movableWall${id7}`, () => chosenEntity = "Movable Wall"]
+
 
     ]) {
         //dis aint working but im going to sleep 
@@ -344,7 +350,13 @@ function place(entity) {
        modifier = 15
    }*/
     if (entity.includes("Block")) {
-        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, width: 30, height: 30, isStatic: true })
+        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom),width: 30, height: 30, isStatic: true })
+        current = baby
+        showData(baby)
+
+    }
+    if (entity.includes("Movable Wall")) {
+        let baby = new MoveableWall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
         current = baby
         showData(baby)
 
@@ -803,7 +815,7 @@ class Entity {
  
          }*/
         out.CREATOR = new.target
-        if (new.target !== Marble) out.collisionFilter.group = -1;
+        if (new.target !== Marble || new.target !== MoveableWall) out.collisionFilter.group = -1;
         out.Name = opts.Name || `${new.target.name} ${out.id}`
         out.shape = opts.shape
         out.isSleeping = true
@@ -1150,6 +1162,21 @@ class Wall extends Entity {
             ctx.stroke()
             ctx.fill()
         }
+
+    }
+}
+class MoveableWall extends Wall {
+    static defaultColor = c.green
+    static {
+        Entity.allClasses[this.name] = this
+    }
+    constructor(opts) {
+        opts.isStatic = false
+        opts.color ??= MoveableWall.defaultColor
+        super(opts)
+        this.toggleable.push('restitution','mass')
+        
+        this.collisionFilter.group = 0
 
     }
 }

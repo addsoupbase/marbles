@@ -758,7 +758,8 @@ class Entity {
             color: out.color,
             dark: out.dark,
             Name: out.Name,
-            opacity: out.opacity
+            opacity: out.opacity,
+            windSpeed: out.windSpeed
         }
         // opts;
         out.SIZE ?? Object.defineProperty(out, "SIZE", {
@@ -1106,7 +1107,7 @@ class WindZone extends Wall {
         o.color = c.blue
         super(o)
         this.toggleable.push('windSpeed')
-        this.windSpeed = 0.01
+        this.windSpeed = this.start.windSpeed = o.windSpeed??0.01
         this.isSensor = true
         this.winds = []
               for (let i = 0; i < 20; i++) {
@@ -1129,7 +1130,7 @@ class WindZone extends Wall {
             const forceX = forceMagnitude * Math.cos(angleRadians);
             const forceY = forceMagnitude * Math.sin(angleRadians);
 
-            Body.applyForce(coll, this.position,
+            Body.applyForce(coll, coll.position,
                 { x: forceX, y: forceY }
             )
         }

@@ -306,7 +306,7 @@ Object.defineProperty(window, "Text", {
     $("#buttonholder").append(`<button class="good" id="block${id1}">Block</button>`)
     //$("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
     $("#buttonholder").append(`<button class="good" id="motor${id3}">Motor</button>`)
-    $("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
+    //$("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
     $("#buttonholder").append(`<button class="good" id='spawner${id5}'>Spawner</button>`)
     $("#buttonholder").append(`<button class="good" id='wind${id6}'>Wind Zone</button>`)
 
@@ -314,7 +314,7 @@ Object.defineProperty(window, "Text", {
         [`block${id1}`, () => chosenEntity = "Block"],
         //   [`beam${id2}`, () => chosenEntity = "Beam"],
         [`motor${id3}`, () => chosenEntity = "Motor"],
-        [`cam${id4}`, () => chosenEntity = "Cam"],
+        // [`cam${id4}`, () => chosenEntity = "Cam"],
         [`spawner${id5}`, () => chosenEntity = "Spawner"],
         [`wind${id6}`, () => chosenEntity = "WindZone"]
 
@@ -562,7 +562,7 @@ function update() {
         Entity.graveyard.push(o)
     }
     Entity.temporarilyDead = []
-   
+
     let pos = {
         x: cam.x / cam.zoom,
         y: cam.y / cam.zoom
@@ -592,11 +592,8 @@ function update() {
         }
         fr.draw?.(frame)
     }
-    let camCanMove = false
-    if (Entity.all.filter(o=>o.isMarble).length) {
+    if (Entity.all.filter(o => o.isMarble).length) {
         switch (cam.behaviour) {
-            default: camCanMove = true;
-            break;
             case 'leader': {
                 if (cam.existinggoal) {
                     cam.following = (Entity.all.filter(o => o.isMarble).sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
@@ -627,29 +624,29 @@ function update() {
                     }
                 }
                 cam.following = null
-                cam.x = -positions.x.average
-                cam.y =- positions.y.average
+                cam.x = (-positions.x.average + canvas.width / cam.zoom / 2) * cam.zoom
+                cam.y = (-positions.y.average + canvas.height / cam.zoom / 2) * cam.zoom
                 break;
             }
             case 'random': {
-                if (!(frame % 500)||!cam.following) {
-                    cam.following = Entity.all.filter(o=>o.isMarble).pick()
+                if (!(frame % 500) || !cam.following) {
+                    cam.following = Entity.all.filter(o => o.isMarble).pick()
                 }
                 break;
-        } 
+            }
+        }
     }
-    }
-    if (cam.key.w && camCanMove) {
+    if (cam.key.w) {
         cam.y += cam.speed
 
     }
-    if (cam.key.s && camCanMove) {
+    if (cam.key.s) {
         cam.y -= cam.speed
     }
-    if (cam.key.a && camCanMove) {
+    if (cam.key.a) {
         cam.x += cam.speed
     }
-    if (cam.key.d && camCanMove) {
+    if (cam.key.d) {
         cam.x -= cam.speed
     }
 
@@ -739,6 +736,7 @@ class Entity {
     static gameSpawns = []
     static {
         window.a = Entity
+        window.cam = cam
 
         for (let src of Images) {
             let x = new Image(50, 50)
@@ -1438,7 +1436,7 @@ $("#can").on({
             place(chosenEntity)
         }
         if (select === "edit") {
-            //    editorMode && (cam.following = null)
+            editorMode && (cam.following = null)
         }
     },
     mousemove: function (e) {

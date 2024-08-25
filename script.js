@@ -1818,8 +1818,23 @@ const params = new URLSearchParams(url.search);
 // Get the value of the 'a' parameter
 const aValue = params.get('level');
 if (aValue) {
+    $('body *').not('canvas').each(function () {
+        $(this).hide()
+        })
+        $(canvas).appendTo('body')
+        $(canvas).attr({
+            margin: '0px',
+            overflow: 'hidden',
+            position: 'fixed',
+            top: 0,
+            left: 0
+        })
+        $('body').css('padding', '0px');
     (async function () {
         let levelData = await fetch('/marbles/levels/' + aValue + '.txt')
+        if (!levelData.ok) {
+            levelData = await fetch('/levels/' + aValue + '.txt')
+        }
         let text = await levelData.text()
 
         Load(text)
@@ -1829,18 +1844,7 @@ if (aValue) {
 
 
     })()
-    $('body *').not('canvas').each(function () {
-        $(this).hide()
-    })
-    $(canvas).appendTo('body')
     level = true
-    $(canvas).attr({
-        margin: '0px',
-        overflow: 'hidden',
-        position: 'fixed',
-        top: 0,
-        left: 0
-    })
-    $('body').css('padding', '0px');
+
 
 }

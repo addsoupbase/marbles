@@ -14,6 +14,7 @@ let select = "edit",
     , text = ""
     , smooth = 0
     , textColor = "#000000";
+let level = false
 const Del = function (num) {
     let foundYou = null
     for (let o of Entity.toSpawn) {
@@ -205,11 +206,18 @@ const bounds = {
     }
 
     $('#textData')[0].value = JSON.stringify(arr)
-}, Load = function () {
+}, Load = function (information) {
     editorMode || startGame()
-    try {
-        let data = JSON.parse($("#textData")[0].value)
+    console.log($("#textData")[0].value)
 
+    try {
+        let data;
+        if (information) {
+            data = JSON.parse(information)
+        }
+        else {
+            data = JSON.parse($("#textData")[0].value)
+        }
         Entity.all.length = Entity.toSpawn.length = Entity.graveyard.length = Entity.gameSpawns.length = Entity.temporarilyDead.length = 0
         $('#allMarbles').empty()
         for (let o of Matter.Composite.allBodies(world)) {
@@ -248,6 +256,7 @@ const bounds = {
     }
     catch (e) {
         Text = 'Check logs please :(#FF0000'
+        console.warn(data)
         throw e
     }
 }, menu = function (type) {
@@ -284,7 +293,7 @@ for (let [id, event] of [
     ["loadButton", Load]
 ]) {
     $(`#${id}`).on({
-        click: event
+        click(){ event()}
     })
 }
 Object.defineProperty(window, "Text", {
@@ -313,8 +322,8 @@ Object.defineProperty(window, "Text", {
     $("#buttonholder").append(`<button class="good" id="block${id1}">Block</button>`)
     //$("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
     $("#buttonholder").append(`<button class="good" id="motor${id3}">Motor</button>`)
-    
-    //$("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
+
+    $("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
     $("#buttonholder").append(`<button class="good" id='spawner${id5}'>Spawner</button>`)
     $("#buttonholder").append(`<button class="good" id='wind${id6}'>Wind Zone</button>`)
     $("#buttonholder").append(`<button class="good" id="movableWall${id7}">Movable Block</button>`)
@@ -324,7 +333,7 @@ Object.defineProperty(window, "Text", {
         [`block${id1}`, () => chosenEntity = "Block"],
         //   [`beam${id2}`, () => chosenEntity = "Beam"],
         [`motor${id3}`, () => chosenEntity = "Motor"],
-        // [`cam${id4}`, () => chosenEntity = "Cam"],
+         [`cam${id4}`, () => chosenEntity = "Cam"],
         [`spawner${id5}`, () => chosenEntity = "Spawner"],
         [`wind${id6}`, () => chosenEntity = "WindZone"],
         [`movableWall${id7}`, () => chosenEntity = "Movable Wall"]
@@ -356,7 +365,7 @@ function place(entity) {
        modifier = 15
    }*/
     if (entity.includes("Block")) {
-        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom),width: 30, height: 30, isStatic: true })
+        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
         current = baby
         showData(baby)
 
@@ -548,7 +557,10 @@ Matter.Runner.run(engine)
 function update() {
     reqFrame(update)
 
-
+    if (level) {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+    }
     frame++
     smooth++
 
@@ -833,7 +845,6 @@ class Entity {
         Body.setAngle(out, opts.angle ?? 0)
         out.img = opts.img ?? new Image()
         if (!opts.img) { out.img.src = "" }
-
         out.imgSrc = out.img.src
         out.dark = darkenHexColor(out.color, 40)
         out.selected = false
@@ -860,7 +871,7 @@ class Entity {
             color: out.color,
             dark: out.dark,
             Name: out.Name,
-            opacity: out.opacity??opts.opacity??1,
+            opacity: out.opacity ?? opts.opacity ?? 1,
             windSpeed: out.windSpeed,
             interval: opts.interval ?? 50
         }
@@ -1181,8 +1192,8 @@ class MoveableWall extends Wall {
         opts.isStatic = false
         opts.color ??= MoveableWall.defaultColor
         super(opts)
-        this.toggleable.push('restitution','mass')
-        
+        this.toggleable.push('restitution', 'mass')
+
         this.collisionFilter.group = 0
 
     }
@@ -1508,7 +1519,7 @@ function startGame() {
         //Enter Play Mode
         frame = 0
         cam.behaviour = $('#camBehaviour')[0].value
-        /*cam.following =*/ current = null
+        cam.following = current = null
         for (let o of Entity.all) {
             o.selected = false
         }
@@ -1796,5 +1807,40 @@ function clone() {
             o.selected = true
         }
     }*/
+
+}
+// Get the current URL
+const url = new URL(window.location.href)
+
+// Create a URLSearchParams object from the URL's query string
+const params = new URLSearchParams(url.search);
+
+// Get the value of the 'a' parameter
+const aValue = params.get('level');
+if (aValue) {
+    (async function () {
+        let levelData = await fetch('/levels/' + aValue + '.txt')
+        let text = await levelData.text()
+
+        Load(text)
+        cam.x =NaN
+
+        startGame()
+
+
+    })()
+    $('body *').not('canvas').each(function () {
+        $(this).hide()
+    })
+    $(canvas).appendTo('body')
+    level = true
+    $(canvas).attr({
+        margin: '0px',
+        overflow: 'hidden',
+        position: 'fixed',
+        top: 0,
+        left: 0
+    })
+    $('body').css('padding', '0px');
 
 }

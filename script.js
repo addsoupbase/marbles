@@ -31,7 +31,6 @@ const Del = function (num) {
     spawnAllOfTheMarbles = () => {
         for (let o of Entity.toSpawn) {
             o.restitution = +$('#bounciness')[0].value
-
             new Marble(o)
         }
     },
@@ -150,6 +149,29 @@ const bounds = {
     let arr = []
     arr.push({ bounciness: $('#bounciness')[0].value })
     for (let o of a.all) {
+        switch(o.CREATOR.name) {
+            case 'Wall':
+                case 'Blade': {
+                delete o.start.interval
+                
+            }
+        }
+        delete o.start.dark
+        if (o.start.opacity === 1) {
+            delete o.start.opacity
+        }
+        if (o.start.size === o.CREATOR.defaultSize) {
+            delete o.start.size
+        }
+        if (o.start.width === o.CREATOR.defaultWidth) {
+            delete o.start.width
+        }
+        if (o.start.height === o.CREATOR.defaultHeight) {
+            delete o.start.height
+        }
+        if (o.start.color === o.CREATOR.defaultColor) {
+            delete o.start.color
+        }
         //console.log(o)
         //    o.start.imgSrc = o.start.img.src
         //     delete o.start.img 
@@ -158,14 +180,21 @@ const bounds = {
         }
         let info = o.start
         for (let o in info) {
-            if (info[o] == undefined || (o.match(/restitution|friction/)) || o === 'img' || o == null || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
+            if (info[o] == undefined || (o.match(/restitution|friction/)) || o === 'img' || o == null  || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
                 delete info[o]
             }
+            
         }
         arr.push([info, o.CREATOR.name])
     }
 
     for (let o of Entity.toSpawn) {
+        if (o.size === Marble.defaultSize) {
+            delete o.size
+        }
+        if (o.shape === Marble.defaultShape) {
+            delete o.shape
+        }
         arr.push(o)
     }
 
@@ -332,19 +361,19 @@ function place(entity) {
 
     }
     if (entity.includes("Cam")) {
-        let baby = new Cam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey })
+        let baby = new Cam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray })
         current = baby
         showData(baby)
 
     }
     if (entity.includes("Spawner")) {
-        let baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
+        let baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
         current = baby
         showData(baby)
 
     }
     if (entity.includes("WindZone")) {
-        let baby = new WindZone({ height: 50, width: 50, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.grey, shape: "circle" })
+        let baby = new WindZone({ height: 50, width: 50, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
         current = baby
         showData(baby)
 
@@ -953,8 +982,11 @@ class Marble extends Entity {
     static {
         Entity.allClasses[this.name] = this
     }
+    static defualtSize = 30;
+    static defaultShape = 'circle'
     constructor(opts) {
-        opts.shape = "circle"
+        opts.shape ??= Marble.defaultShape
+        opts.size??= Marble.defaultSize
         super(opts)
         this.img = opts.img
         if (opts.img) {
@@ -1033,9 +1065,15 @@ class Wall extends Entity {
     static {
         Entity.allClasses[this.name] = this
     }
+    static defaultWidth = 30;
+    static defaultHeight = 30
+    static defaultColor = c.gray
     constructor(opts) {
         opts.shape = "rect"
         opts.friction = 0
+        opts.width??= Wall.defaultWidth
+        opts.height ??= Wall.defaultHeight
+        opts.color??= Wall.defaultColor
         if (new.target === Wall) {
             opts.isStatic = true
 
@@ -1065,8 +1103,13 @@ class Blade extends Wall {
     static {
         Entity.allClasses[this.name] = this
     }
+    static defaultWidth = 90
+    static defaultHeight = 10
+    static defaultColor = c.yellow
     constructor(opts) {
         let mod = opts
+        opts.width??= Blade.defaultWidth
+        opts.height??= Blade.defaultHeight
         mod.width = opts.size * 0.9
         mod.height = opts.size * 0.1
         mod.isStatic = false

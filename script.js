@@ -447,7 +447,7 @@ const apply = () => {
                 current.Name = current.start.Name = idNames[name]
             }
             if (name === "opacity") {
-                current.opacity = current.start.opacity = idNames[name]
+                current.opacity = current.start.opacity = +idNames[name]
             }
             /*  if (name === "angularSpeed") {
                   Body.setAngularSpeed(current, (+(idNames[name])) || 0)
@@ -678,7 +678,7 @@ class Entity {
             out = Bodies.circle(opts.x ?? center.x, opts.y ?? center.y, opts.size ?? 30, {
                 friction: 0.02,
                 //frictionStatic: 0,
-                inertia: 1000,
+                inertia: 2000,
                 isStatic: opts.isStatic ?? false,
                 restitution: opts.bounce ?? opts.restitution ?? 0,
                 frictionAir: opts.frictionAir ?? 0.01,
@@ -737,7 +737,7 @@ class Entity {
         out.dark = darkenHexColor(out.color, 40)
         out.selected = false
         out.isCustom = true
-        out.toggleable = ["angle", "SIZE", "Name", "circleRadius", "restitution", "color", 'opacity', 'width','height']
+        out.toggleable = ["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width','height']
         out.opacity = 1
 
         out.start = {
@@ -884,7 +884,7 @@ class Entity {
                     oj.collision?.(this)
                 }
             }
-            if (!editorMode) {
+            if (editorMode || this.selected) {
                 ctx.globalAlpha = this.opacity
             }
             this.illustrate?.(fr)
@@ -1105,10 +1105,11 @@ class WindZone extends Wall {
 
         o.color = c.blue
         super(o)
+        this.toggleable.push('windSpeed')
         this.windSpeed = 0.01
         this.isSensor = true
         this.winds = []
-        for (let i = 0; i < 20; i++) {
+              for (let i = 0; i < 20; i++) {
             this.winds.push({
                 x: (Math.random() * o.width) - o.width / 2,
                 y: (Math.random() * o.height) - o.height / 2,
@@ -1222,6 +1223,9 @@ class Cam extends Entity {
         this.toggleable.deleteWithin("Name")
         this.toggleable.deleteWithin("restitution")
         this.toggleable.deleteWithin("color")
+        this.toggleable.deleteWithin('width')
+        this.toggleable.deleteWithin('height')
+
         this.illustrate = function () {
             if (!editorMode) {
                 return
@@ -1442,7 +1446,7 @@ function showData(stats) {
 
         }
 
-        if (name === "wind") {
+        if (name === "windSpeed") {
             let bar = document.createElement("input")
             bar.id = name
             bar.className = "write"
@@ -1501,8 +1505,8 @@ function showData(stats) {
             let bar = document.createElement("input")
             bar.id = name
             bar.className = "color"
-            bar.type = "color"
             bar.value = stats[name]
+            bar.type = "color"
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
             $("#data").append(bar)
 

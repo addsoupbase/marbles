@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Improved Design</title>
     <style>
+        .danger{
+            color: red
+        }
         body {
             background-color: #494949;
             font-family: Arial, sans-serif;
@@ -36,6 +39,9 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             max-width: 400px;
             width: 400px;
+            max-height: 400px;
+            overflow-x: hidden;
+            overflow-y: scroll;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -95,7 +101,9 @@
             gap: 10px;
             margin-top: 20px;
         }
-
+        input.color {
+            height: 30px
+        }
         input.write,
         input#field {
             padding: 5px;
@@ -151,7 +159,7 @@
                     <label for="bounciness">Marble bounce</label>
                 </div>
             </div>
-            <p>Local images will NOT be saved!!</p>
+            <p class="danger">Local images will <b>NOT</b> be saved for other users!</p>
             <div id="allMarbles"></div>
         </div>
     </div>

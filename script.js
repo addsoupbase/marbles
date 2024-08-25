@@ -8,17 +8,14 @@ import { darkenHexColor, choose, frange, range, Colors as c } from "./utils.js"
 *koding.com
 */
 let select = "edit",
-    current = null,
-    inx = 0
+    current = null
     , editorMode = true,
     debugMode = false
-    , following = null
     , options = null
     , chosenEntity = "Block1"
     , text = ""
     , smooth = 0
-    , textColor = "#000000"
-    , saved = "", existingCam = null;
+    , textColor = "#000000";
 const Del = function (num) {
     let foundyou = null
     for (let o of Entity.toSpawn) {
@@ -196,7 +193,7 @@ const bounds = {
 $('#textData')[0].value = JSON.stringify(arr)
 }, Load = function () {
     editorMode || startGame()
-    let data = JSON.parse($("#field")[0].value)
+    let data = JSON.parse($("#textData")[0].value)
     Entity.all.length = Entity.toSpawn.length = Entity.graveyard.length = Entity.gameSpawns.length = Entity.temporarilyDead.length = 0
   $('#allMarbles').empty()
     for (let o of Matter.Composite.allBodies(world)) {
@@ -289,7 +286,7 @@ Object.defineProperty(window, "Text", {
         id6 = getIndex()
 
     $("#buttonholder").append(`<button class="good" id="block${id1}">Block</button>`)
-    $("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
+    //$("#buttonholder").append(`<button class="good" id="beam${id2}">Beam</button>`)
     $("#buttonholder").append(`<button class="good" id="motor${id3}">Motor</button>`)
     $("#buttonholder").append(`<button class="good" id='cam${id4}'>Camera</button>`)
     $("#buttonholder").append(`<button class="good" id='spawner${id5}'>Spawner</button>`)
@@ -297,7 +294,7 @@ Object.defineProperty(window, "Text", {
 
     for (let [id, event] of [
         [`block${id1}`, () => chosenEntity = "Block"],
-        [`beam${id2}`, () => chosenEntity = "Beam"],
+     //   [`beam${id2}`, () => chosenEntity = "Beam"],
         [`motor${id3}`, () => chosenEntity = "Motor"],
         [`cam${id4}`, () => chosenEntity = "Cam"],
         [`spawner${id5}`, () => chosenEntity = "Spawner"],
@@ -315,31 +312,32 @@ Object.defineProperty(window, "Text", {
 
 
 }
-let sizes = ["Small", "Medium", "Big", "Large", "Huge"]
+/*let sizes = ["Small", "Medium", "Big", "Large", "Huge"]
 let finalSize = "Small"
 for (let o of sizes) {
     let index = sizes.indexOf(o) + 1
     $("#data2").append(`<input type='radio' id="radio${index}" value='${index * 2}' name="bleh" ${index === 1 ? "checked" : ""}><label for="radio${index}">${o}</label><br>`)
 
 }
-
+*/
 function place(entity) {
-    let modifier = +$("input[type='radio'][name='bleh']:checked")[0].value
+    let modifier = 1
+     /*+$("input[type='radio'][name='bleh']:checked")[0].value
     if (modifier === 10) {
         modifier = 15
-    }
+    }*/
     if (entity.includes("Block")) {
         let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, width: 30 * (modifier), height: 30 * (modifier), isStatic: true })
         current = baby
         showData(baby)
 
     }
-    if (entity.includes("Beam")) {
+    /*if (entity.includes("Beam")) {
         let baby = new Beam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.red, height: 15, width: 70 * (modifier), isStatic: true })
         current = baby
         showData(baby)
 
-    }
+    }*/
     if (entity.includes("Motor")) {
         let baby = new Blade({ frictionAir: 0, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.yellow, size: 100 * modifier, isStatic: false })
         current = baby
@@ -370,9 +368,15 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    click: {
+        x: NaN,
+        y: NaN
+    },
     angle: 0,
     speed: 10,
     zoom: 1,
+    following: null,
+    existingcam: null,
     key: {
         w: false,
         s: false,
@@ -381,7 +385,6 @@ const cam = {
     }
 }
 ctx.lineWidth = 4
-let darkBorders = false;
 // Import or include Matter.js
 const Engine = Matter.Engine,
     World = Matter.World,
@@ -393,10 +396,7 @@ const Engine = Matter.Engine,
 
 const engine = Engine.create();
 const world = engine.world;
-const click = {
-    x: NaN,
-    y: NaN
-}, apply = () => {
+const apply = () => {
     if (!editorMode) {
         //return Text = "Exit play mode first!!!#ff0000"
         startGame()
@@ -469,16 +469,22 @@ const click = {
                 current.start[name] = +(idNames[name]) || 0.1
 
             }
-            if (name.match(/width|height/)) {
-                if (name === "width") {
-                    Body.scale(current, +(idNames[name]) || 1, 1)
-
-                }
-                else {
-                    Body.scale(current, 1, +(idNames[name]) || 1)
-                }
-
+            if (name.match(/width/)) {
+              let modified = current.start
+              modified.width = idNames[name]
+              let out = new current.CREATOR(modified)
+                current.kill()
+                current = out
+                showData(current)
             }
+            if (name.match(/height/)) {
+                let modified = current.start
+                modified.height = idNames[name]
+                let out = new current.CREATOR(modified)
+                  current.kill()
+                  current = out
+                  showData(current)
+              }
             if (name === "color") {
                 current.start.color = current.color = idNames[name]
                 current.start.dark = current.dark = darkenHexColor(idNames[name], 40)
@@ -524,6 +530,7 @@ function update() {
         Entity.all.deleteWithin(fr)
 
     }
+  
     for (const o of Entity.temporarilyDead) {
         World.remove(world, o)
         Entity.all.deleteWithin(o)
@@ -550,10 +557,16 @@ function update() {
     }
 
     Entity.toKill = []
-    existingCam = null
+    for (let o of Entity.all) {
+        if (o.dead) {
+            o.dead = false
+            o.kill()
+        }
+    }
+    cam.existingcam = null
     for (const fr of Entity) {
-        if (fr.CREATOR === Cam && !existingCam) {
-            existingCam = fr
+        if (fr.CREATOR === Cam && !cam.existingcam) {
+            cam.existingcam = fr
         }
         if (editorMode) {
             fr.start.x ??= fr.position.x
@@ -592,7 +605,7 @@ function update() {
     ctx.save()
     ctx.translate(cam.x, cam.y)
     ctx.scale(cam.zoom, cam.zoom)
-    ctx.rotate(existingCam?.angle ?? 0)
+    ctx.rotate(cam.existingcam?.angle ?? 0)
     ctx.fillStyle = c.lightblue
     ctx.globalCompositeOperation = "destination-over"
     ctx.fillRect(0, 0, bounds.x, bounds.y)
@@ -624,12 +637,12 @@ function update() {
         ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2)
         ctx.stroke()
         ctx.beginPath()
-        ctx.arc(click.x, click.y, 15, 0, Math.PI * 2)
+        ctx.arc(cam.click.x, cam.click.y, 15, 0, Math.PI * 2)
         ctx.strokeStyle = c.red
         ctx.stroke()
         ctx.fillText(`x: ${mouse.x} y: ${mouse.y}`, mouse.x, mouse.y - 30)
         ctx.fillStyle = c.red
-        ctx.fillText(`x: ${click.x} y: ${click.y}`, click.x - 70, click.y + 30)
+        ctx.fillText(`x: ${cam.click.x} y: ${cam.click.y}`, cam.click.x - 70, cam.click.y + 30)
         ctx.restore()
     }
 
@@ -724,7 +737,7 @@ class Entity {
         out.dark = darkenHexColor(out.color, 40)
         out.selected = false
         out.isCustom = true
-        out.toggleable = ["angle", "SIZE", "Name", "circleRadius", "restitution", "color", 'opacity']
+        out.toggleable = ["angle", "SIZE", "Name", "circleRadius", "restitution", "color", 'opacity', 'width','height']
         out.opacity = 1
 
         out.start = {
@@ -816,14 +829,14 @@ class Entity {
                 Body.setPosition(this, { y: 0, x: this.position.x })
                 this.outOfBounds?.()
             }
-            if (following) {
-                cam.x = (-following.position.x * cam.zoom) + ((canvas.width * cam.zoom) / 2) / cam.zoom
-                cam.y = (-following.position.y * cam.zoom) + ((canvas.height * cam.zoom) / 2) / cam.zoom
+            if (cam.following) {
+                cam.x = (-cam.following.position.x * cam.zoom) + ((canvas.width * cam.zoom) / 2) / cam.zoom
+                cam.y = (-cam.following.position.y * cam.zoom) + ((canvas.height * cam.zoom) / 2) / cam.zoom
             }
             ctx.translate(cam.x, cam.y)
             ctx.scale(cam.zoom, cam.zoom)
 
-            ctx.rotate(existingCam?.angle ?? 0)
+            ctx.rotate(cam.existingcam?.angle ?? 0)
             ctx.translate(this.position.x, this.position.y)
 
             this.circleRadius && ctx.rotate(this.angle)
@@ -875,7 +888,7 @@ class Entity {
                 ctx.globalAlpha = this.opacity
             }
             this.illustrate?.(fr)
-            if (editorMode && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (click.x && click.y)) {
+            if (editorMode && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
                 if (!Entity.all.some(o => o.selected)) {
                     this.onclick?.()
                     this.selected = true
@@ -886,7 +899,7 @@ class Entity {
                 }
 
             }
-            else if (editorMode && (!click.x || !click.y)) {
+            else if (editorMode && (!cam.click.x || !cam.click.y)) {
                 if (this.selected) {
                     this.velocity.x = this.velocity.y = 0
                     this.start.x = this.position.x
@@ -899,8 +912,8 @@ class Entity {
                 }
 
             }
-            if (ctx.isPointInPath(mouse.x, mouse.y) && click.x && click.y && !editorMode && this.isMarble) {
-                following = this
+            if (ctx.isPointInPath(mouse.x, mouse.y) && cam.click.x && cam.click.y && !editorMode && this.isMarble) {
+                cam.following = this
             }
             ctx.restore()
 
@@ -954,6 +967,10 @@ class Marble extends Entity {
         this.isMarble = true
         this.toggleable.push("img")
         this.toggleable.deleteWithin('angle')
+        this.toggleable.deleteWithin('width')
+        this.toggleable.deleteWithin('height')
+
+
         Marble.prototype.illustrate = this.illustrate = function (frame) {
             if (editorMode) {
                 ctx.save()
@@ -1069,7 +1086,7 @@ class Blade extends Wall {
         }
     }
 }
-class Beam extends Wall {
+/*class Beam extends Wall {
     static {
         Entity.allClasses[this.name] = this
     }
@@ -1077,7 +1094,7 @@ class Beam extends Wall {
         super(o)
         //  this.CREATOR = Beam
     }
-}
+}*/
 class WindZone extends Wall {
     static {
         Entity.allClasses[this.name] = this
@@ -1298,14 +1315,14 @@ function temp(x, y, width, height) {
 
 $("#can").on({
     mousedown: function (e) {
-        click.x = e.offsetX
-        click.y = e.offsetY
+        cam.click.x = e.offsetX
+        cam.click.y = e.offsetY
         //      console.log(chosenEntity)
         if (select === "put" && editorMode) {
             place(chosenEntity)
         }
         if (select === "edit") {
-            editorMode && (following = null)
+            editorMode && (cam.following = null)
         }
     },
     mousemove: function (e) {
@@ -1314,14 +1331,14 @@ $("#can").on({
 
     },
     mouseup: function () {
-        click.x = click.y = NaN
+        cam.click.x = cam.click.y = NaN
     },
 
 })
 function startGame() {
     if (!editorMode) {
         frame = 0
-        following = null
+        cam.following = null
 
         Entity.gameSpawns = [...Entity.toSpawn]
         for (let o of Entity.graveyard) {
@@ -1342,7 +1359,7 @@ function startGame() {
     }
     else {
         //Enter Play Mode
-        following = current = null
+        cam.following = current = null
         for (let o of Entity.all) {
             o.selected = false
         }
@@ -1365,9 +1382,9 @@ function startGame() {
      cam.y = average.y.average
    
      }*/
-    if (existingCam) {
-        cam.x = ((-existingCam.position.x) + ((canvas.width / 2) / cam.zoom)) * (cam.zoom)
-        cam.y = ((-existingCam.position.y) + ((canvas.height / 2) / cam.zoom)) * (cam.zoom)
+    if (cam.existingcam) {
+        cam.x = ((-cam.existingcam.position.x) + ((canvas.width / 2) / cam.zoom)) * (cam.zoom)
+        cam.y = ((-cam.existingcam.position.y) + ((canvas.height / 2) / cam.zoom)) * (cam.zoom)
     }
 
 
@@ -1380,11 +1397,20 @@ function showData(stats) {
         return
     }
     let index1 = getIndex(),
-        index2 = getIndex()
-    $("#data").append(`<button class="good" id="apply${index1}">Apply Changes</button><button class="bad" id="delete${index2}">Delete</button>`)
+        index2 = getIndex(),
+        index3 = getIndex()
+    $("#data").append(`<button class="good" id="apply${index1}">Apply Changes</button><button class='good' id='clone${index3}'>Clone</button><button class="bad" id="delete${index2}">Delete</button>`)
     for (let [id, event] of [
         ['apply' + index1, apply],
-        ['delete' + index2, () => deleteFrom(current)]
+        ['delete' + index2, () => deleteFrom(current)],
+        [`clone${index3}`, ()=> {
+            let params = current.start
+            params.x += 100;
+            params.y += 100
+            let clone =  new current.CREATOR(params)
+            current = select = clone
+            showData(clone)
+        }]
     ]) {
         $(`#${id}`).on({
             click() {
@@ -1402,8 +1428,8 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = stats[name] * 180 / Math.PI
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
         }
         if (name === "speed") {
@@ -1411,8 +1437,8 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = +cam.speed
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
         }
 
@@ -1421,8 +1447,8 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = stats[name] * 100
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
         }
         if (name === "opacity") {
@@ -1430,8 +1456,8 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = stats[name]
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
         }
         if (name.match(/restitution|mass|frictionAir|Name/)) {
@@ -1439,8 +1465,8 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = stats[name]
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
         }
         if (name.match(/interval/)) {
@@ -1448,9 +1474,19 @@ function showData(stats) {
             bar.id = name
             bar.className = "write"
             bar.value = stats[name]
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
+        }
+        if (name.match(/width|height/)) {
+            let bar = document.createElement("input")
+            bar.id = name
+            bar.className = "write"
+            bar.value = stats[name]
+            $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
+
+     
         }
         /* if (name.match(/angularVelocity/)) {
              let bar = document.createElement("input")
@@ -1467,8 +1503,8 @@ function showData(stats) {
             bar.className = "color"
             bar.type = "color"
             bar.value = stats[name]
-            $("#data").append(bar)
             $("#data").append(`<label for="${name}">${name.upper()}</label>`)
+            $("#data").append(bar)
 
         }
 
@@ -1508,7 +1544,7 @@ function showData(stats) {
     if (stats.CREATOR === Marble) {
         let bar = document.createElement("button")
         bar.onclick = () => {
-            following = current
+            cam.following = current
         }
         bar.innerHTML = "Follow"
         bar.className = "good"
@@ -1552,7 +1588,7 @@ $(window).on({
     },
     keydown: function (e) {
 
-        following = null
+        cam.following = null
         const key = e.key.toLowerCase()
         if (key === "w") {
             cam.key.w = true
@@ -1581,9 +1617,8 @@ cam.x = -bounds.center.x + canvas.width / 2
 cam.y = -bounds.center.y + canvas.height / 2
 
 cam.zoom = 1
-for (let className of [Entity, Wall, Marble, Blade, Cam, Beam]) {
-    Entity[className]
-}
+
 function getIndex() {
-    return inx++
+    return getIndex.inx++
 }
+getIndex.inx = 0

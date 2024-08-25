@@ -147,13 +147,13 @@ const bounds = {
 }, save = function () {
     editorMode || startGame()
     let arr = []
-    arr.push({ bounciness: $('#bounciness')[0].value })
+    arr.push({ bounciness: $('#bounciness')[0].value, camBehaviour: $('#camBehaviour')[0].value })
     for (let o of a.all) {
-        switch(o.CREATOR.name) {
+        switch (o.CREATOR.name) {
             case 'Wall':
-                case 'Blade': {
+            case 'Blade': {
                 delete o.start.interval
-                
+
             }
         }
         delete o.start.dark
@@ -163,10 +163,10 @@ const bounds = {
         if (o.start.size === o.CREATOR.defaultSize) {
             delete o.start.size
         }
-        if (o.start.width === o.CREATOR.defaultWidth) {
+        if (o.start.width === o.CREATOR.defaultWidth || o.start.width == null) {
             delete o.start.width
         }
-        if (o.start.height === o.CREATOR.defaultHeight) {
+        if (o.start.height === o.CREATOR.defaultHeight || o.start.height == null) {
             delete o.start.height
         }
         if (o.start.color === o.CREATOR.defaultColor) {
@@ -180,10 +180,10 @@ const bounds = {
         }
         let info = o.start
         for (let o in info) {
-            if (info[o] == undefined || (o.match(/restitution|friction/)) || o === 'img' || o == null  || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
+            if (info[o] == undefined || (o.match(/restitution|friction/)) || o === 'img' || o == null || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
                 delete info[o]
             }
-            
+
         }
         arr.push([info, o.CREATOR.name])
     }
@@ -215,6 +215,7 @@ const bounds = {
 
             if ('bounciness' in item) {
                 $('#bounciness')[0].value = item.bounciness
+                $('#camBehaviour')[0].value = item.camBehaviour
                 continue
             }
             if ('game' in item) {
@@ -384,6 +385,7 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    behaviour: 'leader',
     easterEggs: {
         acidMode: false,
         compop: 'source-over',
@@ -400,6 +402,7 @@ const cam = {
     zoom: 1,
     following: null,
     existingcam: null,
+    existinggoal: null,
     key: {
         w: false,
         s: false,
@@ -559,20 +562,7 @@ function update() {
         Entity.graveyard.push(o)
     }
     Entity.temporarilyDead = []
-    if (cam.key.w) {
-        cam.y += cam.speed
-
-    }
-    if (cam.key.s) {
-        cam.y -= cam.speed
-    }
-    if (cam.key.a) {
-        cam.x += cam.speed
-    }
-    if (cam.key.d) {
-        cam.x -= cam.speed
-    }
-
+   
     let pos = {
         x: cam.x / cam.zoom,
         y: cam.y / cam.zoom
@@ -602,6 +592,67 @@ function update() {
         }
         fr.draw?.(frame)
     }
+    let camCanMove = false
+    if (Entity.all.filter(o=>o.isMarble).length) {
+        switch (cam.behaviour) {
+            default: camCanMove = true;
+            break;
+            case 'leader': {
+                if (cam.existinggoal) {
+                    cam.following = (Entity.all.filter(o => o.isMarble).sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
+                }
+            }
+                break;
+            case 'loser': {
+                if (cam.existinggoal) {
+                    cam.following = (Entity.all.filter(o => o.isMarble).sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal))[0])
+                }
+            }
+                break;
+            case 'middle': {
+                if (cam.existinggoal) {
+                    cam.following = (Entity.all.filter(o => o.isMarble).sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal)).center)
+                }
+            }
+                break;
+            case 'average': {
+                let positions = {
+                    x: [],
+                    y: []
+                }
+                for (let o of Entity.all) {
+                    if (o.isMarble) {
+                        positions.x.push(o.position.x)
+                        positions.y.push(o.position.y)
+                    }
+                }
+                cam.following = null
+                cam.x = -positions.x.average
+                cam.y =- positions.y.average
+                break;
+            }
+            case 'random': {
+                if (!(frame % 500)||!cam.following) {
+                    cam.following = Entity.all.filter(o=>o.isMarble).pick()
+                }
+                break;
+        } 
+    }
+    }
+    if (cam.key.w && camCanMove) {
+        cam.y += cam.speed
+
+    }
+    if (cam.key.s && camCanMove) {
+        cam.y -= cam.speed
+    }
+    if (cam.key.a && camCanMove) {
+        cam.x += cam.speed
+    }
+    if (cam.key.d && camCanMove) {
+        cam.x -= cam.speed
+    }
+
     if (editorMode) {
         ctx.save()
         ctx.lineWidth = 1
@@ -615,7 +666,7 @@ function update() {
     }
     ctx.save()
     ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.font = "30px "+cam.easterEggs.gameFont
+    ctx.font = "30px " + cam.easterEggs.gameFont
     ctx.textBaseline = "middle"
     ctx.textAlign = "center"
     ctx.fillStyle = textColor
@@ -672,7 +723,12 @@ function update() {
 }
 
 class Entity {
+    static distance = function (a, b) {
+        const dx = a.position.x - b.position.x;
+        const dy = a.position.y - b.position.y;
 
+        return Math.sqrt(dx * dx + dy * dy);
+    }
     static all = Matter.Composite.allBodies(world)
     static toKill = []
     static allClasses = {}
@@ -901,7 +957,7 @@ class Entity {
             }
 
             if (this === current) {
-                ctx.shadowBlur = 15 + Math.sin(frame/40)
+                ctx.shadowBlur = 15 + Math.sin(frame / 40)
                 ctx.shadowColor = c.blue
             }
             for (let oj of Entity.all) {
@@ -986,7 +1042,7 @@ class Marble extends Entity {
     static defaultShape = 'circle'
     constructor(opts) {
         opts.shape ??= Marble.defaultShape
-        opts.size??= Marble.defaultSize
+        opts.size ??= Marble.defaultSize
         super(opts)
         this.img = opts.img
         if (opts.img) {
@@ -1071,9 +1127,9 @@ class Wall extends Entity {
     constructor(opts) {
         opts.shape = "rect"
         opts.friction = 0
-        opts.width??= Wall.defaultWidth
+        opts.width ??= Wall.defaultWidth
         opts.height ??= Wall.defaultHeight
-        opts.color??= Wall.defaultColor
+        opts.color ??= Wall.defaultColor
         if (new.target === Wall) {
             opts.isStatic = true
 
@@ -1108,8 +1164,8 @@ class Blade extends Wall {
     static defaultColor = c.yellow
     constructor(opts) {
         let mod = opts
-        opts.width??= Blade.defaultWidth
-        opts.height??= Blade.defaultHeight
+        opts.width ??= Blade.defaultWidth
+        opts.height ??= Blade.defaultHeight
         mod.width = opts.size * 0.9
         mod.height = opts.size * 0.1
         mod.isStatic = false
@@ -1280,7 +1336,7 @@ class Cam extends Entity {
             ctx.stroke()
             ctx.textBaseline = "middle"
             ctx.textAlign = "center"
-            ctx.font = "30px "+cam.easterEggs.gameFont
+            ctx.font = "30px " + cam.easterEggs.gameFont
             ctx.strokeText("🎥", 0, 0)
         }
 
@@ -1419,6 +1475,7 @@ function startGame() {
     else {
         //Enter Play Mode
         frame = 0
+        cam.behaviour = $('#camBehaviour')[0].value
         /*cam.following =*/ current = null
         for (let o of Entity.all) {
             o.selected = false

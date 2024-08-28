@@ -347,7 +347,7 @@ export class Elem {
         opts.type &&   this.content.setAttribute('type', opts.type)
         opts.for &&   this.content.setAttribute('for', opts.for)
         opts.download &&   this.content.setAttribute('download', opts.download)
-
+        opts.checked != null && (this.content.checked = opts.checked) 
         this.content.src = opts.src ?? this.content.src
         this.parent = null
         this.content.accept = opts.accept ?? ''

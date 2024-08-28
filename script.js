@@ -82,17 +82,31 @@ const elements = {
             new Elem({ tag: 'cite', text: 'by Unknown', class: ['gameMenu'], id: 'authorName', parent: Elem.$('#levelTitle') }),
 
             new Elem({
-                tag: 'button', id: 'gameStartButton', class: ['good', 'gameMenu'], text: 'Start', events: [
+                tag: 'button', id: 'gameStartButton', class: ['good', 'gameMenu'], text: 'Play', events: [
                     ['click', (function anonymous() {
                         this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
+                            Elem.$('#startmenu').hide()
                             setTimeout(a => {
-                                startGame()
-                                menuClicked = true
-                                startmenu.style.zIndex = -1
+                                cam.following = cam.existinggoal ?? cam.existingspawn
+                                setTimeout(a => { cam.following = cam.existingspawn; setTimeout(startGame, 1000) }, 2000)
                             }, 200)
 
                         })
                     })]
+                ]
+            }),
+            new Elem({
+                tag: 'div', class: ['gameMenu'], id: 'secondMenu', children: [
+                    new Elem({ tag: 'label', text: 'Camera Behaviour', for: 'camBehaviour' })
+                ]
+            }),
+            new Elem({
+                tag: 'div', class: ['gameMenu'], children: [
+                    new Elem({
+                        tag: 'button', id: 'gameSettings', class: ['neutral', 'gameMenu'], text: 'Settings', events: [
+                            ['click', turnToSettingsMenu]
+                        ]
+                    })
                 ]
             })
         ]
@@ -104,7 +118,7 @@ const elements = {
                 class: ['good'], tag: 'button', id: 'loadButton', text: 'Load from file', events: [
                     ['click', () => {
                         Elem.$('#uploadedData').content.click()
-                        
+
                     }]
                 ]
             }),
@@ -353,12 +367,13 @@ const bounds = {
     $('#textData')[0].value = output
     let blob = new Blob([output], { type: 'text/plain;' })
     const tempurl = URL.createObjectURL(blob)
-    let anchor = new Elem({ tag: 'a', href: tempurl, download: Elem.$('#levelTitle').content.innerHTML })
-     Elem.$('#textData').content.value=output
+    const regex = /[^a-z0-9_]/gi;
+    let anchor = new Elem({ tag: 'a', href: tempurl, download: Elem.$('#title').content.value.replace(regex, '').replaceAll(' ', '_') })
+    Elem.$('#textData').content.value = output
     anchor.content.click()
     anchor.kill()
     URL.revokeObjectURL(tempurl);
-    Elem.$('#textData').value=''
+    Elem.$('#textData').value = ''
 }, Load = function (information) {
     editorMode || startGame()
     console.log($("#textData")[0].value)
@@ -412,13 +427,13 @@ const bounds = {
                 Entity.toSpawn.deleteWithin(o)
             }
         }
-        Elem.$('#textData').content.value=''
+        Elem.$('#textData').content.value = ''
 
     }
     catch (e) {
         Text = 'Check logs please :(#FF0000'
         console.warn(data)
-        Elem.$('#textData').content.value=''
+        Elem.$('#textData').content.value = ''
 
         throw e
     }
@@ -473,10 +488,13 @@ Object.defineProperty(window, "Text", {
         id3 = getIndex(),
         id4 = getIndex(),
         id5 = getIndex(),
-        id6 = getIndex()
-    let naMes = [`block${id1}`, `motor${id2}`, `cam${id3}`, `spawner${id4}`, `wind${id5}`, `moveableWall${id6}`]
+        id6 = getIndex(),
+        id7 = getIndex(),
+        id8 = getIndex(),
+        id9 = getIndex()
+    let naMes = [`block${id1}`, `motor${id2}`, `cam${id3}`, `spawner${id4}`, `wind${id5}`, `moveableWall${id6}`, `circle${id7}`, `ball${id8}`, `goal${id9}`]
     let gtrmnythr = Elem.$('#buttonholder')
-    let events = [() => chosenEntity = 'Block', () => chosenEntity = 'Motor', () => chosenEntity = 'Cam', () => chosenEntity = 'Spawner', () => chosenEntity = 'WindZone', () => chosenEntity = 'Movable Wall']
+    let events = [() => chosenEntity = 'Block', () => chosenEntity = 'Motor', () => chosenEntity = 'Cam', () => chosenEntity = 'Spawner', () => chosenEntity = 'WindZone', () => chosenEntity = 'Movable Wall', () => chosenEntity = 'Circle', () => chosenEntity = 'Ball', () => chosenEntity = 'Goal']
     for (let i = 0; i < naMes.length; i++) {
         let me = new Elem({
             tag: 'button', class: ['good', 'thin'], id: naMes[i], text: naMes[i], events: [
@@ -511,11 +529,26 @@ function place(entity) {
         showData(baby)
 
     }
-    if (entity.includes("Movable Wall")) {
-        let baby = new MoveableWall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
+    if (entity.includes("Goal")) {
+        let baby = new Goal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
         current = baby
         showData(baby)
 
+    }
+    if (entity.includes("Movable Wall")) {
+        let baby = new MoveableWall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: false })
+        current = baby
+        showData(baby)
+    }
+    if (entity.includes("Circle")) {
+        let baby = new Circle({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: true })
+        current = baby
+        showData(baby)
+    }
+    if (entity.includes("Ball")) {
+        let baby = new Ball({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: false })
+        current = baby
+        showData(baby)
     }
     /*if (entity.includes("Beam")) {
         let baby = new Beam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.red, height: 15, width: 70 * (modifier), isStatic: true })
@@ -553,6 +586,7 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    playing: false,
     zoomChange: 0,
     last: {
         x: 0,
@@ -580,6 +614,7 @@ const cam = {
     following: null,
     existingcam: null,
     existinggoal: null,
+    existingspawn: null,
     key: {
         w: false,
         s: false,
@@ -619,11 +654,11 @@ const apply = () => {
         Elem.$(`#shh${o.id}`).content.value = o.Name
     }
     for (let name in idNames) {
-
+        console.log(idNames)
         if (name in current) {
             if (name === "angle") {
-                Body.setAngle(current, (+(idNames[name]) * Math.PI / 180) || 0)
-                current.start[name] = +(idNames[name]) * Math.PI / 180 || 0
+                Body.setAngle(current, +idNames[name] * Math.PI / 180)
+                current.start[name] = +idNames[name] * Math.PI / 180
 
             }
             if (name === "speed") {
@@ -636,7 +671,7 @@ const apply = () => {
 
             }
             if (name === "windSpeed") {
-                current.start[name] = current[name] = +idNames[name] / 100
+                current.start[name] = current[name] = +idNames[name]
 
             }
 
@@ -645,11 +680,24 @@ const apply = () => {
                 current.start[name] = +idNames[name]
 
             }
+            if (name.match(/ignoreWind|respawn/)) {
+                current[name] = idNames[name]
+                current.start[name] = idNames[name]
+
+            }
             if (name === "Name") {
                 current.Name = current.start.Name = idNames[name]
             }
-            if (name === "opacity") {
-                current.opacity = current.start.opacity = +idNames[name]
+            if (name.match(/opacity|restitution/)) {
+                current[name] = current.start[name] = +idNames[name]
+            }
+            if (name.match(/size/)) {
+                let modified = current.start
+                modified.size = +idNames[name]
+                let out = new current.CREATOR(modified)
+                current.kill()
+                current = out
+                showData(current)
             }
             /*  if (name === "angularSpeed") {
                   Body.setAngularSpeed(current, (+(idNames[name])) || 0)
@@ -766,6 +814,12 @@ function update() {
         if (fr.CREATOR === Cam && !cam.existingcam) {
             cam.existingcam = fr
         }
+        if (fr.CREATOR === Goal && !cam.existinggoal) {
+            cam.existinggoal = fr
+        }
+        if (fr.CREATOR === Spawner && !cam.existingspawn) {
+            cam.existingspawn = fr
+        }
         if (editorMode) {
             fr.start.x ??= fr.position.x
             fr.start.y ??= fr.position.y
@@ -800,29 +854,33 @@ function update() {
         cam.x = cam.last.x
         cam.y = cam.last.y
     }
+    if (cam.following) {
+        cam.x = lerp(cam.x, -cam.following.position.x * cam.zoom + canvas.width / 2, cam.easterEggs.lerp)
+        cam.y = lerp(cam.y, -cam.following.position.y * cam.zoom + canvas.height / 2, cam.easterEggs.lerp)
 
+    }
     if (Entity.all.filter(o => o.isMarble).length) {
         let outliers = false;
-        if (cam.following) {
-            cam.x = (-cam.following.position.x * cam.zoom) + ((canvas.width * cam.zoom) / 2) / cam.zoom
-            cam.y = (-cam.following.position.y * cam.zoom) + ((canvas.height * cam.zoom) / 2) / cam.zoom
-        }
-        switch (cam.behaviour) {
+
+        switch (!editorMode && cam.behaviour) {
             case 'leader': {
                 if (cam.existinggoal) {
-                    cam.following = (Entity.getAllMarbles.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
+                    let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
+                    cam.following = raa
                 }
             }
                 break;
             case 'loser': {
                 if (cam.existinggoal) {
-                    cam.following = (Entity.getAllMarbles.sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal))[0])
+                    let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal))[0])
+                    cam.following = raa
                 }
             }
                 break;
             case 'middle': {
                 if (cam.existinggoal) {
-                    cam.following = (Entity.getAllMarbles.sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal)).center())
+                    let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal)).center())
+                    cam.following = raa
                 }
             }
                 break;
@@ -839,7 +897,6 @@ function update() {
                         positions.y.push(o.position.y)
                     }
                 }
-                cam.following = null
                 const avg = {
                     x: positions.x.average(outliers),
                     y: positions.y.average(outliers)
@@ -870,6 +927,7 @@ function update() {
             case 'random': {
                 if (!(frame % 500) || !cam.following) {
                     cam.following = Entity.getAllMarbles.pick()
+
                 }
                 break;
             }
@@ -958,6 +1016,7 @@ class Entity {
         const dy = Math.abs(a.position.y - b.position.y);
         return Math.hypot(dx, dy);
     }
+    static placements = [];
     static calculateZoomForBoundingBox = function (bbox, canvasWidth, canvasHeight) {
         const bboxWidth = bbox.width;
         const bboxHeight = bbox.height;
@@ -1098,6 +1157,7 @@ class Entity {
         out.opacity = opts.opacity ?? 1
         out.interval = opts.interval ?? 50
         out.restitution = opts.restitution ?? 0
+        out.size = opts.size
         out.start = {
             x: out.position.x,
             y: out.position.y,
@@ -1199,7 +1259,7 @@ class Entity {
             this.circleRadius && ctx.rotate(this.angle)
 
             ctx.beginPath()
-            if (!editorMode) {
+            if (editorMode) {
 
                 if (this.selected) {
                     this.opacity = 0.6
@@ -1209,9 +1269,7 @@ class Entity {
                 }
 
             }
-            else {
-                this.opacity = this.start.opacity ?? this.opacity
-            }
+
             if (this.selected) {
                 if (true/* Math.abs(mouse.x - this.start.x) > this.SIZE.x / 4 && Math.abs(mouse.y - this.start.y) > this.SIZE.y / 4 */) {
                     if (this.start.isStatic) {
@@ -1314,6 +1372,7 @@ class Marble extends Entity {
         opts.shape ??= Marble.defaultShape
         opts.size ??= Marble.defaultSize
         super(opts)
+        this.finished = false
         this.img = opts.img
         if (opts.img) {
             this.customImage = true
@@ -1323,7 +1382,13 @@ class Marble extends Entity {
             this.customImage = false
 
         }
-        this.outOfBounds = this.tempKill
+        this.outOfBounds = () => { 
+            for (let i = 10; i--;) {
+                let p = new DeathParticle({ x: this.position.x, y: this.position.y, lifetime: 100 })
+                p.isTemporary = true
+            }
+            this.tempKill()
+        }
         this.collisionFilter.group = 0
         this.isMarble = true
         this.toggleable.push("img")
@@ -1331,8 +1396,23 @@ class Marble extends Entity {
         this.toggleable.deleteWithin('width')
         this.toggleable.deleteWithin('height')
 
-
+        this.victory = function () {
+            if (this.finished) {
+                return
+            }
+            Entity.placements.unshift(this)
+            if (cam.following === this) {
+                setTimeout(o => cam.following = null, 200)
+            }
+            this.finished = true
+            for (let i = 10; i--;) {
+                let p = new Confetti({ x: this.position.x, y: this.position.y, lifetime: 100 })
+                p.isTemporary = true
+            }
+            this.kill()
+        }
         Marble.prototype.illustrate = this.illustrate = function (frame) {
+
             if (editorMode || cam.easterEggs.showNamesInPlayMode && cam.zoom >= 0.6) {
                 ctx.save()
                 ctx.rotate(-this.angle)
@@ -1395,7 +1475,7 @@ class Wall extends Entity {
     static defaultHeight = 30
     static defaultColor = c.gray
     constructor(opts) {
-        opts.shape = "rect"
+        if (opts.shape !== 'circle') opts.shape = "rect"
         opts.friction = 0
         opts.width ??= Wall.defaultWidth
         opts.height ??= Wall.defaultHeight
@@ -1425,6 +1505,35 @@ class Wall extends Entity {
 
     }
 }
+class Circle extends Wall {
+    static {
+        Entity.allClasses[this.name] = this
+    }
+    constructor(opts) {
+        opts.shape = 'circle'
+        super(opts)
+        this.toggleable.deleteWithin('width')
+        this.toggleable.deleteWithin('height')
+        this.toggleable.push('size')
+    }
+}
+class Ball extends Circle {
+    static defaultColor = c.green
+    static defaultSize = 20
+
+    static {
+        Entity.allClasses[this.name] = this
+    }
+    constructor(opts) {
+        opts.isStatic = false
+        opts.color ??= Ball.defaultColor
+
+        super(opts)
+        this.start.ignoreWind = this.ignoreWind = opts.ignoreWind ?? 0;
+        this.start.respawn = this.respawn = opts.respawn ?? 0
+        this.toggleable.push('mass', 'restitution', 'ignoreWind', 'respawn')
+    }
+}
 class MoveableWall extends Wall {
     static defaultColor = c.green
     static {
@@ -1434,8 +1543,10 @@ class MoveableWall extends Wall {
         opts.isStatic = false
         opts.color ??= MoveableWall.defaultColor
         super(opts)
-        this.toggleable.push('restitution', 'mass')
+        this.toggleable.push('restitution', 'mass', 'ignoreWind', 'respawn')
 
+        this.start.ignoreWind = this.ignoreWind = opts.ignoreWind ?? false;
+        this.start.respawn = this.respawn = opts.respawn ?? false
         this.collisionFilter.group = 0
 
     }
@@ -1448,13 +1559,10 @@ class Blade extends Wall {
     static defaultHeight = 10
     static defaultColor = c.yellow
     constructor(opts) {
-        let mod = opts
         opts.width ??= Blade.defaultWidth
         opts.height ??= Blade.defaultHeight
-        mod.width = opts.size * 0.9
-        mod.height = opts.size * 0.1
-        mod.isStatic = false
-        super(mod)
+        opts.isStatic = false
+        super(opts)
         this.collisionFilter.group = -1
         //this.CREATOR = new.target
         //        this.Name = opts.name || `Marble ${this.id}`
@@ -1503,7 +1611,7 @@ class WindZone extends Wall {
             })
         }
         this.collision = function (coll) {
-            if (!coll.isMarble) {
+            if (!coll.isMarble && coll.ignoreWind == false) {
                 return
             }
             const angleRadians = this.angle - Math.PI / 2
@@ -1626,6 +1734,45 @@ class Cam extends Entity {
 
     }
 }
+class Goal extends Entity {
+    static {
+        Entity.allClasses[this.name] = this
+    }
+    constructor(opts) {
+        opts.isStatic = true;
+        opts.shape = 'rect'
+        opts.width = 20;
+        opts.height = 20
+        super(opts)
+        for (let o of Entity.all) {
+            if (o.CREATOR === Goal && o !== this) {
+                o.kill()
+            }
+        }
+        this.isSensor = true
+        this.illustrate = function (f) {
+            ctx.rotate(f / 100)
+            ctx.beginPath()
+            ctx.arc(0, 0, 30 + Math.abs(Math.cos(f / 20)) * 30, 0, Math.PI * 2)
+            stroke(this.color)
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath()
+                ctx.moveTo(5, -50 + Math.abs(Math.cos(f / 20)) * 30)
+                ctx.lineTo(-5, -50 + Math.abs(Math.cos(f / 20)) * 30)
+                ctx.lineTo(-0, -46 + Math.abs(Math.cos(f / 20)) * 30)
+                ctx.closePath()
+                stroke(this.color)
+                ctx.rotate(Math.PI * 2 / 4)
+            }
+
+        }
+        this.collision = function (coll) {
+            if (coll.isMarble) {
+                coll.victory()
+            }
+        }
+    }
+}
 class Spawner extends Entity {
     static {
         Entity.allClasses[this.name] = this
@@ -1668,21 +1815,59 @@ class Spawner extends Entity {
             }
             ctx.closePath()
             ctx.stroke()
-            /*      ctx.beginPath()
-                  ctx.arc(range(-this.SIZE.x+30,this.SIZE.x-30), range(-this.SIZE.y+30,this.SIZE.y-30),30,0,Math.PI*2)
-                  ctx.stroke()
-             */
-            /*     ctx.textBaseline = "middle"
-                 ctx.textAlign = "center"
-                 ctx.font = "30px serif"
-                 ctx.strokeText("🐣", 0, 0)*/
             fill('rgb(100,0,255,0.3)')
 
         }
 
     }
 }
-
+class Particle extends Entity {
+    constructor(opts) {
+        if (new.target === Particle) {
+            throw TypeError(`Abstract class ${new.target.name} not directly constructable`)
+        }
+        opts.isStatic = false;
+        opts.shape = 'circle'
+        super(opts)
+        this.isSensor = true;
+        this.lifetime = opts.lifetime ?? 10
+        this.illustrate = function (fr) {
+            if (!(this.lifetime--)) {
+                this.kill()
+            }
+            else this.particleDraw?.(fr)
+        }
+    }
+}
+class Confetti extends Particle {
+    constructor(opts) {
+        super(opts)
+        this.size = 10 + Math.random() * 20
+        Body.setVelocity(this, { x: Math.random() * 5 * choose(1, -1), y: Math.random() * 5 * choose(1, -1) })
+        this.text = choose(...'✭★⍟✦✴✷⭒')
+        this.particleDraw = function (f) {
+            if (this.opacity <= 0) {
+                this.kill()
+                return
+            }
+            Body.applyForce(this, this.position, { x: 0, y: -engine.gravity.y / 1000 })
+            ctx.rotate(f / 20)
+            this.opacity -= 0.008
+            ctx.font = `${this.size}px ` + cam.easterEggs.gameFont
+            ctx.textBaseline = "middle"
+            ctx.textAlign = "center"
+            ctx.fillStyle = this.color
+            ctx.fillText(this.text, 0, 0)
+        }
+    }
+}
+class DeathParticle extends Confetti {
+    constructor(opts) {
+        super(opts)
+        this.color = c.red
+        this.text = choose(...'⛔❌🚫💀👻')
+    }
+}
 let mouse = {
     x: 0,
     y: 0
@@ -1691,28 +1876,6 @@ let mouse = {
 
 update()
 
-function temp(x, y, width, height) {
-    let n = Bodies.rectangle(x, y, width, height, { isStatic: true })
-    World.add(world, n)
-    Entity.all.push(n)
-    n.draw = function () {
-        ctx.beginPath()
-        ctx.save()
-        ctx.moveTo(this.bounds.max.x, this.bounds.max.y)
-        ctx.lineTo(this.bounds.max.x, this.bounds.min.y)
-        ctx.lineTo(this.bounds.min.x, this.bounds.min.y)
-        ctx.lineTo(this.bounds.min.x, this.bounds.max.y)
-        ctx.stroke()
-        ctx.fill()
-        ctx.restore()
-
-
-    }
-    return n
-}
-//temp(50, 550, canvas.width * 2, 100).passive = true
-//temp(-10, 50, 20, 1000).passive = true
-//temp(520, 50, 20, 1000).passive = true
 
 $("#can").on({
     mousedown: function (e) {
@@ -1738,7 +1901,7 @@ $("#can").on({
 })
 function startGame(fade) {
     if (!editorMode) {
-        //    cam.following = null
+        cam.following = current = null
 
         Entity.gameSpawns = [...Entity.toSpawn]
         for (let o of Entity.graveyard) {
@@ -1819,19 +1982,21 @@ function showData(stats) {
 
     for (let statName of Object.values(stats.toggleable)) {
         let val = stats[statName]
-        console.warn(statName)
+
         if (statName === 'angle') {
             new Elem({ tag: 'label', for: statName, text: 'Angle', parent: me })
-            new Elem({ tag: 'input', class: ['write'], parent: me, id: statName, value: val })
+            new Elem({ tag: 'input', class: ['write'], parent: me, id: statName, value: val * 180 / Math.PI })
         }
+
         if (statName === 'color') {
             new Elem({ tag: 'label', for: statName, text: 'Color', parent: me })
             new Elem({ tag: 'input', class: ['color'], type: 'color', parent: me, id: statName, value: val })
         }
-        if (statName.match(/width|height|opacity|Name|mass|frictionAir|windSpeed|interval/)) {
+        if (statName.match(/width|height|opacity|Name|mass|frictionAir|windSpeed|interval|size|ignoreWind|respawn|restitution/)) {
             new Elem({ tag: 'label', for: statName, text: statName.upper(), parent: me })
             new Elem({ tag: 'input', class: ['write'], parent: me, id: statName, value: val })
         }
+
 
     }
 }
@@ -1862,7 +2027,6 @@ $(window).on({
         if (!e.key) {
             return
         }
-        cam.following = null
         const key = e.key.toLowerCase()
         if (key === "w") {
             cam.key.w = true
@@ -1976,7 +2140,9 @@ if (aValue) {
         overflow: 'hidden',
         position: 'fixed',
         top: 0,
-        left: 0
+        left: 0,
+        width: '100%',
+        height: "100%",
     })
     $('body').css('padding', '0px');
     (async function () {
@@ -1985,11 +2151,18 @@ if (aValue) {
             levelData = await fetch('/levels/' + aValue + '.txt')
         }
         let text = await levelData.text()
-
+        Elem.$('#secondMenu').appendInto(Elem.$('#camBehaviour'))
+        Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
         Load(text)
         cam.x = cam.y = NaN
         //startGame()
-        Elem.$('.gameMenu').forEach(o => { o.content.style.display = 'flex' })
+        Elem.$('.gameMenu').forEach(o => {
+            if (o.content.id !== 'secondMenu') {
+                o.content.style.display = 'flex'
+            } else {
+                o.content.style.display = 'grid'
+            }
+        })
         Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] })
 
     })()
@@ -2062,8 +2235,15 @@ new Elem({
             let file = o.target.files[0]
             let reader = new FileReader()
             reader.readAsText(file)
-            reader.onload = (data) => { Elem.$('#textData').content.value = data.target.result; Load();    Elem.$('#textData').content.value=''
+            reader.onload = (data) => {
+                Elem.$('#textData').content.value = data.target.result; Load(); Elem.$('#textData').content.value = ''
             }
         }]
     ]
 }, true).hide()
+
+function turnToSettingsMenu() {
+    Elem.$('#secondMenu').children.forEach(o => {
+        o.show()
+    })
+}

@@ -1846,7 +1846,7 @@ class Confetti extends Particle {
         super(opts)
         this.size = 10 + Math.random() * 20
         Body.setVelocity(this, { x: Math.random() * 5 * choose(1, -1), y: Math.random() * 5 * choose(1, -1) })
-        this.text = choose(...'✭★⍟✦✴✷⭒')
+        this.text = choose(...'⭐️✨️💯✅️💖')
         this.particleDraw = function (f) {
             if (this.opacity <= 0) {
                 this.kill()

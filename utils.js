@@ -18,26 +18,36 @@ export const range = function getRandomInRange(min, max) {
 }
 export const frange = (min, max) => Math.floor(range(min, max))
 Object.defineProperty(Array.prototype, "last", { get: function () { return this[this.length - 1] } })
-Object.defineProperty(Array.prototype, "center", {
-    get: function () {
-        return this[Math.floor(this.length / 2)]
+Array.prototype.center = function () {
+    return this[Math.floor(this.length / 2)]
+
+}
+export const sanitize = function (num) {
+    return (num === num) && isFinite(num)
+}
+Array.prototype.average = function (type) {
+    let output = []
+    if (type) {
+        let arr = this.sort((a, b) => a - b),
+            index = arr.indexOf(arr.center())
+            , q1 = arr.slice(0, index), q3 = arr.slice(arr.indexOf(index + 1, arr.length))
+            , c = q1.center(), e = q3.center()
+            , IQR = Math.max(c, e) - Math.min(c, e)
+            , upperfence = e + (1.5 * IQR), lowerfence = c - (1.5 * IQR);
+
+        this.forEach(o => (o > lowerfence && o < upperfence) && output.push(o))
+    } else {
+        output = this
     }
-})
-Object.defineProperty(Array.prototype, "average", {
-    get: function () {
-        let num = 0
-        for (let o of this) {
-            num += o
-        }
-        return num / this.length
-    }
-})
-Object.defineProperty(String.prototype,"last",{get:function(){return this[this.length-1]}})
-String.prototype.reverse = function() {
+    return (output.reduce((a, b) => a + b, 0) / output.length)
+}
+
+Object.defineProperty(String.prototype, "last", { get: function () { return this[this.length - 1] } })
+String.prototype.reverse = function () {
     return [...this].reverse().join("")
 }
 
-String.prototype.upper = function() {
+String.prototype.upper = function () {
     return this[0].toUpperCase() + this.slice(1)
 }
 
@@ -84,7 +94,7 @@ Array.prototype.shuffle = function () {
 
     return out;
 };
-Array.prototype.pick = function() {
+Array.prototype.pick = function () {
     return choose(...this)
 }
 export const Colors = {
@@ -230,5 +240,267 @@ export const Colors = {
     whitesmoke: "#f5f5f5",
     yellow: "#ffff00",
     yellowgreen: "#9acd32"
-  };
-  
+};
+export class Elem {
+    static textStyle(message, options) {
+        console.log(`%c ${message}`, `background: ${options.color};color: ${options.textColor ?? '#000000'};font-style: ${options.font};font-size: ${options.size ?? 15}px;`)
+    }
+    static $ (query) {
+        if (query.includes('#')) {
+            return document.getElementById(query.replace('#',''))?.content
+        } else {
+            let arr = []
+            for (let element of document.querySelectorAll(query)) {
+                arr.push(element.content)
+            }
+            return arr
+        }
+    }
+    static tracking = {}
+    static listeners = 0;
+    static warn(message) {
+        if (!Elem.logLevels.warn) {
+            return
+        }
+        Elem.textStyle(`[WARN] ${message}`, { textColor: Colors.yellow, size: 15 })
+    }
+    static error(message) {
+        if (!Elem.logLevels.error) {
+            return
+        }
+        Elem.textStyle(`[ERROR] ${message}`, { textColor: Colors.red, size: 15 })
+    }
+    static findClass(className) {
+        const styleSheets = document.styleSheets;
+        // Loop through each stylesheet
+        for (let i = 0; i < styleSheets.length; i++) {
+            const rules = styleSheets[i].cssRules || styleSheets[i].rules;
+            for (let j = 0; j < rules.length; j++) {
+                if (rules[j].selectorText === `.${className}`) {
+                    return true;
+                }
+            }
+        }
+        return false
+    }
+    static info(message) {
+        if (!Elem.logLevels.info) {
+            return
+        }
+        Elem.textStyle(`[INFO] ${message}`, { textColor: '#FFFFFF',  size: 10 })
+    }
+    static success(message) {
+        if (!Elem.logLevels.success) {
+            return
+        }
+        Elem.textStyle(`[SUCCESS] ${message}`, { textColor: Colors.lightgreen, size: 15 })
+    }
+    static debug(message) {
+        if (!Elem.logLevels.debug) {
+            return
+        }
+        Elem.textStyle(`[DEBUG] ${message}`, { textColor: Colors.orange, size: 10 })
+    }
+    static messages = {
+        noclass(msg) {
+            Elem.warn(`"${msg}" currently does not exist within the documents Style Sheets`)
+        }
+    }
+    static logLevels = {
+        debug: false,
+        warn: true,
+        error: true,
+        info: true,
+        success: true,
+    }
+    static select(identifier) {
+        let element = $search(identifier)
+        Object.setPrototypeOf(element, this.prototype)
+        return element.current
+    }
+    #display;
+    #_label_ = ''
+    #initial
+    constructor(opts, immediate) {
+        if (!opts?.tag) {
+            Elem.error('No tag was provided so i cannot make the new node.')
+            return
+        }
+        if (Elem.logLevels.debug) {
+            let arr = ''
+            for (let [key, value] of Object.entries(opts)) {
+                arr += `${key}="${value}" `.replaceAll('\n', '').replaceAll(' ', '')
+            }
+            Elem.debug(`New <${opts.tag}> element:\n ${arr}`)
+        }
+        if (opts._label_) {
+            if (!(opts._label_ in Elem.tracking)) {
+                this.#_label_ = opts._label_
+                Elem.tracking[this.#_label_] = this
+            } else {
+            Elem.error(`${opts._label_} is already being used as an identifier!`)
+            }
+        }
+        this.eventNames = {}
+        this.content = document.createElement(opts.tag)
+        this.content.content = this
+        opts.type &&   this.content.setAttribute('type', opts.type)
+        opts.for &&   this.content.setAttribute('for', opts.for)
+        opts.download &&   this.content.setAttribute('download', opts.download)
+
+        this.content.src = opts.src ?? this.content.src
+        this.parent = null
+        this.content.accept = opts.accept ?? ''
+        this.content.id = opts.id ?? this.content.id
+        this.content.width = opts.width ?? this.content.width
+        this.content.height = opts.height ?? this.content.height
+        this.content.value = opts.value ?? ''
+        this.content.href = opts.href ?? ''
+        this.content.innerHTML = opts.text ?? ''
+        this.children = []
+        opts.style?.forEach?.(o=> this.content.style[o] = opts.style[o])
+        this.content.name = opts.name ?? ''
+        this.content.placeholder = opts.placeholder ?? ''
+        this.#display = this.content.style.display
+        this.#initial = opts
+        if (opts.class) {
+            for (let $class of opts.class) {
+                this.content.classList.add($class)
+            }
+        }
+        if (opts.events) {
+            this.addevent(...opts.events)
+        }
+        if (opts.parent) {
+            this.appendTo(opts.parent)
+        }
+        this.current = this.content
+        if (immediate) {
+            this.appendTo(document.body)
+        }
+        if (opts.children) {
+            for (let kid of opts.children) {
+                kid.appendTo(this.current)
+                this.children.push(kid)
+                kid.parent = this
+            }
+        }
+    }
+    get initial() {
+        return this.#initial
+    }
+    appendTo(parent) {
+        try {
+        parent.appendChild(this.content)}
+        catch(e) {
+            parent.content.appendChild(this.content)
+        }
+        if (parent instanceof Elem) {
+            parent.children.push(this)
+            this.parent = parent 
+        }
+        return this
+    }
+    appendInto(child) {
+        this.content.appendChild(child.content)
+        this.children.push(child)
+        child.parent = this
+        return this
+    }
+    addClass(...className) {
+        this.add({ class: className })
+        return this
+    }
+    add(props) {
+        if (props.class) {
+
+            /*  if (!Array.isArray(props.class)) {
+                  Elem.error(`Expected Array, instead got ${typeof props.class}`)
+              }*/
+            if (typeof props.class === 'string') {
+                props.class = [props.class]
+            }
+            for (let $class of props.class) {
+                if (!Elem.findClass($class)) {
+                    Elem.messages.noclass($class)
+                } else if ([...this.content.classList].includes($class)) {
+                    Elem.warn(`Class ${$class} already added${this.content.id ? ' to ' + this.content.id : ''}`)
+                }
+                else { Elem.success(`Class ${$class} added${this.content.id ? ' to ' + this.content.id : ''}`) }
+                this.content.classList.add($class)
+            }
+        }
+        return this
+    }
+
+    anim(target, callback) {
+        this.add(target)
+        this.addevent(['animationend', () => { this.noevent('animationend'); callback?.call?.(this.content); }])
+        return this
+    }
+    removeClass(...className) {
+        for (let name of className) {
+            this.content.classList.remove(name)
+        }
+        return this
+    }
+    addevent(...events) {
+        for (let [eventName, event] of events) {
+            Elem.listeners++
+            this.content.addEventListener(eventName, event)
+            this.eventNames[eventName] = event
+            Elem.info(`Event "${eventName}" added${this.content.id ? ' to  ' + this.content.id : ''}: \n${event.toString().replaceAll(`\n`, '').replaceAll(' ', '')}`)
+        }
+    }
+    noevent(...target) {
+        for (let event of target) {
+            this.content.removeEventListener(event, this.eventNames[event])
+            if (!this.eventNames[event]) {
+                Elem.warn(`No event found for "${event}"${this.content.id ? ' on ' + this.content.id : ''}`)
+            } else {
+                Elem.listeners--
+                Elem.info(`Removing event "${event}" ${this.content.id ? 'from ' + this.content.id : ''}:\n${this.eventNames[event].toString()}`)
+            }
+            delete this.eventNames[event]
+        }
+    }
+    kill() {
+        this.noevent(...Object.keys(this.eventNames))
+        if (this.content.id) {
+            Elem.info(`Element ${this.content.id} was removed from body`)
+        }
+        Elem.debug(`Element removed`)
+        delete Elem.tracking[this.#_label_]
+        this.killChildren()
+        this?.parent?.children?.deleteWithin?.(this)
+        this.content.remove()
+        return this
+    }
+    killChildren() {
+        while (this.children.length) {
+            this.children.forEach(o=>o.kill())
+        }
+        return this
+    }
+ 
+    hide(type) {
+        this.content.style.display = type ?? 'none'
+        return this
+    }
+    show() {
+        this.content.style.display = this.#display
+        return this
+    }
+}
+export function $search(query) {
+    let result;
+    if (query.includes('#')) {
+        result = document.getElementById(query.replaceAll('#', ''))
+    }
+    else {
+        result = document.querySelectorAll(query)
+    }
+    return result
+}
+window.Elem = Elem
+window.$search = $search

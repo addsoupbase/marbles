@@ -4,14 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Improved Design</title>
+    <title>Marble</title>
     <style>
-        .danger{
-            color: red
+        .danger {
+            color: rgb(104, 17, 17)
         }
+
+        * {
+            font-family: 'Courier New', 'sans-serif';
+        }
+
         body {
             background-color: #494949;
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -47,6 +51,35 @@
             gap: 10px;
         }
 
+        .fade-out {
+            animation: fadeOut 1s ease-out forwards;
+            /* Adjust the duration and easing as needed */
+        }
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+        .fade-in {
+            animation: fadeIn 1s ease-out forwards;
+            /* Adjust the duration and easing as needed */
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+        .flow-left {
+            animation: flowLeft 1s ease-out forwards
+        }
         .menu.hidden {
             display: none;
         }
@@ -58,8 +91,11 @@
             border-radius: 4px;
             padding: 10px 15px;
             cursor: pointer;
-            transition: background-color 0.3
+            transition: background-color 0.3;
+            margin-top: 15px;
+            margin-bottom: 15px;
         }
+
         button:hover {
             background-color: #0056b3;
         }
@@ -81,12 +117,13 @@
         }
 
         #buttonholder {
-            display:inline-table;
+            display: inline-table;
             flex-direction: row;
             gap: 10px;
             align-items: center;
         }
 
+        .whitemenu,
         #allMarbles {
             overflow-y: auto;
             max-height: 200px;
@@ -96,25 +133,43 @@
             border-radius: 4px;
         }
 
+        #startmenu {
+            z-index: 0;
+            display: none;
+            position: fixed;
+            overflow-y: scroll;
+            max-height: 300px;
+        }
+
         .hold {
             display: flex;
             gap: 10px;
             margin-top: 20px;
         }
+
         input.color {
             height: 30px
         }
+
         input.write,
         input#field {
             padding: 5px;
             border: 1px solid #ccc;
             border-radius: 4px;
+            margin-top: 5px;
+            margin-bottom: 5px;
             width: 100%;
         }
 
         label {
             margin-left: 5px;
             color: #333;
+        }
+
+        .gameMenu {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
         }
 
         p {
@@ -126,71 +181,17 @@
         .separate {
             margin-top: 20px;
         }
-
+        .thin {
+            margin: 1px;
+        }
     </style>
+    <link rel="stylesheet" href="animations.css">
 </head>
 
 <body>
-    <div id="cont">
-        <canvas width="500" height="500" id="can"></canvas>
-
-        <div id="data" class="menu">
-            <!-- Menu content -->
-             <p>Nothing selected...</p>
-        </div>
-
-        <div id="data2" class="menu hidden">
-            <div id="buttonholder">
-                <!-- Buttons or other content for menu 2 -->
-            </div>
-        </div>
-
-        <div id="data4" class="menu hidden">
-            <!-- Content for menu 4 -->
-        </div>
-
-        <div id="data3" class="menu hidden">
-            <div>
-                <button id="marbleAdder" class="good">Add Marble</button>
-                <button id="spawnImmediately" class="good">Spawn All</button>
-                <button id="killAll" class="bad">Destroy All</button>
-                <div class="separate">
-                    <label for="bounciness">Marble bounce</label>
-                    <input id="bounciness" class="write" type="number" value="0" min="0" max="1" step="0.1">
-                    <label for="camBehaviour">Camera Behaviour</label>
-                    <select id="camBehaviour">
-                        <option value="leader">Follow Leader</option>
-                        <option value="loser">Follow Loser</option>
-                        <option value="middle">Follow Middle</option>
-                        <option value="average">Average Position of all marbles</option>
-                        <option value="random">Pick randomly</option>
-                        <option value="free">Free</option>
-
-
-
-                    </select>
-
-                </div>
-            </div>
-            <p class="danger">Local images will <b>NOT</b> be saved for other users!</p>
-            <div id="allMarbles"></div>
-        </div>
-    </div>
-
-    <div class="hold">
-        <button class="good" id="saveButton">Save</button>
-        <button class="good" id="loadButton">Load</button>
-    
-        <button class="good" onclick="navigator.clipboard.writeText($('#textData')[0].value)">Copy</button>
-        <textarea id="textData" placeholder="Saved Data"></textarea>
-        <button class="good" id="put">Put</button>
-        <button class="good" id="edit">Edit</button>
-        <button class="good" id="marble">Marbles</button>
-        <button class="good" id="startButton">Start</button>
-      </div>
-
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="matter.js"></script>
     <script src="script.js" type="module"></script>
 </body>
+
 </html>

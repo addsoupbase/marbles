@@ -1744,6 +1744,7 @@ class Goal extends Entity {
         opts.width = 20;
         opts.height = 20
         super(opts)
+        this.color = c.red
         for (let o of Entity.all) {
             if (o.CREATOR === Goal && o !== this) {
                 o.kill()
@@ -1753,6 +1754,7 @@ class Goal extends Entity {
         this.illustrate = function (f) {
             ctx.rotate(f / 100)
             ctx.beginPath()
+            ctx.lineWidth = 3
             ctx.arc(0, 0, 30 + Math.abs(Math.cos(f / 20)) * 30, 0, Math.PI * 2)
             stroke(this.color)
             for (let i = 0; i < 4; i++) {

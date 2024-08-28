@@ -1,5 +1,12 @@
 import { Images } from "./img.js"
 import { darkenHexColor, choose, frange, range, Colors as c, sanitize, Elem, $search } from "./utils.js"
+Elem.logLevels = {
+    debug: true,
+    warn: true,
+    error: true,
+    info: true,
+    success: true,
+}
 let reqFrame = requestAnimationFrame || window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame ||
@@ -16,8 +23,22 @@ let select = "edit",
     , textColor = "#000000";
 let level = false
 getIndex.inx = 0
+let gameEnded = false
 function getIndex() {
     return getIndex.inx++
+}
+function waitForFrames(callback, frames, label) {
+    let out = {
+        time: frames,
+        label: label,
+        execute: callback
+    }
+    if (!callback) {
+        Elem.warn('No callback provided')
+    }
+    if (cam.delays.every(o => o.label !== out.label)) {
+        cam.delays.push(out)
+    }
 }
 const elements = {
     cont: new Elem({
@@ -27,11 +48,11 @@ const elements = {
             new Elem({ tag: 'canvas', width: 500, height: 500, id: 'can' }),
             new Elem({
                 id: 'data', tag: 'div', class: ['menu'], children: [
-                    new Elem({ tag: 'p', text: 'Nothing Selected...', _label_: 'fuck' })
+                    new Elem({ tag: 'p', text: 'Nothing Selected...' })
                 ]
             }), new Elem({
                 tag: 'div', id: 'data2', class: ['menu', 'hidden'], children: [
-                    new Elem({ tag: 'div', id: 'buttonholder', _label_: 'hi' })
+                    new Elem({ tag: 'div', id: 'buttonholder' })
                 ]
             }),
             new Elem({ tag: 'div', id: 'data4', class: ['menu', 'hidden'] }),
@@ -84,12 +105,13 @@ const elements = {
             new Elem({
                 tag: 'button', id: 'gameStartButton', class: ['good', 'gameMenu'], text: 'Play', events: [
                     ['click', (function anonymous() {
+                        this.content.noevent('click')
                         this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
                             Elem.$('#startmenu').hide()
-                            setTimeout(a => {
+                            waitForFrames(a => {
                                 cam.following = cam.existinggoal ?? cam.existingspawn
-                                setTimeout(a => { cam.following = cam.existingspawn; setTimeout(startGame, 1000) }, 2000)
-                            }, 200)
+                                waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
+                            }, 30, 'intro')
 
                         })
                     })]
@@ -153,7 +175,7 @@ const Del = function (num) {
     }
     Entity.toSpawn.deleteWithin(foundYou)
     $(`[name='${foundYou.id}']`).each(function () {
-        $(this).remove()
+        this.content.kill()
     })
 },
 
@@ -190,22 +212,16 @@ const Del = function (num) {
         me.imgSrc = settings?.imgSrc ?? ''
         me.img = new Image()
         me.img.src = me.imgSrc
+        new Elem({ tag: 'div', id: 'brb' + me.id, style: 'border: 5px solid #28a745; border-radius: 10px;' }).appendTo('allMarbles')
+
+        new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', id: `top${me.id}` }).appendTo('brb' + me.id)
         let inp = new Elem({
             tag: 'input', value: me.Name, placeholder: 'Name', id: `shh${me.id}`, name: me.id, events: [
                 ['focusout', findMarble]
             ]
         })
-        new Elem({ tag: 'div', class: ['separate'], id: `div${me.id}`, parent: $search('#allMarbles') })
-        new Elem({
-            tag: 'input',
-            name: `${me.id}`,
-            type: 'url',
-            id: `mrbl${me.id}`,
-            placeholder: 'ImageUrl or file',
-            value: `${me.imgSrc ?? ''}`,
-            events: [['focusout', findMarbleImage]]
-        })
-            .appendTo($search('#div' + me.id))
+        //  new Elem({ tag: 'div', class: ['separate'], id: `div${me.id}`, parent: $search('#allMarbles') })
+
         new Elem({
             parent: Elem.$('#div' + me.id), name: me.id, tag: 'input', type: 'file', accept: ".png, .jpeg, .jpg, .webp", events: [
                 ['change', function (data) {
@@ -250,23 +266,32 @@ const Del = function (num) {
                    //showData(current)
                }
            })*/
-        inp.appendTo($search('#allMarbles'))
+        inp.appendTo('top' + me.id)
+        new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', id: `bottom${me.id}` }).appendTo('brb' + me.id)
+        new Elem({
+            tag: 'input',
+            name: `${me.id}`,
+            type: 'url',
+            id: `mrbl${me.id}`,
+            placeholder: 'ImageUrl or file',
+            value: `${me.imgSrc ?? ''}`,
+            events: [['focusout', findMarbleImage]]
+        })
+            .appendTo('bottom' + me.id)
         inp = inp.content
         //    $("#allMarbles").append(inp)
         let index1 = getIndex(),
             index2 = getIndex()
-        $("#allMarbles").append(`
-                <button class="good" name="${me.id}" id="spawn${index1}">Spawn</button>
-                <button name="${me.id}" id="Del${index2}" class="bad">🗑️</button>
-            `) //kill marble
-        for (let [id, event] of [
-            [`spawn${index1}`, spawnEvent],
-            [`Del${index2}`, deleteEvent]
-        ]) {
-            $(`#${id}`).on({
-                click() { event(me.id) }
-            })
-        }
+        new Elem({
+            tag: 'button', name: `${me.id}`, id: `spawn${index1}`, events: [
+                ['click', () => spawnEvent(me.id)]
+            ], text: 'Spawn', class: ['good', 'thin']
+        }).appendTo(`top${me.id}`)
+        new Elem({ tag: 'button', name: `${me.id}`, id: `Del${index2}`, events: [
+            ['click', () => {deleteEvent(me.id); Elem.$('#brb'+me.id).killChildren().kill()}]
+        ], text: '🗑️', class: ['bad', 'thin'] }).appendTo(`bottom${me.id}`)
+
+
         me.kill()
         Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
     }
@@ -376,7 +401,6 @@ const bounds = {
     Elem.$('#textData').value = ''
 }, Load = function (information) {
     editorMode || startGame()
-    console.log($("#textData")[0].value)
 
     try {
         let data;
@@ -510,19 +534,9 @@ Object.defineProperty(window, "Text", {
 
 
 }
-/*let sizes = ["Small", "Medium", "Big", "Large", "Huge"]
-let finalSize = "Small"
-for (let o of sizes) {
-    let index = sizes.indexOf(o) + 1
-    $("#data2").append(`<input type='radio' id="radio${index}" value='${index * 2}' name="bleh" ${index === 1 ? "checked" : ""}><label for="radio${index}">${o}</label><br>`)
 
-}
-*/
 function place(entity) {
-    /*+$("input[type='radio'][name='bleh']:checked")[0].value
-   if (modifier === 10) {
-       modifier = 15
-   }*/
+
     if (entity.includes("Block")) {
         let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
         current = baby
@@ -586,6 +600,51 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    delays: [],
+    endGame: () => {
+        if (!level) {
+            return
+        }
+        waitForFrames(o => {
+            Elem.$('#can').anim({ class: ['blur-element'] }, () => {
+                let testsubject = Elem.$('#startmenu')
+                testsubject.show().content.style.display = 'flex'
+                testsubject.removeClass('slide-in-blurred-top', 'slide-out-blurred-top')
+                testsubject.content.style.zIndex = 2
+                testsubject.killChildren()
+                testsubject.anim({ class: ['slide-in-blurred-top'] })
+                new Elem({ tag: 'div', id: 'winners', }).appendTo(testsubject)
+                for (let placement of Entity.placements) {
+                    let index = Entity.placements.indexOf(placement)
+                    let medal
+                    if (index === 0) {
+                        medal = '#f0ff21'
+                    }
+                    else if (index === 1) {
+                        medal = '#a3a3a0'
+                    }
+                    else {
+                        medal = '#704c21'
+                    }
+                    Elem.$('#winners').appendInto(new Elem({ tag: 'p', style: `color: ${medal}`, text: `#${index + 1}` }),
+                    )
+                    Elem.$('#winners').appendInto(new Elem({
+                        tag: 'div', id: `place${index}`, style: `width:50px; height: 50px; background-color: ${placement.color}; border-color: ${placement.dark}`, children: [
+                            new Elem({
+                                tag: 'img',
+                                src: placement.imgSrc,
+                                events: [
+                                    ['error', (function anonymous() { Elem.$(`#place${index}`).content.style['border-style'] = 'solid'; this.content.kill() })]
+                                ],
+                                width: 50,
+                                height: 50
+                            })
+                        ]
+                    }))
+                }
+            })
+        }, 100, 'gameEnd')
+    },
     playing: false,
     zoomChange: 0,
     last: {
@@ -597,6 +656,7 @@ const cam = {
     behaviour: 'leader',
     easterEggs: {
         acidMode: false,
+        filter: '',
         lerp: 0.1,
         zoomLerp: 0, //broken
         compop: 'source-over',
@@ -766,8 +826,15 @@ function update() {
         canvas.height = window.innerHeight
     }
     frame++
-    smooth++
 
+    smooth++
+    for (let delays of cam.delays) {
+        if (!(delays.time--)) {
+            delays.execute()
+            Elem.debug(`Delay ${delays.label} executed`)
+            cam.delays.deleteWithin(delays)
+        }
+    }
     if (!cam.easterEggs.acidMode) ctx.clearRect(0, 0, canvas.width, canvas.height);
     //   ctx.fillRect(0,0,1e301,1e301)
     /*
@@ -810,6 +877,8 @@ function update() {
         }
     }
     cam.existingcam = null
+    ctx.filter = cam.easterEggs.filter
+
     for (const fr of Entity) {
         if (fr.CREATOR === Cam && !cam.existingcam) {
             cam.existingcam = fr
@@ -1017,6 +1086,7 @@ class Entity {
         return Math.hypot(dx, dy);
     }
     static placements = [];
+    static losers = []
     static calculateZoomForBoundingBox = function (bbox, canvasWidth, canvasHeight) {
         const bboxWidth = bbox.width;
         const bboxHeight = bbox.height;
@@ -1335,12 +1405,22 @@ class Entity {
 
         }
 
-        out.kill = function () {
+        out.kill = function (isWinner) {
             if (this.dead) {
                 return
             }
+            if (cam.following === this) {
+                waitForFrames(o => cam.following = null, 50, 'follow')
+            }
+            if (!Entity.all.filter(o => o.isMarble).length && !gameEnded) {
+                gameEnded = true;
+                cam.endGame()
+            }
             this.dead = true
             Entity.toKill.push(this)
+            if (this.isMarble && !isWinner) {
+                Entity.losers.push(this)
+            }
         }
         out.tempKill = function () {
             if (!editorMode) {
@@ -1382,7 +1462,7 @@ class Marble extends Entity {
             this.customImage = false
 
         }
-        this.outOfBounds = () => { 
+        this.outOfBounds = () => {
             for (let i = 10; i--;) {
                 let p = new DeathParticle({ x: this.position.x, y: this.position.y, lifetime: 100 })
                 p.isTemporary = true
@@ -1400,16 +1480,16 @@ class Marble extends Entity {
             if (this.finished) {
                 return
             }
-            Entity.placements.unshift(this)
-            if (cam.following === this) {
-                setTimeout(o => cam.following = null, 200)
-            }
+
             this.finished = true
             for (let i = 10; i--;) {
                 let p = new Confetti({ x: this.position.x, y: this.position.y, lifetime: 100 })
                 p.isTemporary = true
             }
-            this.kill()
+            if (this.isMarble) {
+                Entity.placements.push(this)
+            }
+            this.kill(true)
         }
         Marble.prototype.illustrate = this.illustrate = function (frame) {
 
@@ -1757,14 +1837,14 @@ class Goal extends Entity {
             ctx.lineWidth = 3
             ctx.arc(0, 0, 30 + Math.abs(Math.cos(f / 20)) * 30, 0, Math.PI * 2)
             stroke(this.color)
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0, arrows = 6; i < arrows; i++) {
                 ctx.beginPath()
                 ctx.moveTo(5, -50 + Math.abs(Math.cos(f / 20)) * 30)
                 ctx.lineTo(-5, -50 + Math.abs(Math.cos(f / 20)) * 30)
                 ctx.lineTo(-0, -46 + Math.abs(Math.cos(f / 20)) * 30)
                 ctx.closePath()
                 stroke(this.color)
-                ctx.rotate(Math.PI * 2 / 4)
+                ctx.rotate(Math.PI * 2 / arrows)
             }
 
         }
@@ -1807,18 +1887,23 @@ class Spawner extends Entity {
 
                     }
                 }
-                return
-            }
-
-            ctx.moveTo(this.vertices[0].x - this.position.x, this.vertices[0].y - this.position.y)
-            for (let i = 0, len = this.vertices.length; i < len; i++) {
-                ctx.lineTo(this.vertices[i].x - this.position.x, this.vertices[i].y - this.position.y)
 
             }
-            ctx.closePath()
-            ctx.stroke()
-            fill('rgb(100,0,255,0.3)')
 
+            ctx.rotate(e / 100)
+            ctx.beginPath()
+            ctx.lineWidth = 3
+            ctx.arc(0, 0, 30 + Math.abs(Math.sin(e / 20)) * 50, 0, Math.PI * 2)
+            stroke(this.color)
+            for (let i = 0, arrows = 6; i < arrows; i++) {
+                ctx.beginPath()
+                ctx.moveTo(5, -70 + Math.abs(Math.sin(e / 20)) * 50)
+                ctx.lineTo(-5, -70 + Math.abs(Math.sin(e / 20)) * 50)
+                ctx.lineTo(-0, -75 + Math.abs(Math.sin(e / 20)) * 50)
+                ctx.closePath()
+                stroke(this.color)
+                ctx.rotate(Math.PI * 2 / arrows)
+            }
         }
 
     }
@@ -1925,6 +2010,8 @@ function startGame(fade) {
     else {
         //Enter Play Mode
         frame = 0
+        Entity.placements = []
+        Entity.losers = []
         cam.behaviour = $('#camBehaviour')[0].value
         cam.following = current = null
         for (let o of Entity.all) {
@@ -2165,7 +2252,7 @@ if (aValue) {
                 o.content.style.display = 'grid'
             }
         })
-        Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] })
+        Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => { Elem.$('#startmenu').removeClass('slide-in-blurred-top'); Elem.$('#gameStartButton').content.focus() })
 
     })()
     level = true
@@ -2176,60 +2263,7 @@ if (aValue) {
 function lerp(start, end, t) {
     return start + (end - start) * t
 }
-/*$('#pickbutton').on('click', (function anonymous() {
-    let data = localStorage.getItem('sets')
-    let div = `<div class='gameMenu'>content</div>`
-    let setbutton = new Elem({type: 'button', class: ['good'], text: 'Add marble', id: 'addSetButton'})
-    let savebutton = new Elem({type: 'button', class: ['good'],text:'Save',id:'saveButton'})
 
-    $(savebutton).on('click',(function anonymous(){
-        for (let o of document.querySelectorAll('[name="savingsets"]')) {
-            let ID = getIndex()
-            let imageurl = o.children[0].value
-            let name = o.children[2].value
-            localStorage.setItem('sets',JSON.stringify({Name: name,img: {},imgSrc: imageurl,size: 30,id: ID, game: true}))
-
-        }
-    }))
-    $(setbutton).on('click', (function anonymous() {
-        $('#nosets').remove()
-        let index = getIndex()
-        $(this).before(`<div class='whitemenu' id='menu${index}'>
-            <div class='separate' name='savingsets'>
-            <input placeholder='Image Url' type='url'></input>
-            <br>
-            <input placeholder='Name' name='${index}' value='Marble ${index}'></input>
-            <button class='bad' id='remove${index}'>🗑️</button
-            </div>
-            </div>`)
-            $(`#remove${index}`).on('click',()=>$(`#menu${index}`).remove())
-    }))
-    $(startmenu).append(`<div id='setHolder' class='gameMenu' style='display:grid;'></div>`)
-    $('#setHolder').append(setbutton)
-    $('#setHolder').append(savebutton)
-
-    if (!data) {
-        $(setbutton).before('<h2 id="nosets">No sets</h2>')
-    }
-    else {
-        let _data = JSON.parse(data)
-  
-            let index = getIndex()
-            $(setbutton).before(`<div class='whitemenu' id='menu${index}'>
-                <div class='separate' name='savingsets'>
-                <input placeholder='Image Url' type='url' value='${_data.imgSrc}'></input>
-                <br>
-                <input placeholder='Name' name='${_data.Name}' value='${_data.Name}'></input>
-                <button class='bad' id='remove${index}'>🗑️</button
-                </div>
-                </div>`)
-                $(`#remove${index}`).on('click',()=>$(`#menu${index}`).remove())
-
-        
-       
-    }
-
-}))*/
 Elem.$('#textData')
 new Elem({
     id: 'uploadedData', type: 'file', tag: 'input', events: [

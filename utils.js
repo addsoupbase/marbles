@@ -245,9 +245,9 @@ export class Elem {
     static textStyle(message, options) {
         console.log(`%c ${message}`, `background: ${options.color};color: ${options.textColor ?? '#000000'};font-style: ${options.font};font-size: ${options.size ?? 15}px;`)
     }
-    static $ (query) {
+    static $(query) {
         if (query.includes('#')) {
-            return document.getElementById(query.replace('#',''))?.content
+            return document.getElementById(query.replace('#', ''))?.content
         } else {
             let arr = []
             for (let element of document.querySelectorAll(query)) {
@@ -287,7 +287,7 @@ export class Elem {
         if (!Elem.logLevels.info) {
             return
         }
-        Elem.textStyle(`[INFO] ${message}`, { textColor: '#FFFFFF',  size: 10 })
+        Elem.textStyle(`[INFO] ${message}`, { textColor: '#FFFFFF', size: 10 })
     }
     static success(message) {
         if (!Elem.logLevels.success) {
@@ -308,10 +308,10 @@ export class Elem {
     }
     static logLevels = {
         debug: false,
-        warn: true,
-        error: true,
-        info: true,
-        success: true,
+        warn: false,
+        error: false,
+        info: false,
+        success: false,
     }
     static select(identifier) {
         let element = $search(identifier)
@@ -338,29 +338,30 @@ export class Elem {
                 this.#_label_ = opts._label_
                 Elem.tracking[this.#_label_] = this
             } else {
-            Elem.error(`${opts._label_} is already being used as an identifier!`)
+                Elem.error(`${opts._label_} is already being used as an identifier!`)
             }
         }
         this.eventNames = {}
         this.content = document.createElement(opts.tag)
         this.content.content = this
-        opts.type &&   this.content.setAttribute('type', opts.type)
-        opts.for &&   this.content.setAttribute('for', opts.for)
-        opts.download &&   this.content.setAttribute('download', opts.download)
-        opts.checked != null && (this.content.checked = opts.checked) 
-        this.content.src = opts.src ?? this.content.src
+        opts.type && this.content.setAttribute('type', opts.type)
+        opts.for && this.content.setAttribute('for', opts.for)
+        opts.download && this.content.setAttribute('download', opts.download)
+        opts.style && this.content.setAttribute('style', opts.style)
+        opts.value && this.content.setAttribute('value', opts.value)
+        opts.name && this.content.setAttribute('name', opts.name)
+        opts.checked != null && this.content.setAttribute('checked', opts.checked)
+        opts.src && this.content.setAttribute('src', opts.src)
+        opts.accept && this.content.setAttribute('accept', opts.accept)
+        opts.placeholder && this.content.setAttribute('placeholder', opts.placeholder)
         this.parent = null
-        this.content.accept = opts.accept ?? ''
         this.content.id = opts.id ?? this.content.id
         this.content.width = opts.width ?? this.content.width
         this.content.height = opts.height ?? this.content.height
-        this.content.value = opts.value ?? ''
         this.content.href = opts.href ?? ''
         this.content.innerHTML = opts.text ?? ''
         this.children = []
-        opts.style?.forEach?.(o=> this.content.style[o] = opts.style[o])
-        this.content.name = opts.name ?? ''
-        this.content.placeholder = opts.placeholder ?? ''
+        opts.style?.forEach?.(o => this.content.style[o] = opts.style[o])
         this.#display = this.content.style.display
         this.#initial = opts
         if (opts.class) {
@@ -390,14 +391,19 @@ export class Elem {
         return this.#initial
     }
     appendTo(parent) {
+        if (typeof parent === 'string') {
+            Elem.$('#'+parent).content.appendChild(this.content)
+            return
+        }
         try {
-        parent.appendChild(this.content)}
-        catch(e) {
+            parent.appendChild(this.content)
+        }
+        catch (e) {
             parent.content.appendChild(this.content)
         }
         if (parent instanceof Elem) {
             parent.children.push(this)
-            this.parent = parent 
+            this.parent = parent
         }
         return this
     }
@@ -478,11 +484,11 @@ export class Elem {
     }
     killChildren() {
         while (this.children.length) {
-            this.children.forEach(o=>o.kill())
+            this.children.forEach(o => o.kill())
         }
         return this
     }
- 
+
     hide(type) {
         this.content.style.display = type ?? 'none'
         return this

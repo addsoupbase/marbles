@@ -1,4 +1,4 @@
-import { Images } from "./img.js"
+//import { Images } from "./img.js"
 import { darkenHexColor, choose, frange, range, Colors as c, sanitize, Elem, $search } from "./utils.js"
 Elem.logLevels = {
     debug: true,
@@ -11,7 +11,7 @@ let reqFrame = requestAnimationFrame || window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame ||
     window.oRequestAnimationFrame ||
-    window.msRequestAnimationFrame || ((func) => { setTimeout(func, 10) })
+    window.msRequestAnimationFrame || (func => setTimeout(func, 10))
 let select = "edit",
     current = null
     , editorMode = true,
@@ -28,6 +28,10 @@ function getIndex() {
     return getIndex.inx++
 }
 function waitForFrames(callback, frames, label) {
+    if (!(frames === Math.round(frames))) {
+        Elem.error('Expected int, instead got float')
+        return
+    }
     let out = {
         time: frames,
         label: label,
@@ -76,7 +80,7 @@ const elements = {
                             new Elem({ tag: 'input', id: 'bounciness', class: ['write'], type: 'number', value: '0', }),
                             new Elem({ tag: 'label', for: 'camBehaviour', text: 'Camera Behaviour', }),
                             new Elem({
-                                tag: 'select', id: 'camBehaviour', children: [
+                                tag: 'select', id: 'camBehaviour', style: 'display: hidden;', value: 'leader', children: [
                                     new Elem({ tag: 'option', value: 'leader', text: 'Follow Leader' }),
                                     new Elem({ tag: 'option', value: 'loser', text: 'Follow Loser' }),
                                     new Elem({ tag: 'option', value: 'middle', text: 'Follow Middle' }),
@@ -107,6 +111,9 @@ const elements = {
                     ['click', (function anonymous() {
                         this.content.noevent('click')
                         this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
+                            let bhv = Elem.$('#camBehaviour').content.value
+                            cam.behaviour = bhv
+                            localStorage.setItem('cambehaviour', bhv)
                             Elem.$('#startmenu').hide()
                             waitForFrames(a => {
                                 cam.following = cam.existinggoal ?? cam.existingspawn
@@ -287,9 +294,11 @@ const Del = function (num) {
                 ['click', () => spawnEvent(me.id)]
             ], text: 'Spawn', class: ['good', 'thin']
         }).appendTo(`top${me.id}`)
-        new Elem({ tag: 'button', name: `${me.id}`, id: `Del${index2}`, events: [
-            ['click', () => {deleteEvent(me.id); Elem.$('#brb'+me.id).killChildren().kill()}]
-        ], text: '🗑️', class: ['bad', 'thin'] }).appendTo(`bottom${me.id}`)
+        new Elem({
+            tag: 'button', name: `${me.id}`, id: `Del${index2}`, events: [
+                ['click', function () { deleteEvent(me.id); Elem.$('#brb' + me.id).killChildren().kill(); }]
+            ], text: '🗑️', class: ['bad', 'thin']
+        }).appendTo(`bottom${me.id}`)
 
 
         me.kill()
@@ -331,9 +340,15 @@ const bounds = {
 }, save = function () {
     editorMode || startGame()
     let arr = []
-    arr.push({ bounciness: $('#bounciness')[0].value, camBehaviour: $('#camBehaviour')[0].value, title: Elem.$('#title').content.value, author: Elem.$('#authorName').content.value })
+    arr.push({
+        bounciness: $('#bounciness')[0].value,
+        /*camBehaviour: $('#camBehaviour')[0].value,*/
+        title: Elem.$('#title').content.value, author: Elem.$('#authorName').content.value
+    })
     for (let o of a.all) {
-        console.warn(o)
+        if (!o.canBeSaved) {
+            continue
+        }
         switch (o.CREATOR.name) {
             case 'Wall':
             case 'Blade': {
@@ -427,7 +442,7 @@ const bounds = {
 
             if ('bounciness' in item) {
                 $('#bounciness')[0].value = item.bounciness
-                $('#camBehaviour')[0].value = item.camBehaviour
+                //$('#camBehaviour')[0].value = item.camBehaviour
                 Elem.$('#title').content.value = item.title
                 continue
             }
@@ -442,9 +457,13 @@ const bounds = {
             //inputargs.width = item[2].width ?? item[2].start.width
             inputargs.img = new Image()
             inputargs.img.src = inputargs.imgSrc
-
-            let x = new Entity.allClasses[item[1]](inputargs)
-            x.start = inputargs
+            try {
+                let x = new Entity.allClasses[item[1]](inputargs)
+                x.start = inputargs
+            }
+            catch(e) {
+                console.log(item[1])
+            }
         }
         for (let o of Entity.toSpawn) {
             if (o.img.src !== o.imgSrc) {
@@ -515,10 +534,11 @@ Object.defineProperty(window, "Text", {
         id6 = getIndex(),
         id7 = getIndex(),
         id8 = getIndex(),
-        id9 = getIndex()
-    let naMes = [`block${id1}`, `motor${id2}`, `cam${id3}`, `spawner${id4}`, `wind${id5}`, `moveableWall${id6}`, `circle${id7}`, `ball${id8}`, `goal${id9}`]
+        id9 = getIndex(),
+        id10 = getIndex();
+    let naMes = [`block${id1}`, `motor${id2}`, `spawner${id4}`, `wind${id5}`, `moveableWall${id6}`, `circle${id7}`, `ball${id8}`, `goal${id9}`, `portal${id10}`]
     let gtrmnythr = Elem.$('#buttonholder')
-    let events = [() => chosenEntity = 'Block', () => chosenEntity = 'Motor', () => chosenEntity = 'Cam', () => chosenEntity = 'Spawner', () => chosenEntity = 'WindZone', () => chosenEntity = 'Movable Wall', () => chosenEntity = 'Circle', () => chosenEntity = 'Ball', () => chosenEntity = 'Goal']
+    let events = [() => chosenEntity = 'Block', () => chosenEntity = 'Motor', () => chosenEntity = 'Spawner', () => chosenEntity = 'WindZone', () => chosenEntity = 'Movable Wall', () => chosenEntity = 'Circle', () => chosenEntity = 'Ball', () => chosenEntity = 'Goal', () => chosenEntity = 'Portal']
     for (let i = 0; i < naMes.length; i++) {
         let me = new Elem({
             tag: 'button', class: ['good', 'thin'], id: naMes[i], text: naMes[i], events: [
@@ -582,6 +602,12 @@ function place(entity) {
         showData(baby)
 
     }
+    if (entity.includes("Portal")) {
+        let baby = new Portal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
+        current = baby
+        showData(baby)
+
+    }
     if (entity.includes("Spawner")) {
         let baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
         current = baby
@@ -601,6 +627,7 @@ const cam = {
     x: 0,
     y: 0,
     delays: [],
+    behaviour: 'leader',
     endGame: () => {
         if (!level) {
             return
@@ -643,7 +670,7 @@ const cam = {
                     }))
                 }
             })
-        }, 100, 'gameEnd')
+        }, 50, 'gameEnd')
     },
     playing: false,
     zoomChange: 0,
@@ -653,7 +680,6 @@ const cam = {
         zoom: 1
     },
     targetZoom: 1,
-    behaviour: 'leader',
     easterEggs: {
         acidMode: false,
         filter: '',
@@ -681,6 +707,11 @@ const cam = {
         a: false,
         d: false
     }
+}
+cam.behaviour = localStorage.getItem('cambehaviour')
+if (!cam.behaviour) {
+    localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
+    cam.behaviour = Elem.$('#cambehaviour')
 }
 ctx.lineWidth = 4
 // Import or include Matter.js
@@ -736,8 +767,8 @@ const apply = () => {
             }
 
             if (name === "interval") {
-                current[name] = +idNames[name]
-                current.start[name] = +idNames[name]
+                current[name] = Math.floor(+idNames[name])
+                current.start[name] = Math.floor(+idNames[name])
 
             }
             if (name.match(/ignoreWind|respawn/)) {
@@ -1135,18 +1166,18 @@ class Entity {
     static allClasses = {}
     static graveyard = []
     static temporarilyDead = []
-    static Images = []
+    //static Images = []
     static toSpawn = []
     static gameSpawns = []
     static {
         window.a = this
         window.cam = cam
 
-        for (let src of Images) {
-            let x = new Image(50, 50)
-            x.src = src
-            this.Images.push(x)
-        }
+        /* for (let src of Images) {
+             let x = new Image(50, 50)
+             x.src = src
+             this.Images.push(x)
+         }*/
     }
     static *[Symbol.iterator]() {
         yield* this.all
@@ -1192,20 +1223,6 @@ class Entity {
             Text = 'Check logs please :(#FF0000'
             throw TypeError('No shape was provided.')
         }
-        /* else if (opts.shape === "blade") {
-             let mod = opts
-             mod.width = opts.size
-             mod.height = opts.size / 30
-             out = new MotorBlade(mod)
-             out.collisionFilter.group = -1
-             out.collisionFilter.group = -1
-             out.CREATOR = new.target
-             out.Name = opts.name || `Marble ${out.id}`
-             return out
- 
- 
- 
-         }*/
         out.CREATOR = new.target
         if (!new.target.name.match(/Marble|MoveableWall/)) out.collisionFilter.group = -1;
         out.Name = opts.Name || `${new.target.name} ${out.id}`
@@ -1405,7 +1422,7 @@ class Entity {
 
         }
 
-        out.kill = function (isWinner) {
+        Entity.prototype.kill = out.kill = function (isWinner) {
             if (this.dead) {
                 return
             }
@@ -1464,6 +1481,9 @@ class Marble extends Entity {
         }
         this.outOfBounds = () => {
             for (let i = 10; i--;) {
+                if (Entity.all.length > 100) {
+                    break
+                }
                 let p = new DeathParticle({ x: this.position.x, y: this.position.y, lifetime: 100 })
                 p.isTemporary = true
             }
@@ -1483,6 +1503,9 @@ class Marble extends Entity {
 
             this.finished = true
             for (let i = 10; i--;) {
+                if (Entity.all.length > 100) {
+                    break
+                }
                 let p = new Confetti({ x: this.position.x, y: this.position.y, lifetime: 100 })
                 p.isTemporary = true
             }
@@ -1562,7 +1585,6 @@ class Wall extends Entity {
         opts.color ??= Wall.defaultColor
         if (new.target === Wall) {
             opts.isStatic = true
-
         }
         super(opts)
         this.toggleable.deleteWithin("frictionAir")
@@ -1644,31 +1666,16 @@ class Blade extends Wall {
         opts.isStatic = false
         super(opts)
         this.collisionFilter.group = -1
-        //this.CREATOR = new.target
-        //        this.Name = opts.name || `Marble ${this.id}`
         this.toggleable.push("frictionAir", "mass")
         this.draw = function () {
             Entity.prototype.draw.call(this)
             Body.setVelocity(this, { x: 0, y: 0 })
-            if (!editorMode
-            ) {
-
+            if (!editorMode) {
                 Body.setPosition(this, this.start)
             }
-
-
         }
     }
 }
-/*class Beam extends Wall {
-    static {
-        Entity.allClasses[this.name] = this
-    }
-    constructor(o) {
-        super(o)
-        //  this.CREATOR = Beam
-    }
-}*/
 class WindZone extends Wall {
     static {
         Entity.allClasses[this.name] = this
@@ -1759,23 +1766,95 @@ class WindZone extends Wall {
 
     }
 }
-class MotorBlade extends Wall {
+class Portal extends Entity {
     static {
         Entity.allClasses[this.name] = this
     }
     constructor(opts) {
-        let mod = opts
-        mod.isStatic = false
-        super(mod)
-        //(this)
-        this.toggleable.push("frictionAir", "mass")
-        this.draw = function () {
-            Entity.prototype.draw.call(this)
+        opts.isStatic = true
+        opts.shape = 'circle'
 
-            Body.setVelocity(this, { x: 0, y: 0 })
-            Body.setPosition(this, this.start)
+        super(opts)
+        this.hint = 'Press clone to copy changes between portals'
+        this.interval = opts.interval || 50
+        this.size = this.circleRadius
+        this.pair = null
+        this.active = true
+        this.isSensor = true
+        this.toggleable.push("interval")
 
+        this.onenterplaymode = function () {
+            this.active = true
+        }
+        this.kill = function () {
+            Entity.all.forEach(o => {
+                if (o.pair === this) {
+                    o.pair = null
+                    o.kill()
+                }
 
+            }
+            )
+            Entity.prototype.kill.call(this)
+        }
+        if (!this.pair) {
+            for (let o of Entity.all) {
+                if (o.CREATOR === Portal && !o.pair && o !== this) {
+                    o.pair = this
+                    this.pair = o
+                    break
+                }
+            }
+        }
+        this.toggleable.push('size')
+        this.toggleable.deleteWithin('width')
+        this.toggleable.deleteWithin('height')
+        this.toggleable.deleteWithin('angle')
+        this.toggleable.deleteWithin('restitution')
+        this.toggleable.deleteWithin('opacity')
+        this.collision = function (coll) {
+            if (coll === this?.pair || coll.isParticle || !this.pair) {
+                return
+            }
+            if (this.active) {
+                waitForFrames(() => (!editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + this.id)
+                this.active = this.pair.active = false
+                Body.setPosition(coll, this.pair.position)
+                Body.setVelocity(coll, { x: -coll.velocity.x, y: -coll.velocity.y })
+                Body.setAngularVelocity(coll, -Body.getAngularVelocity(coll) + 0.1)
+            }
+        }
+        this.illustrate = function (f) {
+            let mod = Math.sin(f / 40) * 3
+            let scaleFactor = (this.circleRadius + mod) / 3
+            let b = 0.3
+            if (!this.active) {
+                this.opacity = 0.3
+            } else if (this.opacity !== 1 && !editorMode) {
+                this.opacity += 0.1
+            } else {
+                this.opacity = 1
+            }
+            if (this.pair) {
+                for (let o of Entity.all) {
+                    if (o.pair === this && editorMode) {
+                        ctx.beginPath()
+                        ctx.moveTo(0, 0)
+                        ctx.lineTo((o.position.x - this.position.x) / 2, (o.position.y - this.position.y) / 2)
+                        let old = ctx.lineWidth
+                        ctx.lineWidth = 4
+                        stroke(this.color)
+                        ctx.lineWidth = old
+                        break
+                    }
+                }
+            }
+            ctx.beginPath()
+            ctx.rotate(f / 100)
+            ctx.arc(0, 0, this.circleRadius + mod, 0, Math.PI * 2)
+            ctx.setLineDash([b * scaleFactor, b * scaleFactor, b * scaleFactor, b * scaleFactor, b * scaleFactor, b * scaleFactor]);
+            fill(this.color)
+            stroke(this.color)
         }
     }
 }
@@ -1824,6 +1903,11 @@ class Goal extends Entity {
         opts.width = 20;
         opts.height = 20
         super(opts)
+        this.toggleable.deleteWithin('width')
+        this.toggleable.deleteWithin('height')
+        this.toggleable.deleteWithin('Name')
+        this.toggleable.deleteWithin('angle')
+        this.toggleable.deleteWithin('restitution')
         this.color = c.red
         for (let o of Entity.all) {
             if (o.CREATOR === Goal && o !== this) {
@@ -1833,10 +1917,10 @@ class Goal extends Entity {
         this.isSensor = true
         this.illustrate = function (f) {
             ctx.rotate(f / 100)
-            ctx.beginPath()
+
+            ctx.save()
             ctx.lineWidth = 3
-            ctx.arc(0, 0, 30 + Math.abs(Math.cos(f / 20)) * 30, 0, Math.PI * 2)
-            stroke(this.color)
+
             for (let i = 0, arrows = 6; i < arrows; i++) {
                 ctx.beginPath()
                 ctx.moveTo(5, -50 + Math.abs(Math.cos(f / 20)) * 30)
@@ -1846,7 +1930,11 @@ class Goal extends Entity {
                 stroke(this.color)
                 ctx.rotate(Math.PI * 2 / arrows)
             }
-
+            ctx.restore()
+            ctx.beginPath()
+            ctx.lineWidth = 3
+            ctx.arc(0, 0, 30 + Math.abs(Math.cos(f / 20)) * 30, 0, Math.PI * 2)
+            stroke(this.color)
         }
         this.collision = function (coll) {
             if (coll.isMarble) {
@@ -1869,8 +1957,8 @@ class Spawner extends Entity {
         this.toggleable.deleteWithin("Name")
         this.toggleable.deleteWithin("angle")
         this.toggleable.deleteWithin("restitution")
-        this.toggleable.deleteWithin("color")
-        this.toggleable.deleteWithin("opacity")
+        this.toggleable.deleteWithin('width')
+        this.toggleable.deleteWithin('height')
         this.illustrate = function (e) {
 
             if (!editorMode) {
@@ -1890,11 +1978,10 @@ class Spawner extends Entity {
 
             }
 
+
             ctx.rotate(e / 100)
-            ctx.beginPath()
+            ctx.save()
             ctx.lineWidth = 3
-            ctx.arc(0, 0, 30 + Math.abs(Math.sin(e / 20)) * 50, 0, Math.PI * 2)
-            stroke(this.color)
             for (let i = 0, arrows = 6; i < arrows; i++) {
                 ctx.beginPath()
                 ctx.moveTo(5, -70 + Math.abs(Math.sin(e / 20)) * 50)
@@ -1904,6 +1991,11 @@ class Spawner extends Entity {
                 stroke(this.color)
                 ctx.rotate(Math.PI * 2 / arrows)
             }
+            ctx.restore()
+            ctx.beginPath()
+            ctx.lineWidth = 3
+            ctx.arc(0, 0, 30 + Math.abs(Math.sin(e / 20)) * 50, 0, Math.PI * 2)
+            stroke(this.color)
         }
 
     }
@@ -1916,7 +2008,10 @@ class Particle extends Entity {
         opts.isStatic = false;
         opts.shape = 'circle'
         super(opts)
+        this.isParticle = true
+        Body.setAngle(this, Math.random() * Math.PI * 2)
         this.isSensor = true;
+        this.canBeSaved = false
         this.lifetime = opts.lifetime ?? 10
         this.illustrate = function (fr) {
             if (!(this.lifetime--)) {
@@ -2006,13 +2101,19 @@ function startGame(fade) {
             }
             o.reset()
         }
+        for (let o of Entity.all) {
+            o.onexitplaymode?.()
+        }
     }
     else {
         //Enter Play Mode
         frame = 0
+        for (let o of Entity.all) {
+            o.onenterplaymode?.()
+        }
         Entity.placements = []
         Entity.losers = []
-        cam.behaviour = $('#camBehaviour')[0].value
+        cam.behaviour = localStorage.getItem('cambehaviour') ?? 'leader'
         cam.following = current = null
         for (let o of Entity.all) {
             o.selected = false
@@ -2051,6 +2152,9 @@ function showData(stats) {
         new Elem({ tag: 'p', text: 'Nothing Selected...', parent: me })
         return
     }
+    if (stats.hint) {
+        new Elem({ tag: 'p', class: ['hint'], text: `Hint: ${stats.hint}`, parent: me })
+    }
     new Elem({
         tag: 'button', class: ['good', 'thin'], text: 'Apply', parent: me, events: [
             ['click', () => apply(stats)]
@@ -2088,6 +2192,7 @@ function showData(stats) {
 
 
     }
+
 }
 window.ctx = ctx
 $(window).on({
@@ -2198,6 +2303,7 @@ function clone() {
     params.x += 100
     params.y += 100
     let clone = new current.CREATOR(params)
+    clone.Name = `${clone.CREATOR.name} ${clone.id}`
     current = select = clone
     //current.start = {...params}
     showData(clone)
@@ -2245,6 +2351,7 @@ if (aValue) {
         Load(text)
         cam.x = cam.y = NaN
         //startGame()
+        Elem.$('#camBehaviour').content.value = cam.behaviour
         Elem.$('.gameMenu').forEach(o => {
             if (o.content.id !== 'secondMenu') {
                 o.content.style.display = 'flex'
@@ -2279,7 +2386,7 @@ new Elem({
 }, true).hide()
 
 function turnToSettingsMenu() {
-    Elem.$('#secondMenu').children.forEach(o => {
+    Elem.$('#secondMenu').children.forEach(o =>
         o.show()
-    })
+    )
 }

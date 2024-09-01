@@ -107,22 +107,7 @@ const elements = {
             new Elem({ tag: 'cite', text: 'by Unknown', class: ['gameMenu'], id: 'authorName', parent: Elem.$('#levelTitle') }),
 
             new Elem({
-                tag: 'button', id: 'gameStartButton', class: ['good', 'gameMenu'], text: 'Play', events: [
-                    ['click', (function anonymous() {
-                        this.content.noevent('click')
-                        this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
-                            let bhv = Elem.$('#camBehaviour').content.value
-                            cam.behaviour = bhv
-                            localStorage.setItem('cambehaviour', bhv)
-                            Elem.$('#startmenu').hide()
-                            waitForFrames(a => {
-                                cam.following = cam.existinggoal ?? cam.existingspawn
-                                waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
-                            }, 30, 'intro')
-
-                        })
-                    })]
-                ]
+                tag: 'button', id: 'gameStartButton', class: ['good', 'gameMenu'], text: 'Play',
             }),
             new Elem({
                 tag: 'div', class: ['gameMenu'], id: 'secondMenu', children: [
@@ -461,7 +446,7 @@ const bounds = {
                 let x = new Entity.allClasses[item[1]](inputargs)
                 x.start = inputargs
             }
-            catch(e) {
+            catch (e) {
                 console.log(item[1])
             }
         }
@@ -626,6 +611,9 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    cutscene: {
+        focus: true
+    },
     delays: [],
     behaviour: 'leader',
     endGame: () => {
@@ -711,7 +699,7 @@ const cam = {
 cam.behaviour = localStorage.getItem('cambehaviour')
 if (!cam.behaviour) {
     localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
-    cam.behaviour = Elem.$('#cambehaviour')
+    cam.behaviour = Elem.$('#cambehaviour').content.value
 }
 ctx.lineWidth = 4
 // Import or include Matter.js
@@ -868,6 +856,7 @@ function update() {
     }
     if (!cam.easterEggs.acidMode) ctx.clearRect(0, 0, canvas.width, canvas.height);
     //   ctx.fillRect(0,0,1e301,1e301)
+
     /*
         for (let gridSize = 200, i = ((canvas.width / cam.zoom) - cam.x / 2) % gridSize; i < canvas.width / cam.zoom; i += gridSize) {
             ctx.beginPath()
@@ -1052,6 +1041,29 @@ function update() {
         ctx.strokeRect(21, 10, 7, 20)
         ctx.restore()
     }
+    // Step 1: Draw your normal content
+    // (Insert your code to draw any content here, e.g., images, shapes, text, etc.)
+
+    // Step 2: Save the current canvas state
+
+    /* if (cam.cutscene.focus) {
+         if (!cam.following) {
+             return
+         }
+         ctx.save();
+         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // Semi-transparent black
+         ctx.fillRect(0, 0, canvas.width, canvas.height); // Cover the entire canvas with dark color
+         ctx.globalCompositeOperation = 'destination-out';
+         const focusX = 150;
+         const focusY = 150;
+         const focusRadius = 50;
+         ctx.beginPath();
+         ctx.arc((cam.following.position.x*cam.zoom + cam.x*cam.zoom), (cam.following.position.y*cam.zoom + cam.y*cam.zoom), cam.following.position.circleRadius|| 100, 0, Math.PI * 2);
+         ctx.fill();
+         ctx.restore();
+         cam.following.draw()
+     }*/
+
     ctx.save()
     ctx.translate(canvas.width / 2, canvas.height / 2)
     ctx.font = "30px " + cam.easterEggs.gameFont
@@ -1093,6 +1105,7 @@ function update() {
         ctx.stroke()
     }
     ctx.restore()*/
+
     if (debugMode) {
         ctx.save()
         ctx.beginPath()
@@ -1391,7 +1404,7 @@ class Entity {
             }
             ctx.globalCompositeOperation = cam.easterEggs.compop
             this.illustrate?.(fr)
-            if (editorMode && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
+            if (editorMode && !level && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
                 if (!Entity.all.some(o => o.selected)) {
                     this.onclick?.()
                     this.selected = true
@@ -1402,7 +1415,7 @@ class Entity {
                 }
 
             }
-            else if (editorMode && (!cam.click.x || !cam.click.y)) {
+            else if (editorMode && !level && (!cam.click.x || !cam.click.y)) {
                 if (this.selected) {
                     this.velocity.x = this.velocity.y = 0
                     this.start.x = this.position.x
@@ -2064,10 +2077,10 @@ $("#can").on({
         cam.click.x = e.offsetX
         cam.click.y = e.offsetY
         //      console.log(chosenEntity)
-        if (select === "put" && editorMode) {
+        if (select === "put" && editorMode && !level) {
             place(chosenEntity)
         }
-        if (select === "edit") {
+        if (select === "edit" && !level) {
             editorMode && (cam.following = null)
         }
     },
@@ -2346,6 +2359,7 @@ if (aValue) {
             levelData = await fetch('/levels/' + aValue + '.txt')
         }
         let text = await levelData.text()
+
         Elem.$('#secondMenu').appendInto(Elem.$('#camBehaviour'))
         Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
         Load(text)
@@ -2359,7 +2373,24 @@ if (aValue) {
                 o.content.style.display = 'grid'
             }
         })
-        Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => { Elem.$('#startmenu').removeClass('slide-in-blurred-top'); Elem.$('#gameStartButton').content.focus() })
+        Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => {
+            Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
+                this.content.noevent('click')
+                this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
+                    let bhv = Elem.$('#camBehaviour').content.value
+                    cam.behaviour = bhv
+                    localStorage.setItem('cambehaviour', bhv)
+                    Elem.$('#startmenu').hide()
+                    waitForFrames(a => {
+                        cam.following = cam.existinggoal ?? cam.existingspawn
+                        waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
+                    }, 30, 'intro')
+
+                })
+            })])
+            Elem.$('#startmenu').removeClass('slide-in-blurred-top');
+            Elem.$('#gameStartButton').content.focus()
+        })
 
     })()
     level = true

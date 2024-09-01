@@ -1,0 +1,214 @@
+.danger {
+    color: rgb(104, 17, 17)
+}
+
+* {
+    font-family: 'Courier New', 'sans-serif';
+}
+
+body {
+    background-color: #494949;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#cont {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+canvas {
+    background-color: #000;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 0px;
+}
+.hint {
+color: black
+}
+    .menu {
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    width: 400px;
+    max-height: 400px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fade-out {
+    animation: fadeOut 1s ease-out forwards;
+    /* Adjust the duration and easing as needed */
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 1s ease-out forwards;
+    /* Adjust the duration and easing as needed */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.flow-left {
+    animation: flowLeft 1s ease-out forwards
+}
+
+.menu.hidden {
+    display: none;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.3;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.good {
+    background-color: #007bff;
+}
+
+.good:hover {
+    background-color: #0056b3;
+}
+
+.bad {
+    background-color: #dc3545;
+}
+
+.bad:hover {
+    background-color: #c82333;
+}
+
+.neutral {
+    background-color: #666;
+}
+
+.neutral:hover {
+    background-color: #333;
+}
+
+#buttonholder {
+    display: inline-table;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.whitemenu,
+#allMarbles {
+    overflow-y: auto;
+    max-height: 200px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+}
+
+#startmenu {
+    z-index: 0;
+    display: none;
+    position: fixed;
+    overflow-y: scroll;
+    max-height: 300px;
+}
+
+#winners {
+    display: flex
+}
+
+.hold {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+input.color {
+    height: 30px
+}
+
+input.write,
+input#field {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    width: 100%;
+}
+
+label {
+    margin-left: 5px;
+    color: #333;
+}
+
+.gameMenu {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+
+#secondMenu {
+    display: grid;
+    text-align: center;
+    align-items: center;
+    gap: 10px;
+}
+
+p {
+    margin: 10px 0;
+    color: #666;
+    text-align: center;
+}
+
+.separate {
+    margin-top: 20px;
+}
+
+.thin {
+    margin: 1px;
+}
+
+.chek {
+    margin: 0px;
+    padding: 0px;
+    width: 30px
+}

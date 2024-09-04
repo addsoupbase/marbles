@@ -1252,6 +1252,7 @@ class Entity {
         out.imgSrc = out.img.src
         out.dark = darkenHexColor(out.color, 40)
         out.selected = false
+        out.canBeSaved=true
         out.isCustom = true
         out.toggleable = ["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width', 'height']
         out.opacity = opts.opacity ?? 1

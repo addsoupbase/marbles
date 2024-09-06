@@ -115,7 +115,6 @@ const elements = {
                 tag: 'div', class: ['gameMenu'], id: 'secondMenu', children: [
                     new Elem({ tag: 'label', text: 'Play Cutscenes', for: 'cutscenes' }),
                     new Elem({ tag: 'input', type: 'checkbox', id: 'cutscenes', checked: true, }),
-
                     new Elem({ tag: 'label', for: 'camSpeed', text: 'Camera Speed', }),
                     new Elem({ tag: 'input', id: 'camSpeed', value: 0.1,placeholder: 'Default: 0.1' }),
                     new Elem({ tag: 'label', text: 'Camera Behaviour', for: 'camBehaviour' }),
@@ -759,11 +758,11 @@ const cam = {
 }
 cam.behaviour = localStorage.getItem('cambehaviour')
 cam.easterEggs.lerp = +localStorage.getItem('camspeed')
-if (localStorage.getItem('cutscenes') === 'true') {
-    cam.cutscene.enabled = true
+if (localStorage.getItem('cutscenes') === 'false') {
+    cam.cutscene.enabled = false
 }
 else {
-    cam.cutscene.enabled = false
+    cam.cutscene.enabled = true
 }
 if (!cam.easterEggs.lerp) {
     localStorage.setItem('camspeed', Elem.$('#camSpeed').content.value)

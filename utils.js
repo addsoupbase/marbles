@@ -26,21 +26,35 @@ export const sanitize = function (num) {
     return (num === num) && isFinite(num)
 }
 Array.prototype.average = function (type) {
-    let output = []
-    if (type) {
-        let arr = this.sort((a, b) => a - b),
-            index = arr.indexOf(arr.center())
-            , q1 = arr.slice(0, index), q3 = arr.slice(arr.indexOf(index + 1, arr.length))
-            , c = q1.center(), e = q3.center()
-            , IQR = Math.max(c, e) - Math.min(c, e)
-            , upperfence = e + (1.5 * IQR), lowerfence = c - (1.5 * IQR);
+    if (this.length === 0) return NaN; // Handle empty array case
 
-        this.forEach(o => (o > lowerfence && o < upperfence) && output.push(o))
+    let sorted = this.slice().sort((a, b) => a - b); // Sort the array
+
+    if (type) {
+        // Calculate the median
+        const median = sorted[Math.floor(sorted.length / 2)];
+        
+        // Calculate the first quartile (Q1) and third quartile (Q3)
+        const q1 = sorted[Math.floor(sorted.length / 4)];
+        const q3 = sorted[Math.floor(3 * sorted.length / 4)];
+
+        // Calculate the IQR
+        const IQR = q3 - q1;
+        
+        // Calculate the fences
+        const upperFence = q3 + 1.5 * IQR;
+        const lowerFence = q1 - 1.5 * IQR;
+
+        // Filter outliers
+        const filtered = sorted.filter(x => x >= lowerFence && x <= upperFence);
+        
+        // Recalculate the average on the filtered array
+        return filtered.reduce((a, b) => a + b, 0) / filtered.length;
     } else {
-        output = this
+        // Calculate average on the original array
+        return sorted.reduce((a, b) => a + b, 0) / sorted.length;
     }
-    return (output.reduce((a, b) => a + b, 0) / output.length)
-}
+};
 
 Object.defineProperty(String.prototype, "last", { get: function () { return this[this.length - 1] } })
 String.prototype.reverse = function () {

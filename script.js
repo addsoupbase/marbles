@@ -116,7 +116,7 @@ const elements = {
                     new Elem({ tag: 'label', text: 'Play Cutscenes', for: 'cutscenes' }),
                     new Elem({ tag: 'input', type: 'checkbox', id: 'cutscenes', checked: true, }),
                     new Elem({ tag: 'label', for: 'camSpeed', text: 'Camera Speed', }),
-                    new Elem({ tag: 'input', id: 'camSpeed', value: 0.1,placeholder: 'Default: 0.1' }),
+                    new Elem({ tag: 'input', id: 'camSpeed', value: 0.1, placeholder: 'Default: 0.1' }),
                     new Elem({ tag: 'label', text: 'Camera Behaviour', for: 'camBehaviour' }),
 
 
@@ -618,8 +618,8 @@ function place(entity) {
 }
 const canvas = Elem.$('#can'),
     ctx = canvas.content.getContext('2d');
-    canvas.width = canvas.content.width
-    canvas.height = canvas.content.height
+canvas.width = canvas.content.width
+canvas.height = canvas.content.height
 const cam = {
     x: 0,
     y: 0,
@@ -657,11 +657,11 @@ const cam = {
             cam.cutscene.firstPlace = cam.following
             cam.cutscene.firstPlace.victory()
             waitForFrames(() => {
-                if (!Entity.all.filter(o=>o.isMarble).length) {
-                        return
+                if (!Entity.all.filter(o => o.isMarble).length) {
+                    return
                 }
                 this.frozen = false
-    
+
                 if (cam.behaviour !== 'free') {
                     this.following = lastFollowing
                 } else {
@@ -775,7 +775,7 @@ if (cam.cutscene.enabled == null) {
 }
 if (!cam.behaviour) {
     localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
-    cam.behaviour = Elem.$('#cambehaviour')?.content?.value??'free'
+    cam.behaviour = Elem.$('#cambehaviour')?.content?.value ?? 'free'
 }
 ctx.lineWidth = 4
 // Import or include Matter.js
@@ -920,13 +920,13 @@ function update() {
            menuClicked = true
            startmenu.style.zIndex = -1
        }*/
- 
+
     if (!cam.frozen) {
 
         frame++
     }
     if (!Entity.all.includes(cam.following) && cam.following) {
-    waitForFrames(()=>cam.following=null,10,'resetCam')
+        waitForFrames(() => cam.following = null, 10, 'resetCam')
     }
     smooth++
     for (let delays of cam.delays) {
@@ -1038,27 +1038,29 @@ function update() {
         }
 
     }
-    if (Entity.all.filter(o => o.isMarble).length) {
+    let eve = Entity.getAllMarbles
+
+    if (eve.length) {
         let outliers = false;
 
         switch (!editorMode && !cam.frozen && cam.behaviour) {
             case 'leader': {
                 if (cam.existinggoal) {
-                    let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
+                    let raa = (eve.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
                     cam.following = raa
                 }
             }
                 break;
             case 'loser': {
                 if (cam.existinggoal) {
-                    let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal))[0])
+                    let raa = (eve.sort((a, b) => Entity.distance(b, cam.existinggoal) - Entity.distance(a, cam.existinggoal))[0])
                     cam.following = raa
                 }
             }
                 break;
             case 'middle': {
                 if (cam.existinggoal) {
-                    let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal)).center())
+                    let raa = (eve.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal)).center())
                     cam.following = raa
                 }
             }
@@ -1070,22 +1072,25 @@ function update() {
                     x: [],
                     y: []
                 }
-                for (let o of Entity.all) {
-                    if (o.isMarble) {
-                        positions.x.push(o.position.x)
-                        positions.y.push(o.position.y)
-                    }
-                }
+          
+                eve.forEach(o => {
+                    positions.x.push(o.position.x)
+                    positions.y.push(o.position.y)
+                })
+
                 const avg = {
                     x: positions.x.average(outliers),
                     y: positions.y.average(outliers)
                 }
+                console.log(cam)
                 let pos = {
                     x: -avg.x + canvas.width / 2 / cam.zoom,
                     y: -avg.y + canvas.height / 2 / cam.zoom
                 }
 
+
                 if (cam.easterEggs.lerp && cam.zoom === cam.last.zoom) {
+
                     cam.x = lerp(cam.x, pos.x * cam.zoom, cam.easterEggs.lerp)
                     cam.y = lerp(cam.y, pos.y * cam.zoom, cam.easterEggs.lerp)
 
@@ -1105,7 +1110,7 @@ function update() {
             }
             case 'random': {
                 if (!(frame % 500) || !cam.following) {
-                    cam.following = Entity.getAllMarbles.pick()
+                    cam.following = eve.pick()
 
                 }
                 break;
@@ -1547,7 +1552,7 @@ class Entity {
             if (!editorMode) {
 
                 Entity.temporarilyDead.push(this)
-              
+
             }
 
 
@@ -2056,10 +2061,10 @@ class Goal extends Entity {
                     cam.freeze()
                     return
                 }
-        
+
             }
             if (coll.isMarble && !cam.frozen) {
-                cam.firstPlace??= coll
+                cam.firstPlace ??= coll
                 coll.victory()
             }
         }
@@ -2460,15 +2465,15 @@ const aValue = params.get('level');
 if (aValue) {
 
 
-    
-    Elem.elements.forEach(o=>{
+
+    Elem.elements.forEach(o => {
         if (o !== canvas) {
             o.hide()
         }
     })
     canvas.appendIntoBody()
-    
-   document.body.style.padding='0px';
+
+    document.body.style.padding = '0px';
     (async function () {
         let levelData = await fetch('/marbles/levels/' + aValue + '.txt')
         if (!levelData.ok) {
@@ -2502,7 +2507,7 @@ if (aValue) {
                 this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
                     let checked = Elem.$('#cutscenes').content.checked
                     localStorage.setItem('cutscenes', checked)
-                    if (checked+'' === 'true') {
+                    if (checked + '' === 'true') {
                         cam.cutscene.enabled = true
                     } else {
                         cam.cutscene.enabled = false
@@ -2511,15 +2516,15 @@ if (aValue) {
                     cam.behaviour = bhv
                     localStorage.setItem('cambehaviour', bhv)
                     localStorage.setItem('camspeed', Elem.$('#camSpeed').content.value)
-                  
+
                     cam.easterEggs.lerp = +localStorage.getItem('camspeed') ?? 0.1
 
                     Elem.$('#startmenu').hide()
                     waitForFrames(a => {
                         cam.following = cam.existinggoal ?? cam.existingspawn
                         if (!cam.cutscene.enabled) {
-                            cam.x = cam.existingspawn?.x??cam.x
-                            cam.y = cam.existingspawn?.y??cam.y
+                            cam.x = cam.existingspawn?.x ?? cam.x
+                            cam.y = cam.existingspawn?.y ?? cam.y
                             cam.following = null
                             return startGame()
                         }
@@ -2559,7 +2564,7 @@ new Elem({
 function turnToSettingsMenu() {
     Elem.$('#secondMenu').children.forEach(o =>
         o.show()
-        
+
     )
     Elem.$('#gameSettings').hide()
 }
@@ -2569,6 +2574,6 @@ function turnToSettingsMenu() {
     }
 })*/
 function resize() {
-    canvas.content.width = canvas.width =window.innerWidth
+    canvas.content.width = canvas.width = window.innerWidth
     canvas.content.height = canvas.height = window.innerHeight
 }

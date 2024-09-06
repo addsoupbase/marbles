@@ -90,7 +90,8 @@ const elements = {
                                     new Elem({ tag: 'option', value: 'random', text: 'Pick randomly' }),
                                     new Elem({ tag: 'option', value: 'free', text: 'Free' }),
                                 ]
-                            })
+                            }),
+
 
                         ]
                     }),
@@ -112,7 +113,14 @@ const elements = {
             }),
             new Elem({
                 tag: 'div', class: ['gameMenu'], id: 'secondMenu', children: [
-                    new Elem({ tag: 'label', text: 'Camera Behaviour', for: 'camBehaviour' })
+                    new Elem({ tag: 'label', text: 'Play Cutscenes', for: 'cutscenes' }),
+                    new Elem({ tag: 'input', type: 'checkbox', id: 'cutscenes', checked: true, }),
+
+                    new Elem({ tag: 'label', for: 'camSpeed', text: 'Camera Speed', }),
+                    new Elem({ tag: 'input', id: 'camSpeed', value: 0.1,placeholder: 'Default: 0.1' }),
+                    new Elem({ tag: 'label', text: 'Camera Behaviour', for: 'camBehaviour' }),
+
+
                 ]
             }),
             new Elem({
@@ -123,7 +131,8 @@ const elements = {
                         ]
                     })
                 ]
-            })
+            }),
+
         ]
     }, true),
     hold: new Elem({
@@ -616,6 +625,7 @@ const cam = {
     firstPlace: null,
     frozen: false,
     cutscene: {
+        enabled: true,
         firstPlace: false,
     },
 
@@ -627,7 +637,7 @@ const cam = {
         cam.targetZoom = 1.2
         let bodiesToFreeze = []
         let lastx = cam.x,
-        lasty = cam.y
+            lasty = cam.y
         Entity.all.forEach(o => {
             if (!o.isStatic) {
                 bodiesToFreeze.push(o)
@@ -644,7 +654,7 @@ const cam = {
         })
         waitForFrames(() => {
             cam.cutscene.firstPlace = cam.following
-            cam.following.victory()
+            cam.cutscene.firstPlace.victory()
             waitForFrames(() => {
                 this.frozen = false
                 if (cam.behaviour !== 'free') {
@@ -744,6 +754,20 @@ const cam = {
     }
 }
 cam.behaviour = localStorage.getItem('cambehaviour')
+cam.easterEggs.lerp = +localStorage.getItem('camspeed')
+if (localStorage.getItem('cutscenes') === 'true') {
+    cam.cutscene.enabled = true
+}
+else {
+    cam.cutscene.enabled = false
+}
+if (!cam.easterEggs.lerp) {
+    localStorage.setItem('camspeed', Elem.$('#camSpeed').content.value)
+    cam.easterEggs.lerp = +Elem.$('#camSpeed').content.value
+}
+if (cam.cutscene.enabled == null) {
+    localStorage.setItem('cutscenes', Elem.$('#cutscenes').content.checked)
+}
 if (!cam.behaviour) {
     localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
     cam.behaviour = Elem.$('#cambehaviour').content.value
@@ -895,7 +919,9 @@ function update() {
 
         frame++
     }
-
+    if (!Entity.all.includes(cam.following) && cam.following) {
+    waitForFrames(()=>cam.following=null,10,'resetCam')
+    }
     smooth++
     for (let delays of cam.delays) {
         if (delays.pauseDuringCutscene && cam.frozen) {
@@ -999,6 +1025,11 @@ function update() {
     if (cam.following) {
         cam.x = lerp(cam.x, -cam.following.position.x * cam.zoom + canvas.width / 2, cam.easterEggs.lerp / cam.zoom)
         cam.y = lerp(cam.y, -cam.following.position.y * cam.zoom + canvas.height / 2, cam.easterEggs.lerp / cam.zoom)
+        if (cam.easterEggs.lerp > 1.2) {
+            cam.x = -cam.following.position.x * cam.zoom + canvas.width / 2
+            cam.y = -cam.following.position.y * cam.zoom + canvas.height / 2
+
+        }
 
     }
     if (Entity.all.filter(o => o.isMarble).length) {
@@ -1510,6 +1541,7 @@ class Entity {
             if (!editorMode) {
 
                 Entity.temporarilyDead.push(this)
+              
             }
 
 
@@ -1880,7 +1912,7 @@ class Portal extends Entity {
         this.toggleable.deleteWithin('restitution')
         this.toggleable.deleteWithin('opacity')
         this.collision = function (coll) {
-            if (coll === this?.pair || coll.isParticle || !this.pair) {
+            if (coll === this?.pair || coll.isParticle || !this.pair || coll.isSensor) {
                 return
             }
             if (this.active) {
@@ -1889,7 +1921,7 @@ class Portal extends Entity {
                         if (Entity.all.length > 100) {
                             break
                         }
-                        new PortalParticle({ x: this.position.x, y: this.position.y, })
+                        new PortalParticle({ x: coll.position.x, y: coll.position.y, })
                     }
                 }
                 waitForFrames(() => (!editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + Math.max(this.id, this.pair.id), true)
@@ -2012,12 +2044,16 @@ class Goal extends Entity {
             stroke(this.color)
         }
         this.collision = function (coll) {
-            if (!cam.firstPlace && coll.isMarble) {
+            if (!cam.firstPlace && coll.isMarble && !cam.frozen) {
                 cam.firstPlace = coll;
-                cam.freeze()
-                return
+                if (cam.cutscene.enabled) {
+                    cam.freeze()
+                    return
+                }
+        
             }
-            if (coll.isMarble && cam.cutscene.firstPlace) {
+            if (coll.isMarble && !cam.frozen) {
+                cam.firstPlace??= coll
                 coll.victory()
             }
         }
@@ -2042,7 +2078,7 @@ class Spawner extends Entity {
         this.illustrate = function (e) {
 
             if (!editorMode) {
-                if (!(e % this.interval) && !editorMode) {
+                if (!(e % this.interval) && !editorMode && !cam.frozen) {
                     Entity.gameSpawns = Entity.gameSpawns.shuffle()
                     let child = Entity.gameSpawns.pop()
 
@@ -2134,7 +2170,7 @@ class PortalParticle extends Confetti {
     constructor(opts) {
         super(opts)
         this.color = c.red
-        this.text = choose(...'🌀🔀🪄')
+        this.text = choose(...'🌀🪄')
     }
 }
 let mouse = {
@@ -2148,6 +2184,9 @@ update()
 
 $("#can").on({
     mousedown: function (e) {
+        if (cam.frozen) {
+            return
+        }
         cam.click.x = e.offsetX
         cam.click.y = e.offsetY
         //      console.log(chosenEntity)
@@ -2441,6 +2480,13 @@ if (aValue) {
         cam.x = cam.y = NaN
         //startGame()
         Elem.$('#camBehaviour').content.value = cam.behaviour
+        Elem.$('#camSpeed').content.value = cam.easterEggs.lerp
+        if (cam.cutscene.enabled) {
+            Elem.$('#cutscenes').content.checked = true
+        } else {
+            Elem.$('#cutscenes').content.checked = false
+
+        }
         Elem.$('.gameMenu').forEach(o => {
             if (o.content.id !== 'secondMenu') {
                 o.content.style.display = 'flex'
@@ -2452,12 +2498,27 @@ if (aValue) {
             Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
                 this.content.noevent('click')
                 this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
+                    let checked = Elem.$('#cutscenes').content.checked
+                    localStorage.setItem('cutscenes', checked)
+                    if (checked+'' === 'true') {
+                        cam.cutscene.enabled = true
+                    } else {
+                        cam.cutscene.enabled = false
+                    }
                     let bhv = Elem.$('#camBehaviour').content.value
                     cam.behaviour = bhv
                     localStorage.setItem('cambehaviour', bhv)
+                    localStorage.setItem('camspeed', Elem.$('#camSpeed').content.value)
+                  
+                    cam.easterEggs.lerp = +localStorage.getItem('camspeed') ?? 0.1
+
                     Elem.$('#startmenu').hide()
                     waitForFrames(a => {
                         cam.following = cam.existinggoal ?? cam.existingspawn
+                        if (!cam.cutscene.enabled) {
+                            cam.following = cam.existingspawn
+                            return startGame()
+                        }
                         waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
                     }, 30, 'intro')
 

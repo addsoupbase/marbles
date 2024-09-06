@@ -350,7 +350,7 @@ export class Elem {
         opts.style && this.content.setAttribute('style', opts.style)
         opts.value && this.content.setAttribute('value', opts.value)
         opts.name && this.content.setAttribute('name', opts.name)
-        opts.checked != null && this.content.setAttribute('checked', opts.checked)
+        opts.checked != null && (this.content.checked = opts.checked)
         opts.src && this.content.setAttribute('src', opts.src)
         opts.accept && this.content.setAttribute('accept', opts.accept)
         opts.placeholder && this.content.setAttribute('placeholder', opts.placeholder)

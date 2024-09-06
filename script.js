@@ -773,7 +773,7 @@ if (cam.cutscene.enabled == null) {
 }
 if (!cam.behaviour) {
     localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
-    cam.behaviour = Elem.$('#cambehaviour').content.value
+    cam.behaviour = Elem.$('#cambehaviour')?.content?.value??'free'
 }
 ctx.lineWidth = 4
 // Import or include Matter.js

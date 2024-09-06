@@ -306,6 +306,7 @@ export class Elem {
             Elem.warn(`"${msg}" currently does not exist within the documents Style Sheets`)
         }
     }
+    static elements = []
     static logLevels = {
         debug: false,
         warn: false,
@@ -343,6 +344,7 @@ export class Elem {
         }
         this.eventNames = {}
         this.content = document.createElement(opts.tag)
+        new.target.elements.push(this)
         this.content.content = this
         opts.type && this.content.setAttribute('type', opts.type)
         opts.for && this.content.setAttribute('for', opts.for)
@@ -356,8 +358,8 @@ export class Elem {
         opts.placeholder && this.content.setAttribute('placeholder', opts.placeholder)
         this.parent = null
         this.content.id = opts.id ?? this.content.id
-        this.content.width = opts.width ?? this.content.width
-        this.content.height = opts.height ?? this.content.height
+        opts.width  && this.content.setAttribute('width',opts.width)
+        opts.height && this.content.setAttribute('height',opts.height) 
         this.content.href = opts.href ?? ''
         this.content.innerHTML = opts.text ?? ''
         this.children = []
@@ -392,7 +394,7 @@ export class Elem {
     }
     appendTo(parent) {
         if (typeof parent === 'string') {
-            Elem.$('#'+parent).content.appendChild(this.content)
+            Elem.$('#' + parent).content.appendChild(this.content)
             return
         }
         try {
@@ -412,6 +414,9 @@ export class Elem {
         this.children.push(child)
         child.parent = this
         return this
+    }
+    appendIntoBody() {
+        document.body.appendChild(this.content)
     }
     addClass(...className) {
         this.add({ class: className })
@@ -479,6 +484,7 @@ export class Elem {
         delete Elem.tracking[this.#_label_]
         this.killChildren()
         this?.parent?.children?.deleteWithin?.(this)
+        Elem.elements.deleteWithin(this)
         this.content.remove()
         return this
     }
@@ -510,3 +516,12 @@ export function $search(query) {
 }
 window.Elem = Elem
 window.$search = $search
+
+
+//Async
+
+export class Pro {
+    constructor(opts) {
+        this.promise = new Promise((resolve, reject) => opts.func?.())
+    }
+}

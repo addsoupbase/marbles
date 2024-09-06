@@ -336,7 +336,7 @@ const bounds = {
     editorMode || startGame()
     let arr = []
     arr.push({
-        bounciness: $('#bounciness')[0].value,
+        bounciness: Elem.$('#bounciness').content.value,
         /*camBehaviour: $('#camBehaviour')[0].value,*/
         title: Elem.$('#title').content.value, author: Elem.$('#authorName').content.value
     })
@@ -616,8 +616,10 @@ function place(entity) {
 
     }
 }
-const canvas = $('canvas')[0],
-    ctx = canvas.getContext('2d');
+const canvas = Elem.$('#can'),
+    ctx = canvas.content.getContext('2d');
+    canvas.width = canvas.content.width
+    canvas.height = canvas.content.height
 const cam = {
     x: 0,
     y: 0,
@@ -909,15 +911,16 @@ let menuClicked = false
 window.menuClicked = menuClicked
 function update() {
     reqFrame(update)
+    if (level) {
+
+        resize()
+    }
     /*   if (getComputedStyle(startmenu).getPropertyValue('opacity') == 0 && !menuClicked) {
            startGame()
            menuClicked = true
            startmenu.style.zIndex = -1
        }*/
-    if (level) {
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
-    }
+ 
     if (!cam.frozen) {
 
         frame++
@@ -2326,6 +2329,7 @@ function showData(stats) {
 window.ctx = ctx
 $(window).on({
     mousewheel: function (e) {
+        //resize()
         cam.zoomChange = e.originalEvent.deltaY / 2000;
         cam.targetZoom = Math.max(0.1, cam.zoom - cam.zoomChange);
         cam.targetZoom = Math.abs(cam.targetZoom);
@@ -2456,20 +2460,15 @@ const aValue = params.get('level');
 if (aValue) {
 
 
-    $('body *').not('canvas').each(function () {
-        $(this).hide()
+    
+    Elem.elements.forEach(o=>{
+        if (o !== canvas) {
+            o.hide()
+        }
     })
-    $(canvas).appendTo('body')
-    $(canvas).attr({
-        margin: '0px',
-        overflow: 'hidden',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: "100%",
-    })
-    $('body').css('padding', '0px');
+    canvas.appendIntoBody()
+    
+   document.body.style.padding='0px';
     (async function () {
         let levelData = await fetch('/marbles/levels/' + aValue + '.txt')
         if (!levelData.ok) {
@@ -2560,5 +2559,16 @@ new Elem({
 function turnToSettingsMenu() {
     Elem.$('#secondMenu').children.forEach(o =>
         o.show()
+        
     )
+    Elem.$('#gameSettings').hide()
+}
+/*addEventListener('resize',o=>{
+    if (level) {
+       resize
+    }
+})*/
+function resize() {
+    canvas.content.width = canvas.width =window.innerWidth
+    canvas.content.height = canvas.height = window.innerHeight
 }

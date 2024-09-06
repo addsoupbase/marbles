@@ -145,9 +145,10 @@ button:hover {
 #startmenu {
     z-index: 0;
     display: none;
-    position: fixed;
-    overflow-y: scroll;
+    position:fixed;
     max-height: 300px;
+
+    overflow-y: scroll;
 }
 
 #winners {
@@ -191,6 +192,7 @@ label {
     text-align: center;
     align-items: center;
     gap: 10px;
+    
 }
 
 p {

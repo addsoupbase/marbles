@@ -27,7 +27,7 @@ let gameEnded = false
 function getIndex() {
     return getIndex.inx++
 }
-function waitForFrames(callback, frames, label) {
+function waitForFrames(callback, frames, label, pauseDuringCutscene) {
     if (!(frames === Math.round(frames))) {
         Elem.error('Expected int, instead got float')
         return
@@ -35,7 +35,8 @@ function waitForFrames(callback, frames, label) {
     let out = {
         time: frames,
         label: label,
-        execute: callback
+        execute: callback,
+        pauseDuringCutscene: pauseDuringCutscene
     }
     if (!callback) {
         Elem.warn('No callback provided')
@@ -158,13 +159,14 @@ const elements = {
 let startmenu = document.getElementById('startmenu')
 
 const Del = function (num) {
-    let foundYou = null
-    for (let o of Entity.toSpawn) {
+    let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+
+    /*for (let o of Entity.toSpawn) {
         if (o.id === +num) {
             foundYou = o
             break
         }
-    }
+    }*/
     Entity.toSpawn.deleteWithin(foundYou)
     $(`[name='${foundYou.id}']`).each(function () {
         this.content.kill()
@@ -185,13 +187,13 @@ const Del = function (num) {
         }
     }
     , Spawn = function (num) {
-        let foundYou = null
-        for (let o of Entity.toSpawn) {
+        let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+        /*for (let o of Entity.toSpawn) {
             if (o.id === num) {
                 foundYou = o
                 break
             }
-        }
+        }*/
         // foundYou.img = new Image()
         foundYou.img.src = foundYou.imgSrc
         foundYou.restitution = +$('#bounciness')[0].value ?? 1
@@ -221,13 +223,13 @@ const Del = function (num) {
                     reader.readAsDataURL(data.target.files[0])
                     console.log(this)
                     reader.onload = (f) => {
-                        let foundYou = null
-                        for (let o of Entity.toSpawn) {
+                        let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+                        /*for (let o of Entity.toSpawn) {
                             if (o.id === +this.name) {
                                 foundYou = o
                                 break
                             }
-                        }
+                        }*/
                         foundYou.img = new Image()
                         foundYou.img.src = f.target.result
                         foundYou.imgSrc = foundYou.img.src
@@ -611,8 +613,53 @@ const canvas = $('canvas')[0],
 const cam = {
     x: 0,
     y: 0,
+    firstPlace: null,
+    frozen: false,
     cutscene: {
-        focus: true
+        firstPlace: false,
+    },
+
+    freeze() {
+        this.frozen = true;
+        let lastFollowing = this.following
+        this.following = this.firstPlace
+        let lastzoom = cam.targetZoom
+        cam.targetZoom = 1.2
+        let bodiesToFreeze = []
+        let lastx = cam.x,
+        lasty = cam.y
+        Entity.all.forEach(o => {
+            if (!o.isStatic) {
+                bodiesToFreeze.push(o)
+            }
+        })
+        bodiesToFreeze.forEach(o => {
+            let あ = Body.getVelocity(o)
+            o.temp = {
+                vx: あ.x,
+                vy: あ.y,
+                av: Body.getAngularVelocity(o)
+            }
+            Body.setStatic(o, true);
+        })
+        waitForFrames(() => {
+            cam.cutscene.firstPlace = cam.following
+            cam.following.victory()
+            waitForFrames(() => {
+                this.frozen = false
+                if (cam.behaviour !== 'free') {
+                    this.following = lastFollowing
+                } else {
+                    cam.x = lastx
+                    cam.y = lasty
+                }
+                cam.targetZoom = lastzoom
+                bodiesToFreeze.forEach(o => {
+                    Body.setStatic(o, false);
+                    Body.setVelocity(o, { x: o.temp.vx, y: o.temp.vy })
+                })
+            }, 100, 'backToPlayModeFromVictoryDance')
+        }, 100, 'victorydance')
     },
     delays: [],
     behaviour: 'leader',
@@ -844,10 +891,16 @@ function update() {
         canvas.width = window.innerWidth
         canvas.height = window.innerHeight
     }
-    frame++
+    if (!cam.frozen) {
+
+        frame++
+    }
 
     smooth++
     for (let delays of cam.delays) {
+        if (delays.pauseDuringCutscene && cam.frozen) {
+            continue
+        }
         if (!(delays.time--)) {
             delays.execute()
             Elem.debug(`Delay ${delays.label} executed`)
@@ -944,14 +997,14 @@ function update() {
         cam.y = cam.last.y
     }
     if (cam.following) {
-        cam.x = lerp(cam.x, -cam.following.position.x * cam.zoom + canvas.width / 2, cam.easterEggs.lerp)
-        cam.y = lerp(cam.y, -cam.following.position.y * cam.zoom + canvas.height / 2, cam.easterEggs.lerp)
+        cam.x = lerp(cam.x, -cam.following.position.x * cam.zoom + canvas.width / 2, cam.easterEggs.lerp / cam.zoom)
+        cam.y = lerp(cam.y, -cam.following.position.y * cam.zoom + canvas.height / 2, cam.easterEggs.lerp / cam.zoom)
 
     }
     if (Entity.all.filter(o => o.isMarble).length) {
         let outliers = false;
 
-        switch (!editorMode && cam.behaviour) {
+        switch (!editorMode && !cam.frozen && cam.behaviour) {
             case 'leader': {
                 if (cam.existinggoal) {
                     let raa = (Entity.getAllMarbles.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
@@ -1252,7 +1305,7 @@ class Entity {
         out.imgSrc = out.img.src
         out.dark = darkenHexColor(out.color, 40)
         out.selected = false
-        out.canBeSaved=true
+        out.canBeSaved = true
         out.isCustom = true
         out.toggleable = ["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width', 'height']
         out.opacity = opts.opacity ?? 1
@@ -1498,7 +1551,7 @@ class Marble extends Entity {
                 if (Entity.all.length > 100) {
                     break
                 }
-                let p = new DeathParticle({ x: this.position.x, y: this.position.y, lifetime: 100 })
+                let p = new DeathParticle({ x: this.position.x, y: this.position.y, })
                 p.isTemporary = true
             }
             this.tempKill()
@@ -1520,7 +1573,7 @@ class Marble extends Entity {
                 if (Entity.all.length > 100) {
                     break
                 }
-                let p = new Confetti({ x: this.position.x, y: this.position.y, lifetime: 100 })
+                let p = new Confetti({ x: this.position.x, y: this.position.y, })
                 p.isTemporary = true
             }
             if (this.isMarble) {
@@ -1730,7 +1783,6 @@ class WindZone extends Wall {
         }
         this.illustrate = function (fr) {
 
-            ctx.rotate(this.angle)
 
             ctx.moveTo(this.vertices[0].x - this.position.x, this.vertices[0].y - this.position.y)
             for (let i = 0, len = this.vertices.length; i < len; i++) {
@@ -1744,7 +1796,7 @@ class WindZone extends Wall {
             ctx.shadowBlur = 0
 
             ctx.fillStyle = this.color
-
+            ctx.rotate(this.angle)
             for (let wind of this.winds) {
                 wind.y -= 1 * this.windSpeed * 160
                 if (Math.abs(wind.y) > this.height / 2 + 10) {
@@ -1752,7 +1804,7 @@ class WindZone extends Wall {
 
                 }
                 ctx.beginPath()
-                ctx.arc(wind.x, wind.y, wind.radius, 0, Math.PI * 2)
+                ctx.arc(wind.x, wind.y, 10, 0, Math.PI * 2)
                 ctx.fill()
 
             }
@@ -1766,6 +1818,7 @@ class WindZone extends Wall {
                 ctx.stroke()
             }
             ctx.beginPath()
+            ctx.rotate(-this.angle)
             ctx.moveTo(this.vertices[0].x - this.position.x, this.vertices[0].y - this.position.y)
             for (let i = 0, len = this.vertices.length; i < len; i++) {
                 ctx.lineTo(this.vertices[i].x - this.position.x, this.vertices[i].y - this.position.y)
@@ -1831,7 +1884,15 @@ class Portal extends Entity {
                 return
             }
             if (this.active) {
-                waitForFrames(() => (!editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + this.id)
+                if (coll.isMarble) {
+                    for (let i = 10; i--;) {
+                        if (Entity.all.length > 100) {
+                            break
+                        }
+                        new PortalParticle({ x: this.position.x, y: this.position.y, })
+                    }
+                }
+                waitForFrames(() => (!editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + Math.max(this.id, this.pair.id), true)
                 this.active = this.pair.active = false
                 Body.setPosition(coll, this.pair.position)
                 Body.setVelocity(coll, { x: -coll.velocity.x, y: -coll.velocity.y })
@@ -1951,7 +2012,12 @@ class Goal extends Entity {
             stroke(this.color)
         }
         this.collision = function (coll) {
-            if (coll.isMarble) {
+            if (!cam.firstPlace && coll.isMarble) {
+                cam.firstPlace = coll;
+                cam.freeze()
+                return
+            }
+            if (coll.isMarble && cam.cutscene.firstPlace) {
                 coll.victory()
             }
         }
@@ -2026,12 +2092,12 @@ class Particle extends Entity {
         Body.setAngle(this, Math.random() * Math.PI * 2)
         this.isSensor = true;
         this.canBeSaved = false
-        this.lifetime = opts.lifetime ?? 10
+        this.lifetime = opts.lifetime ?? -1
         this.illustrate = function (fr) {
-            if (!(this.lifetime--)) {
+            if (!(this.lifetime--) || this.opacity <= 0) {
                 this.kill()
             }
-            else this.particleDraw?.(fr)
+            else this.particleDraw?.(smooth)
         }
     }
 }
@@ -2048,7 +2114,7 @@ class Confetti extends Particle {
             }
             Body.applyForce(this, this.position, { x: 0, y: -engine.gravity.y / 1000 })
             ctx.rotate(f / 20)
-            this.opacity -= 0.008
+            this.opacity -= 0.02
             ctx.font = `${this.size}px ` + cam.easterEggs.gameFont
             ctx.textBaseline = "middle"
             ctx.textAlign = "center"
@@ -2062,6 +2128,13 @@ class DeathParticle extends Confetti {
         super(opts)
         this.color = c.red
         this.text = choose(...'⛔❌🚫💀👻')
+    }
+}
+class PortalParticle extends Confetti {
+    constructor(opts) {
+        super(opts)
+        this.color = c.red
+        this.text = choose(...'🌀🔀🪄')
     }
 }
 let mouse = {
@@ -2279,26 +2352,27 @@ function fileChange(o) {
     }
 }
 function findMarble() {
-    let foundYou = null
-    for (let o of Entity.toSpawn) {
+    let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+    /*for (let o of Entity.toSpawn) {
         if (o.id === +this.name) {
             foundYou = o
             break
         }
-    }
+    }*/
+
     foundYou.Name = this.value
 }
 function findMarbleImage() {
     if (!this.value.length) {
         return
     }
-    let foundYou = null
-    for (let o of Entity.toSpawn) {
-        if (o.id === +this.name) {
-            foundYou = o
-            break
-        }
-    }
+    let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+    /*  for (let o of Entity.toSpawn) {
+          if (o.id === +this.name) {
+              foundYou = o
+              break
+          }
+      }*/
 
     foundYou.img = new Image()
     foundYou.img.src = this.value

@@ -656,7 +656,11 @@ const cam = {
             cam.cutscene.firstPlace = cam.following
             cam.cutscene.firstPlace.victory()
             waitForFrames(() => {
+                if (!Entity.all.filter(o=>o.isMarble).length) {
+                        return
+                }
                 this.frozen = false
+    
                 if (cam.behaviour !== 'free') {
                     this.following = lastFollowing
                 } else {
@@ -2516,7 +2520,9 @@ if (aValue) {
                     waitForFrames(a => {
                         cam.following = cam.existinggoal ?? cam.existingspawn
                         if (!cam.cutscene.enabled) {
-                            cam.following = cam.existingspawn
+                            cam.x = cam.existingspawn?.x??cam.x
+                            cam.y = cam.existingspawn?.y??cam.y
+                            cam.following = null
                             return startGame()
                         }
                         waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')

@@ -1,12 +1,14 @@
 //import { Images } from "./img.js"
-import { darkenHexColor, choose, frange, range, Colors as c, sanitize, Elem, $search } from "./utils.js"
-Elem.logLevels = {
+const あ = Elem;
+const c = color;
+/*Elem.logLevels = {
     debug: true,
     warn: true,
     error: true,
     info: true,
     success: true,
-}
+}*/
+Elem.logLevels.error = true
 let reqFrame = requestAnimationFrame || window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame ||
@@ -78,7 +80,7 @@ const elements = {
                             new Elem({ tag: 'label', for: 'author', text: 'Author' }),
                             new Elem({ tag: 'input', id: 'author', class: ['write'], type: 'text', value: 'Unknown', }),
                             new Elem({ tag: 'label', for: 'bounciness', text: 'Marble bounce' }),
-                            new Elem({ tag: 'input', id: 'bounciness', class: ['write'], type: 'number', value: '0', }),
+                            new Elem({ tag: 'input', id: 'bounciness', class: ['write'], type: 'number', value: '1', }),
                             new Elem({ tag: 'label', for: 'camBehaviour', text: 'Camera Behaviour', }),
                             new Elem({
                                 tag: 'select', id: 'camBehaviour', style: 'display: hidden;', value: 'leader', children: [
@@ -167,7 +169,7 @@ const elements = {
 let startmenu = document.getElementById('startmenu')
 
 const Del = function (num) {
-    let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+    let foundYou = Entity.toSpawn.find(o => o.id === +num)
 
     /*for (let o of Entity.toSpawn) {
         if (o.id === +num) {
@@ -176,14 +178,17 @@ const Del = function (num) {
         }
     }*/
     Entity.toSpawn.deleteWithin(foundYou)
-    $(`[name='${foundYou.id}']`).each(function () {
-        this.content.kill()
+    あ.elements.forEach(o=>{
+        if (o.name === foundYou.id) {
+            this.kill()
+        }
     })
+  
 },
 
     spawnAllOfTheMarbles = () => {
         for (let o of Entity.toSpawn) {
-            o.restitution = +$('#bounciness')[0].value
+            o.restitution= +あ['#bounciness'].value
             new Marble(o)
         }
     },
@@ -194,8 +199,9 @@ const Del = function (num) {
             }
         }
     }
-    , Spawn = function (num) {
-        let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+    , Spawn = function (mx) {
+        console.log(mx)
+        let foundYou = Entity.toSpawn.find(o => o.id === +mx)
         /*for (let o of Entity.toSpawn) {
             if (o.id === num) {
                 foundYou = o
@@ -204,11 +210,11 @@ const Del = function (num) {
         }*/
         // foundYou.img = new Image()
         foundYou.img.src = foundYou.imgSrc
-        foundYou.restitution = +$('#bounciness')[0].value ?? 1
+        foundYou.restitution = +あ['#bounciness'].value
         new Marble(foundYou)
     },
     addMarble = function (settings) {
-        let params = { Name: settings?.Name, restitution: +$('#bounciness')[0].value ?? 0, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * choose(1, -1)) /*img: Entity.Images[1]*/ }
+        let params = { Name: settings?.Name, restitution: +あ['#bounciness'].value, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * ran.choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * ran.choose(1, -1)) /*img: Entity.Images[1]*/ }
 
         let me = new Marble(params)
         me.imgSrc = settings?.imgSrc ?? ''
@@ -296,6 +302,25 @@ const Del = function (num) {
         }).appendTo(`bottom${me.id}`)
 
 
+let change = new あ({parent: `top${me.id}`,tag:'input',type:'file', accept: ".png, .jpeg, .jpg, .webp", events: {
+    change(o) {
+        let reader = new FileReader()
+        reader.readAsDataURL(o.target.files[0])
+        let my = Entity.toSpawn.find(o=>o.id === +me.id)
+        reader.onload = (o) => {
+            my.img = new Image()
+            my.img.src = o.target.result
+            my.imgSrc = o.target.result
+            あ['#mrbl'+me.id].content.value = my.img.src
+        }  }
+}}).hide()
+
+
+new あ({tag:'button',class:['good','thin'], parent: `top${me.id}`,text:'Upload', events: {
+    click() {
+change.content.click()
+    }
+}})
         me.kill()
         Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
     }
@@ -336,7 +361,7 @@ const bounds = {
     editorMode || startGame()
     let arr = []
     arr.push({
-        bounciness: Elem.$('#bounciness').content.value,
+        bounciness: あ['#bounciness'].value,
         /*camBehaviour: $('#camBehaviour')[0].value,*/
         title: Elem.$('#title').content.value, author: Elem.$('#authorName').content.value
     })
@@ -399,7 +424,7 @@ const bounds = {
         arr.push(o)
     }
     let output = JSON.stringify(arr)
-    $('#textData')[0].value = output
+    あ['#textData'].content.value = output
     let blob = new Blob([output], { type: 'text/plain;' })
     const tempurl = URL.createObjectURL(blob)
     const regex = /[^a-z0-9_]/gi;
@@ -418,7 +443,7 @@ const bounds = {
             data = JSON.parse(information)
         }
         else {
-            data = JSON.parse($("#textData")[0].value)
+            data = JSON.parse(あ["#textData"].content.value)
         }
         if (data[0].title) {
             Elem.$('#levelTitle').content.innerHTML = data[0].title
@@ -427,7 +452,7 @@ const bounds = {
             Elem.$('#authorName').content.innerHTML = `by ${data[0].author}`
         }
         Entity.all.length = Entity.toSpawn.length = Entity.graveyard.length = Entity.gameSpawns.length = Entity.temporarilyDead.length = 0
-        $('#allMarbles').empty()
+        あ['#allMarbles'].killChildren()
         for (let o of Matter.Composite.allBodies(world)) {
             World.remove(world, o)
         }
@@ -436,7 +461,7 @@ const bounds = {
             // console.log(item[0], item[1])
 
             if ('bounciness' in item) {
-                $('#bounciness')[0].value = item.bounciness
+                あ['#bounciness'].value = item['bounciness']
                 //$('#camBehaviour')[0].value = item.camBehaviour
                 Elem.$('#title').content.value = item.title
                 continue
@@ -476,8 +501,8 @@ const bounds = {
         throw e
     }
 }, menu = function (type) {
-    $(".menu").each(function () { $(this).hide() })
-    $("#" + type).show()
+  [あ['#data'],あ['#data2'],あ['#data3'],あ['#data4'],].forEach(o=>o.addClass('hidden'))
+    あ[`#${type}`].removeClass('hidden')
 
 }, deleteFrom = (o) => {
     if (!editorMode) {
@@ -490,12 +515,13 @@ const bounds = {
 
 }
 for (let [key, id] of [["data2", "put"], ["data", "edit"], ["data3", "marble"]]) {
-    $(`#${id}`).on({
+    あ[`#${id}`].addevent({
         click() {
             select = id
             menu(key)
         }
     })
+
 }
 for (let [id, event] of [
     ["marbleAdder", addMarble],
@@ -719,7 +745,7 @@ const cam = {
                         ]
                     }))
                 }
-            })
+            }, true)
         }, 50, 'gameEnd')
     },
     playing: false,
@@ -798,8 +824,8 @@ const apply = () => {
     let idNames = {
 
     }
-    for (let element of $("#data").children()) {
-        let mine = $(element)[0]
+    for (let element of あ["#data"].children) {
+        let mine = element.content
         if ((mine.value != null || 'checked' in mine) && mine.id) {
             idNames[mine.id] = mine.value
         }
@@ -892,7 +918,7 @@ const apply = () => {
             }
             if (name === "color") {
                 current.start.color = current.color = idNames[name]
-                current.start.dark = current.dark = darkenHexColor(idNames[name], 40)
+                current.start.dark = current.dark = c.dhk(idNames[name], 40)
                 if (!current.customImage) {
                     current.img = new Image()
                     showData(current)
@@ -1020,7 +1046,7 @@ function update() {
     if (cam.key.d) {
         cam.x -= cam.speed
     }
-    if (sanitize(cam.x) && sanitize(cam.y)) {
+    if (sane.sanitize(cam.x) && sane.sanitize(cam.y)) {
         cam.last.x = cam.x;
         cam.last.y = cam.y
     }
@@ -1072,7 +1098,7 @@ function update() {
                     x: [],
                     y: []
                 }
-          
+
                 eve.forEach(o => {
                     positions.x.push(o.position.x)
                     positions.y.push(o.position.y)
@@ -1117,7 +1143,7 @@ function update() {
             }
         }
     }
-    if (sanitize(cam.zoom)) {
+    if (sane.sanitize(cam.zoom)) {
         cam.last.zoom = cam.zoom
     }
     else {
@@ -1165,7 +1191,7 @@ function update() {
     ctx.textBaseline = "middle"
     ctx.textAlign = "center"
     ctx.fillStyle = textColor
-    ctx.strokeStyle = darkenHexColor(textColor, 40)
+    ctx.strokeStyle = c.dhk(textColor, 40)
     ctx.lineWidth = 1
     ctx.font = `30px ${cam.easterEggs.messageFont}`
     ctx.fillText(text, 0, Math.min(-30, -(smooth - 100) * 4))
@@ -1305,7 +1331,7 @@ class Entity {
                 //frictionStatic: 0,
                 inertia: 2000,
                 isStatic: opts.isStatic ?? false,
-                restitution: opts.bounce ?? opts.restitution ?? 0,
+                restitution: opts.bounce ?? opts.restitution ?? 1,
                 frictionAir: opts.frictionAir ?? 0.01,
                 angle: opts.angle ?? 0,
                 mass: opts.mass ?? 1
@@ -1339,13 +1365,13 @@ class Entity {
         World.add(world, out)
         out.color = opts.color
         let colours = Object.values(c)
-        out.color ??= choose(...colours)
+        out.color ??= ran.choose(...colours)
         out.dead = false
         Body.setAngle(out, opts.angle ?? 0)
         out.img = opts.img ?? new Image()
         if (!opts.img) { out.img.src = "" }
         out.imgSrc = out.img.src
-        out.dark = darkenHexColor(out.color, 40)
+        out.dark = c.dhk(out.color, 40)
         out.selected = false
         out.canBeSaved = true
         out.isCustom = true
@@ -1625,7 +1651,9 @@ class Marble extends Entity {
             this.kill(true)
         }
         Marble.prototype.illustrate = this.illustrate = function (frame) {
-
+            if (!editorMode && !cam.frozen && this.isSleeping) {
+                this.outOfBounds()
+            }
             if (editorMode || cam.easterEggs.showNamesInPlayMode && cam.zoom >= 0.6) {
                 ctx.save()
                 ctx.rotate(-this.angle)
@@ -2094,9 +2122,14 @@ class Spawner extends Entity {
                     let child = Entity.gameSpawns.pop()
 
                     if (child) {
-                        child.x = this.position.x + range(-this.SIZE.x / 2, this.SIZE.x / 2)
-                        child.y = this.position.y + range(-this.SIZE.y / 2, this.SIZE.y / 2)
-                        child.restitution = +$search('#bounciness').value ?? 1
+                        child.x = this.position.x + ran.range(-this.SIZE.x / 2, this.SIZE.x / 2)
+                        child.y = this.position.y + ran.range(-this.SIZE.y / 2, this.SIZE.y / 2)
+                        child.restitution = +あ['#bounciness'].value
+                        if (aValue) {
+                            child.restitution *= 3
+                            //i dont know but This is required for some reason and im so fucking confused literally kill
+                            //me it makes no sense 😭 ive been trying to fix it for like an hour now i give up
+                        }
                         let instance = new Marble(child)
                         instance.isTemporary = true
 
@@ -2152,8 +2185,8 @@ class Confetti extends Particle {
     constructor(opts) {
         super(opts)
         this.size = 10 + Math.random() * 20
-        Body.setVelocity(this, { x: Math.random() * 5 * choose(1, -1), y: Math.random() * 5 * choose(1, -1) })
-        this.text = choose(...'⭐️✨️💯✅️💖')
+        Body.setVelocity(this, { x: Math.random() * 5 * ran.choose(1, -1), y: Math.random() * 5 * ran.choose(1, -1) })
+        this.text = ran.choose(...'⭐️✨️💯✅️💖')
         this.particleDraw = function (f) {
             if (this.opacity <= 0) {
                 this.kill()
@@ -2174,14 +2207,14 @@ class DeathParticle extends Confetti {
     constructor(opts) {
         super(opts)
         this.color = c.red
-        this.text = choose(...'⛔❌🚫💀👻')
+        this.text = ran.choose(...'⛔❌🚫💀👻')
     }
 }
 class PortalParticle extends Confetti {
     constructor(opts) {
         super(opts)
         this.color = c.red
-        this.text = choose(...'🌀🪄')
+        this.text = ran.choose(...'🌀🪄')
     }
 }
 let mouse = {
@@ -2192,9 +2225,16 @@ let mouse = {
 
 update()
 
+あ['#can'].addevent({
+    mousemove(e) {
+        mouse.x = e.offsetX
+        mouse.y = e.offsetY
+    },
+    mouseup(e) {
+        cam.click.x = cam.click.y = NaN
 
-$("#can").on({
-    mousedown: function (e) {
+    },
+    mousedown(e) {
         if (cam.frozen) {
             return
         }
@@ -2207,17 +2247,9 @@ $("#can").on({
         if (select === "edit" && !level) {
             editorMode && (cam.following = null)
         }
-    },
-    mousemove: function (e) {
-        mouse.x = e.offsetX
-        mouse.y = e.offsetY
-
-    },
-    mouseup: function () {
-        cam.click.x = cam.click.y = NaN
-    },
-
+    }
 })
+
 function startGame(fade) {
     if (!editorMode) {
         cam.following = current = null
@@ -2332,54 +2364,52 @@ function showData(stats) {
 
 }
 window.ctx = ctx
-$(window).on({
-    mousewheel: function (e) {
-        //resize()
-        cam.zoomChange = e.originalEvent.deltaY / 2000;
-        cam.targetZoom = Math.max(0.1, cam.zoom - cam.zoomChange);
-        cam.targetZoom = Math.abs(cam.targetZoom);
-    },
-    keyup: function (e) {
+addEventListener('mousewheel', function (e) {
+    //resize()
+    cam.zoomChange = e.deltaY / 2000;
+    cam.targetZoom = Math.max(0.1, cam.zoom - cam.zoomChange);
+    cam.targetZoom = Math.abs(cam.targetZoom);
+},)
 
-        const key = e.key.toLowerCase()
-        if (key === "w") {
-            cam.key.w = false
-        }
-        if (key === "s") {
-            cam.key.s = false
-        }
-        if (key === "a") {
-            cam.key.a = false
-        }
-        if (key === "d") {
-            cam.key.d = false
-        }
-    },
-    keydown: function (e) {
-        if (!e.key) {
-            return
-        }
-        const key = e.key.toLowerCase()
-        if (key === "w") {
-            cam.key.w = true
-            cam.key.s = false
+addEventListener('keyup', function (e) {
+    const key = e.key.toLowerCase()
+    if (key === "w") {
+        cam.key.w = false
+    }
+    if (key === "s") {
+        cam.key.s = false
+    }
+    if (key === "a") {
+        cam.key.a = false
+    }
+    if (key === "d") {
+        cam.key.d = false
+    }
+},)
+addEventListener('keydown', function (e) {
+    if (!e.key) {
+        return
+    }
+    const key = e.key.toLowerCase()
+    if (key === "w") {
+        cam.key.w = true
+        cam.key.s = false
 
-        }
-        if (key === "s") {
-            cam.key.s = true
-            cam.key.w = false
+    }
+    if (key === "s") {
+        cam.key.s = true
+        cam.key.w = false
 
-        }
-        if (key === "a") {
-            cam.key.a = true
-            cam.key.d = false
+    }
+    if (key === "a") {
+        cam.key.a = true
+        cam.key.d = false
 
-        }
-        if (key === "d") {
-            cam.key.d = true
-            cam.key.s = false
+    }
+    if (key === "d") {
+        cam.key.d = true
+        cam.key.s = false
 
-        }
     }
 })
 
@@ -2468,21 +2498,23 @@ if (aValue) {
 
     Elem.elements.forEach(o => {
         if (o !== canvas) {
-            o.hide()
+            o.content.classList.contains('hidden') &&  o.hide()
         }
     })
     canvas.appendIntoBody()
-
     document.body.style.padding = '0px';
+    document.body.style.overflow='hidden';
     (async function () {
         let levelData = await fetch('/marbles/levels/' + aValue + '.txt')
         if (!levelData.ok) {
             levelData = await fetch('/levels/' + aValue + '.txt')
         }
         let text = await levelData.text()
-
+        あ.elements.forEach(o=>o.hide())
+        canvas.show()
         Elem.$('#secondMenu').appendInto(Elem.$('#camBehaviour'))
         Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
+        
         Load(text)
         cam.x = cam.y = NaN
         //startGame()
@@ -2531,7 +2563,7 @@ if (aValue) {
                         waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
                     }, 30, 'intro')
 
-                })
+                },true)
             })])
             Elem.$('#startmenu').removeClass('slide-in-blurred-top');
             Elem.$('#gameStartButton').content.focus()
@@ -2546,8 +2578,6 @@ if (aValue) {
 function lerp(start, end, t) {
     return start + (end - start) * t
 }
-
-Elem.$('#textData')
 new Elem({
     id: 'uploadedData', type: 'file', tag: 'input', events: [
         ['change', (o) => {
@@ -2566,7 +2596,7 @@ function turnToSettingsMenu() {
         o.show()
 
     )
-    Elem.$('#gameSettings').hide()
+    あ['#gameSettings'].kill()
 }
 /*addEventListener('resize',o=>{
     if (level) {
@@ -2574,6 +2604,6 @@ function turnToSettingsMenu() {
     }
 })*/
 function resize() {
-    canvas.content.width = canvas.width = window.innerWidth
-    canvas.content.height = canvas.height = window.innerHeight
+    canvas.width = window.innerWidth
+    canvas.height  = window.innerHeight
 }

@@ -371,7 +371,9 @@ export class Elem {
         opts.accept && this.content.setAttribute('accept', opts.accept)
         opts.placeholder && this.content.setAttribute('placeholder', opts.placeholder)
         this.parent = null
-        this.content.id = opts.id ?? this.content.id
+        opts.id && this.content.setAttribute('id', opts.id)
+        opts.readonly && this.content.setAttribute('readonly', opts.readonly)
+
         opts.width  && this.content.setAttribute('width',opts.width)
         opts.height && this.content.setAttribute('height',opts.height) 
         this.content.href = opts.href ?? ''

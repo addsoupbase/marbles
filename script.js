@@ -1869,11 +1869,11 @@ class WindZone extends Wall {
             ctx.fillStyle = this.color
             ctx.rotate(this.angle)
             for (let wind of this.winds) {
-                wind.y -= 1 * this.windSpeed * 160
+           if (!cam.frozen) {     wind.y -= 1 * this.windSpeed * 160
                 if (Math.abs(wind.y) > this.height / 2 + 10) {
                     wind.y = this.height / 2
 
-                }
+                }}
                 ctx.beginPath()
                 ctx.arc(wind.x, wind.y, 10, 0, Math.PI * 2)
                 ctx.fill()
@@ -2604,6 +2604,7 @@ function turnToSettingsMenu() {
     }
 })*/
 function resize() {
-    canvas.width = window.innerWidth
-    canvas.height  = window.innerHeight
+    let {innerWidth,innerHeight} = window
+    if (canvas.height !== innerHeight) canvas.height = innerHeight
+    if (canvas.width !== innerWidth) canvas.width = innerWidth
 }

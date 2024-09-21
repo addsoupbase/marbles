@@ -9,6 +9,10 @@ const c = color;
     success: true,
 }*/
 Elem.logLevels.error = true
+let max = {
+    title: '20',
+    author: '16'
+}
 let reqFrame = requestAnimationFrame || window.requestAnimationFrame ||
     window.webkitRequestAnimationFrame ||
     window.mozRequestAnimationFrame ||
@@ -75,15 +79,15 @@ const elements = {
                     }),
                     new Elem({
                         tag: 'div', class: ['separate'], children: [
-                            new Elem({ tag: 'label', for: 'title', text: 'Title' }),
-                            new Elem({ tag: 'input', id: 'title', class: ['write'], type: 'text', value: 'Untitled', }),
+                            new Elem({ tag: 'label', for: 'title', text: 'Title'}),
+                            new Elem({ tag: 'input', id: 'title', class: ['write'], type: 'text', value: 'Untitled', maxLength:max.title  }),
                             new Elem({ tag: 'label', for: 'author', text: 'Author' }),
-                            new Elem({ tag: 'input', id: 'author', class: ['write'], type: 'text', value: 'Unknown', }),
+                            new Elem({ tag: 'input', id: 'author', class: ['write'], type: 'text', value: 'Unknown', maxLength:max.author }),
                             new Elem({ tag: 'label', for: 'bounciness', text: 'Marble bounce' }),
                             new Elem({ tag: 'input', id: 'bounciness', class: ['write'], type: 'number', value: '1', }),
-                            new Elem({ tag: 'label', for: 'camBehaviour', text: 'Camera Behaviour', }),
+                            new Elem({ tag: 'label', for: 'camBehaviour', text: 'Camera Behaviour',class:['hidden'] }),
                             new Elem({
-                                tag: 'select', id: 'camBehaviour', style: 'display: hidden;', value: 'leader', children: [
+                                tag: 'select', id: 'camBehaviour', style: 'display: hidden;',class:['hidden'], value: 'leader', children: [
                                     new Elem({ tag: 'option', value: 'leader', text: 'Follow Leader' }),
                                     new Elem({ tag: 'option', value: 'loser', text: 'Follow Loser' }),
                                     new Elem({ tag: 'option', value: 'middle', text: 'Follow Middle' }),
@@ -91,6 +95,7 @@ const elements = {
                                     new Elem({ tag: 'option', value: 'outliers', text: 'Outliers' }),
                                     new Elem({ tag: 'option', value: 'random', text: 'Pick randomly' }),
                                     new Elem({ tag: 'option', value: 'free', text: 'Free' }),
+                                    new あ({tag:'optgroup', label:'Contestants'})
                                 ]
                             }),
 
@@ -363,7 +368,7 @@ const bounds = {
     arr.push({
         bounciness: あ['#bounciness'].value,
         /*camBehaviour: $('#camBehaviour')[0].value,*/
-        title: Elem.$('#title').content.value, author: Elem.$('#authorName').content.value
+        title: Elem.$('#title').content.value.shorten(max.title), author: Elem.$('#authorName').content.value.shorten(max.author)
     })
     for (let o of a.all) {
         if (!o.canBeSaved) {
@@ -450,10 +455,11 @@ const bounds = {
             data = JSON.parse(あ["#textData"].content.value)
         }
         if (data[0].title) {
-            Elem.$('#levelTitle').content.innerHTML = data[0].title
+            Elem.$('#levelTitle').content.innerHTML = data[0].title.shorten(max.title)
+            document.title = `${data[0].title.shorten(max.title)} - Marbles`
         }
         if (data[0].author) {
-            Elem.$('#authorName').content.innerHTML = `by ${data[0].author}`
+            Elem.$('#authorName').content.innerHTML = `by ${data[0].author.shorten(max.author)}`
         }
         Entity.all.length = Entity.toSpawn.length = Entity.graveyard.length = Entity.gameSpawns.length = Entity.temporarilyDead.length = 0
         あ['#allMarbles'].killChildren()
@@ -472,6 +478,7 @@ const bounds = {
             }
             if ('game' in item) {
                 Entity.toSpawn.push(item)
+            new あ({parent: 'camBehaviour', tag:'option', value:item.Name,text:item.Name})
                 addMarble(item)
                 continue
             }
@@ -803,7 +810,7 @@ if (!cam.easterEggs.lerp) {
 if (cam.cutscene.enabled == null) {
     localStorage.setItem('cutscenes', Elem.$('#cutscenes').content.checked)
 }
-if (!cam.behaviour) {
+if (!cam.behaviour || !(['leader','loser','middle','outliers','average','ramdom','free'].some(o=>o===cam.behaviour))) {
     localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
     cam.behaviour = Elem.$('#cambehaviour')?.content?.value ?? 'free'
 }
@@ -1074,6 +1081,10 @@ function update() {
         let outliers = false;
 
         switch (!editorMode && !cam.frozen && cam.behaviour) {
+            default: {
+                cam.following??= Entity.getAllMarbles.find(o=>o.Name===cam.behaviour)
+            }
+            break
             case 'leader': {
                 if (cam.existinggoal) {
                     let raa = (eve.sort((a, b) => Entity.distance(a, cam.existinggoal) - Entity.distance(b, cam.existinggoal))[0])
@@ -1775,6 +1786,7 @@ class Ball extends Circle {
         super(opts)
         this.start.ignoreWind = this.ignoreWind = opts.ignoreWind ?? 0;
         this.start.respawn = this.respawn = opts.respawn ?? 0
+        this.collisionFilter.group = 0
         this.toggleable.push('mass', 'restitution', 'ignoreWind', 'respawn')
     }
 }
@@ -2550,7 +2562,9 @@ if (aValue) {
                     }
                     let bhv = Elem.$('#camBehaviour').content.value
                     cam.behaviour = bhv
-                    localStorage.setItem('cambehaviour', bhv)
+                    if ((['leader','loser','middle','outliers','average','random','free'].some(o=>o===cam.behaviour))) {
+                        localStorage.setItem('cambehaviour', bhv)
+                    }
                     localStorage.setItem('camspeed', Elem.$('#camSpeed').content.value)
 
                     cam.easterEggs.lerp = +localStorage.getItem('camspeed') ?? 0.1

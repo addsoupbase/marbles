@@ -1,4 +1,4 @@
-//import { Images } from "./img.js"
+'use strict';
 const あ = Elem;
 const c = color;
 /*Elem.logLevels = {
@@ -380,6 +380,10 @@ const bounds = {
         if (o.start.opacity === 1) {
             delete o.start.opacity
         }
+        if (!o.start.imgSrc) {
+            delete o.start.imgSrc
+            delete o.start.img
+        }
         if (o.start.Name?.includes?.(o.CREATOR.name)) {
             delete o.start.Name
         }
@@ -396,7 +400,7 @@ const bounds = {
             delete o.start.height
         }
         if (o.start.color === o.CREATOR.defaultColor) {
-            delete o.start.color
+      //      delete o.start.color
         }
         //console.log(o)
         //    o.start.imgSrc = o.start.img.src
@@ -1836,7 +1840,7 @@ class WindZone extends Wall {
             })
         }
         this.collision = function (coll) {
-            if (!coll.isMarble && coll.ignoreWind == false) {
+            if (!coll.isMarble && coll.ignoreWind == false || coll.isParticle) {
                 return
             }
             const angleRadians = this.angle - Math.PI / 2
@@ -1955,14 +1959,13 @@ class Portal extends Entity {
                 return
             }
             if (this.active) {
-                if (coll.isMarble) {
                     for (let i = 10; i--;) {
                         if (Entity.all.length > 100) {
                             break
                         }
                         new PortalParticle({ x: coll.position.x, y: coll.position.y, })
                     }
-                }
+                
                 waitForFrames(() => (!editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + Math.max(this.id, this.pair.id), true)
                 this.active = this.pair.active = false
                 Body.setPosition(coll, this.pair.position)
@@ -2505,10 +2508,11 @@ if (aValue) {
     document.body.style.padding = '0px';
     document.body.style.overflow='hidden';
     (async function () {
-        let levelData = await fetch('/marbles/levels/' + aValue + '.txt')
-        if (!levelData.ok) {
+        let url = new URL( '/levels/'+aValue+'.txt',location.href)
+        let levelData = await fetch(url.href)
+        /*if (!levelData.ok) {
             levelData = await fetch('/levels/' + aValue + '.txt')
-        }
+        }*/
         let text = await levelData.text()
         あ.elements.forEach(o=>o.hide())
         canvas.show()

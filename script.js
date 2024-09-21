@@ -2508,7 +2508,7 @@ if (aValue) {
     document.body.style.padding = '0px';
     document.body.style.overflow='hidden';
     (async function () {
-        let url = new URL( '/levels/'+aValue+'.txt',location.href)
+        let url = new URL('./levels/'+aValue+'.txt',location.href)
         let levelData = await fetch(url.href)
         /*if (!levelData.ok) {
             levelData = await fetch('/levels/' + aValue + '.txt')

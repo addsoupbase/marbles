@@ -142,7 +142,8 @@ const elements = {
         ]
     }, true),
     hold: new Elem({
-        class: ['hold'], tag: 'div', children: [
+        class: ['hold'],
+        id:'hideme', tag: 'div', children: [
             new Elem({ tag: 'button', id: 'saveButton', text: 'Download', class: ['good'] }),
             new Elem({
                 class: ['good'], tag: 'button', id: 'loadButton', text: 'Load from file', events: [
@@ -812,8 +813,8 @@ if (cam.cutscene.enabled == null) {
 }
 if (!cam.behaviour || !(['leader','loser','middle','outliers','average','ramdom','free'].some(o=>o===cam.behaviour))) {
     localStorage.setItem('cambehaviour', Elem.$('#camBehaviour').content.value)
-    cam.behaviour = Elem.$('#cambehaviour')?.content?.value ?? 'free'
 }
+cam.behaviour = Elem.$('#cambehaviour')?.content?.value ?? 'free'
 ctx.lineWidth = 4
 // Import or include Matter.js
 const Engine = Matter.Engine,
@@ -1593,7 +1594,9 @@ class Entity {
             if (!editorMode) {
 
                 Entity.temporarilyDead.push(this)
-
+                if (cam.behaviour === this.Name) {
+                    cam.behaviour = Entity.getAllMarbles.pick().Name
+                }
             }
 
 
@@ -1639,6 +1642,7 @@ class Marble extends Entity {
                 p.isTemporary = true
             }
             this.tempKill()
+      
         }
         this.collisionFilter.group = 0
         this.isMarble = true
@@ -2297,7 +2301,7 @@ function startGame(fade) {
         }
         Entity.placements = []
         Entity.losers = []
-        cam.behaviour = localStorage.getItem('cambehaviour') ?? 'leader'
+     //    cam.behaviour = localStorage.getItem('cambehaviour') ?? 'leader'
         cam.following = current = null
         for (let o of Entity.all) {
             o.selected = false
@@ -2528,6 +2532,7 @@ if (aValue) {
         let text = await levelData.text()
         あ.elements.forEach(o=>o.hide())
         canvas.show()
+        あ['#hideme'].styleMe({display:'none'})
         Elem.$('#secondMenu').appendInto(Elem.$('#camBehaviour'))
         Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
         

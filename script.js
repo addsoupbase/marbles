@@ -308,7 +308,7 @@ const Del = function (num) {
         }).appendTo(`bottom${me.id}`)
 
 
-let change = new あ({parent: `top${me.id}`,tag:'input',type:'file', accept: ".png, .jpeg, .jpg, .webp", events: {
+let change = new あ({parent: あ[`#top${me.id}`],tag:'input',type:'file', accept: ".png, .jpeg, .jpg, .webp", events: {
     change(o) {
         let reader = new FileReader()
         reader.readAsDataURL(o.target.files[0])
@@ -322,7 +322,7 @@ let change = new あ({parent: `top${me.id}`,tag:'input',type:'file', accept: ".p
 }}).hide()
 
 
-new あ({tag:'button',class:['good','thin'], parent: `top${me.id}`,text:'Upload', events: {
+new あ({tag:'button',class:['good','thin'], parent: あ[`#top${me.id}`],text:'Upload', events: {
     click() {
 change.content.click()
     }
@@ -479,7 +479,7 @@ const bounds = {
             }
             if ('game' in item) {
                 Entity.toSpawn.push(item)
-            new あ({parent: 'camBehaviour', tag:'option', value:item.Name,text:item.Name})
+            new あ({parent: あ['#camBehaviour'], tag:'option', value:item.Name,text:item.Name})
                 addMarble(item)
                 continue
             }
@@ -2554,6 +2554,7 @@ if (aValue) {
                 o.content.style.display = 'grid'
             }
         })
+        Elem['#secondMenu'].styleMe({display:'none'})
         Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => {
             Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
                 this.content.noevent('click')
@@ -2615,10 +2616,8 @@ new Elem({
 }, true).hide()
 
 function turnToSettingsMenu() {
-    Elem.$('#secondMenu').children.forEach(o =>
-        o.show()
+    Elem['#secondMenu'].styleMe({display:'grid'})
 
-    )
     あ['#gameSettings'].kill()
 }
 /*addEventListener('resize',o=>{

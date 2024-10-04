@@ -226,10 +226,11 @@ const Del = function (num) {
         me.imgSrc = settings?.imgSrc ?? ''
         me.img = new Image()
         me.img.src = me.imgSrc
-        new Elem({ tag: 'div', id: 'brb' + me.id, style: 'border: 5px solid #28a745; border-radius: 10px;' }).appendTo('allMarbles')
+        new Elem({ tag: 'div', id: 'brb' + me.id, style: 'border: 5px solid #28a745; border-radius: 10px;' }).append(Elem['#allMarbles'])
 
-        new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', id: `top${me.id}` }).appendTo('brb' + me.id)
+        new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', id: `top${me.id}` ,parent:'brb' + me.id})
         let inp = new Elem({
+            parent: 'top' + me.id,
             tag: 'input', value: me.Name, placeholder: 'Name', id: `shh${me.id}`, name: me.id, events: [
                 ['focusout', findMarble]
             ]
@@ -280,8 +281,7 @@ const Del = function (num) {
                    //showData(current)
                }
            })*/
-        inp.appendTo('top' + me.id)
-        new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', id: `bottom${me.id}` }).appendTo('brb' + me.id)
+        new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;',parent:'brb' + me.id, id: `bottom${me.id}` })
         new Elem({
             tag: 'input',
             name: `${me.id}`,
@@ -289,23 +289,25 @@ const Del = function (num) {
             id: `mrbl${me.id}`,
             placeholder: 'ImageUrl or file',
             value: `${me.imgSrc ?? ''}`,
-            events: [['focusout', findMarbleImage]]
+            events: [['focusout', findMarbleImage]],
+            parent: 'bottom' + me.id
         })
-            .appendTo('bottom' + me.id)
         inp = inp.content
         //    $("#allMarbles").append(inp)
         let index1 = getIndex(),
             index2 = getIndex()
         new Elem({
+            parent: `top${me.id}`,
             tag: 'button', name: `${me.id}`, id: `spawn${index1}`, events: [
                 ['click', () => spawnEvent(me.id)]
             ], text: 'Spawn', class: ['good', 'thin']
-        }).appendTo(`top${me.id}`)
+        })
         new Elem({
+            parent: `bottom${me.id}`,
             tag: 'button', name: `${me.id}`, id: `Del${index2}`, events: [
                 ['click', function () { deleteEvent(me.id); Elem.$('#brb' + me.id).killChildren().kill(); }]
             ], text: '🗑️', class: ['bad', 'thin']
-        }).appendTo(`bottom${me.id}`)
+        })
 
 
 let change = new あ({parent: あ[`#top${me.id}`],tag:'input',type:'file', accept: ".png, .jpeg, .jpg, .webp", events: {
@@ -578,7 +580,7 @@ Object.defineProperty(window, "Text", {
                 ['click', events[i]]
             ]
         })
-        me.appendTo(gtrmnythr.content)
+        me.append(gtrmnythr)
 
     }
 
@@ -721,14 +723,16 @@ const cam = {
             return
         }
         waitForFrames(o => {
-            Elem.$('#can').anim({ class: ['blur-element'] }, () => {
+            Elem.$('#can').anim({ 
+                'keep class':true,
+                class: ['blur-element'] }, () => {
                 let testsubject = Elem.$('#startmenu')
                 testsubject.show().content.style.display = 'flex'
                 testsubject.removeClass('slide-in-blurred-top', 'slide-out-blurred-top')
                 testsubject.content.style.zIndex = 2
                 testsubject.killChildren()
                 testsubject.anim({ class: ['slide-in-blurred-top'] })
-                new Elem({ tag: 'div', id: 'winners', }).appendTo(testsubject)
+                new Elem({ tag: 'div', id: 'winners', }).append(testsubject)
                 for (let placement of Entity.placements) {
                     let index = Entity.placements.indexOf(placement)
                     let medal
@@ -741,9 +745,9 @@ const cam = {
                     else {
                         medal = '#704c21'
                     }
-                    Elem.$('#winners').appendInto(new Elem({ tag: 'p', style: `color: ${medal}`, text: `#${index + 1}` }),
+                    Elem.$('#winners').append(new Elem({ tag: 'p', style: `color: ${medal}`, text: `#${index + 1}` }),
                     )
-                    Elem.$('#winners').appendInto(new Elem({
+                    Elem.$('#winners').append(new Elem({
                         tag: 'div', id: `place${index}`, style: `width:50px; height: 50px; background-color: ${placement.color}; border-color: ${placement.dark}`, children: [
                             new Elem({
                                 tag: 'img',
@@ -757,7 +761,7 @@ const cam = {
                         ]
                     }))
                 }
-            }, true)
+            },)
         }, 50, 'gameEnd')
     },
     playing: false,
@@ -2520,7 +2524,7 @@ if (aValue) {
             o.content.classList.contains('hidden') &&  o.hide()
         }
     })
-    canvas.appendIntoBody()
+  canvas.append(body)
     document.body.style.padding = '0px';
     document.body.style.overflow='hidden';
     (async function () {
@@ -2533,7 +2537,8 @@ if (aValue) {
         あ.elements.forEach(o=>o.hide())
         canvas.show()
         あ['#hideme'].styleMe({display:'none'})
-        Elem.$('#secondMenu').appendInto(Elem.$('#camBehaviour'))
+        Elem.$('#camBehaviour').append(        Elem.$('#secondMenu')
+    )
         Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
         
         Load(text)
@@ -2557,8 +2562,9 @@ if (aValue) {
         Elem['#secondMenu'].styleMe({display:'none'})
         Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => {
             Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
-                this.content.noevent('click')
-                this.content.parent.anim({ class: ['slide-out-blurred-top'] }, () => {
+                this.noevent('click')
+                this.parent.anim({ class: ['slide-out-blurred-top'] }, function(){
+        this.content.style.zIndex = -1
                     let checked = Elem.$('#cutscenes').content.checked
                     localStorage.setItem('cutscenes', checked)
                     if (checked + '' === 'true') {
@@ -2591,7 +2597,7 @@ if (aValue) {
             })])
             Elem.$('#startmenu').removeClass('slide-in-blurred-top');
             Elem.$('#gameStartButton').content.focus()
-        })
+        },)
 
     })()
     level = true
@@ -2613,10 +2619,10 @@ new Elem({
             }
         }]
     ]
-}, true).hide()
+}, true).style.display='none'
 
 function turnToSettingsMenu() {
-    Elem['#secondMenu'].styleMe({display:'grid'})
+    Elem.$('#secondMenu').style.display = 'grid'
 
     あ['#gameSettings'].kill()
 }

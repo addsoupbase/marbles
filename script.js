@@ -47,9 +47,8 @@ function waitForFrames(callback, frames, label, pauseDuringCutscene) {
     if (!callback) {
         Elem.warn('No callback provided')
     }
-    if (cam.delays.every(o => o.label !== out.label)) {
-        cam.delays.push(out)
-    }
+        cam.delays.add(out)
+    
 }
 const elements = {
     cont: new Elem({
@@ -161,7 +160,7 @@ const elements = {
 
             new Elem({
                 class: ['good'], tag: 'button', text: 'Copy', events: [
-                    ['click', () => navigator.clipboard.writeText($('#textData')[0].value)]
+                    ['click', () => navigator.clipboard.writeText(あ.$('#textData').value)]
                 ]
             }),
             new Elem({ tag: 'textArea', id: 'textData', placeholder: 'Saved Data' }),
@@ -175,7 +174,7 @@ const elements = {
 let startmenu = document.getElementById('startmenu')
 
 const Del = function (num) {
-    let foundYou = Entity.toSpawn.find(o => o.id === +num)
+    let foundYou = [...Entity.toSpawn].find(o => o.id === +num)
 
     /*for (let o of Entity.toSpawn) {
         if (o.id === +num) {
@@ -183,7 +182,7 @@ const Del = function (num) {
             break
         }
     }*/
-    Entity.toSpawn.deleteWithin(foundYou)
+    Entity.toSpawn.delete(foundYou)
     あ.elements.forEach(o=>{
         if (o.name === foundYou.id) {
             this.kill()
@@ -194,7 +193,7 @@ const Del = function (num) {
 
     spawnAllOfTheMarbles = () => {
         for (let o of Entity.toSpawn) {
-            o.restitution= +あ['#bounciness'].value
+            o.restitution= +あ.$('#bounciness').value
             new Marble(o)
         }
     },
@@ -207,7 +206,7 @@ const Del = function (num) {
     }
     , Spawn = function (mx) {
         console.log(mx)
-        let foundYou = Entity.toSpawn.find(o => o.id === +mx)
+        let foundYou = [...Entity.toSpawn].find(o => o.id === +mx)
         /*for (let o of Entity.toSpawn) {
             if (o.id === num) {
                 foundYou = o
@@ -216,17 +215,17 @@ const Del = function (num) {
         }*/
         // foundYou.img = new Image()
         foundYou.img.src = foundYou.imgSrc
-        foundYou.restitution = +あ['#bounciness'].value
+        foundYou.restitution = +あ.$('#bounciness').value
         new Marble(foundYou)
     },
     addMarble = function (settings) {
-        let params = { Name: settings?.Name, restitution: +あ['#bounciness'].value, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * ran.choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * ran.choose(1, -1)) /*img: Entity.Images[1]*/ }
+        let params = { Name: settings?.Name, restitution: +あ.$('#bounciness').value, size: 30, x: (-cam.x / cam.zoom + canvas.width / 2) + (Math.random() * 100 * ran.choose(1, -1)), y: (-cam.y / cam.zoom + canvas.height / 2) + (Math.random() * 100 * ran.choose(1, -1)) /*img: Entity.Images[1]*/ }
 
         let me = new Marble(params)
         me.imgSrc = settings?.imgSrc ?? ''
         me.img = new Image()
         me.img.src = me.imgSrc
-        new Elem({ tag: 'div', id: 'brb' + me.id, style: 'border: 5px solid #28a745; border-radius: 10px;' }).append(Elem['#allMarbles'])
+        new Elem({ tag: 'div', id: 'brb' + me.id, style: 'border: 5px solid #28a745; border-radius: 10px;' }).append(Elem.$('#allMarbles'))
 
         new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', id: `top${me.id}` ,parent:'brb' + me.id})
         let inp = new Elem({
@@ -238,13 +237,14 @@ const Del = function (num) {
         //  new Elem({ tag: 'div', class: ['separate'], id: `div${me.id}`, parent: $search('#allMarbles') })
 
         new Elem({
-            parent: Elem.$('#div' + me.id), name: me.id, tag: 'input', type: 'file', accept: ".png, .jpeg, .jpg, .webp", events: [
+            parent: Elem.$('#div' + me.id),
+            name: me.id, tag: 'input', type: 'file', accept: ".png, .jpeg, .jpg, .webp", events: [
                 ['change', function (data) {
                     let reader = new FileReader()
                     reader.readAsDataURL(data.target.files[0])
                     console.log(this)
                     reader.onload = (f) => {
-                        let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+                        let foundYou = [...Entity.toSpawn].find(o => o.id === +this.name)
                         /*for (let o of Entity.toSpawn) {
                             if (o.id === +this.name) {
                                 foundYou = o
@@ -310,27 +310,28 @@ const Del = function (num) {
         })
 
 
-let change = new あ({parent: あ[`#top${me.id}`],tag:'input',type:'file', accept: ".png, .jpeg, .jpg, .webp", events: {
+let change = new あ({parent: あ.$(`#top${me.id}`),tag:'input',type:'file', accept: ".png, .jpeg, .jpg, .webp", events: {
     change(o) {
         let reader = new FileReader()
         reader.readAsDataURL(o.target.files[0])
-        let my = Entity.toSpawn.find(o=>o.id === +me.id)
+        let my = [...Entity.toSpawn].find(o=>o.id === +me.id)
         reader.onload = (o) => {
             my.img = new Image()
             my.img.src = o.target.result
             my.imgSrc = o.target.result
-            あ['#mrbl'+me.id].content.value = my.img.src
+            あ.$('#mrbl'+me.id).content.value = my.img.src
         }  }
-}}).hide()
+}})
+change.hide()
 
 
-new あ({tag:'button',class:['good','thin'], parent: あ[`#top${me.id}`],text:'Upload', events: {
+new あ({tag:'button',class:['good','thin'], parent: あ.$(`#top${me.id}`),text:'Upload', events: {
     click() {
 change.content.click()
     }
 }})
         me.kill()
-        Entity.toSpawn.push({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
+        Entity.toSpawn.add({ Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
     }
 function fill(color) {
     let old = ctx.fillStyle
@@ -369,9 +370,9 @@ const bounds = {
     editorMode || startGame()
     let arr = []
     arr.push({
-        bounciness: あ['#bounciness'].value,
+        bounciness: あ.$('#bounciness').value,
         /*camBehaviour: $('#camBehaviour')[0].value,*/
-        title: Elem.$('#title').content.value.shorten(max.title), author: Elem.$('#authorName').content.value.shorten(max.author)
+        title: shorten(Elem.$('#title').content.value,max.title), author: shorten(Elem.$('#authorName').content.value,max.author)
     })
     for (let o of a.all) {
         if (!o.canBeSaved) {
@@ -433,10 +434,11 @@ const bounds = {
         if (o.shape === Marble.defaultShape) {
             delete o.shape
         }
+        delete o.img
         arr.push(o)
     }
     let output = JSON.stringify(arr)
-    あ['#textData'].content.value = output
+    あ.$('#textData').content.value = output
     let blob = new Blob([output], { type: 'text/plain;' })
     const tempurl = URL.createObjectURL(blob)
     const regex = /[^a-z0-9_]/gi;
@@ -455,17 +457,17 @@ const bounds = {
             data = JSON.parse(information)
         }
         else {
-            data = JSON.parse(あ["#textData"].content.value)
+            data = JSON.parse(あ.$("#textData").content.value)
         }
         if (data[0].title) {
-            Elem.$('#levelTitle').content.innerHTML = data[0].title.shorten(max.title)
-            document.title = `${data[0].title.shorten(max.title)} - Marbles`
+            Elem.$('#levelTitle').textContent = shorten(data[0].title,max.title)
+            document.title = `${shorten(data[0].title,max.title)} - Marbles`
         }
         if (data[0].author) {
-            Elem.$('#authorName').content.innerHTML = `by ${data[0].author.shorten(max.author)}`
+            Elem.$('#authorName').textContent = `by ${shorten(data[0].author,max.author)}`
         }
-        Entity.all.length = Entity.toSpawn.length = Entity.graveyard.length = Entity.gameSpawns.length = Entity.temporarilyDead.length = 0
-        あ['#allMarbles'].killChildren()
+        ;[Entity.all, Entity.toSpawn, Entity.graveyard, Entity.gameSpawns, Entity.temporarilyDead].forEach(o=>o.clear())
+        あ.$('#allMarbles').killChildren()
         for (let o of Matter.Composite.allBodies(world)) {
             World.remove(world, o)
         }
@@ -474,14 +476,18 @@ const bounds = {
             // console.log(item[0], item[1])
 
             if ('bounciness' in item) {
-                あ['#bounciness'].value = item['bounciness']
+                あ.$('#bounciness').value = item['bounciness']
                 //$('#camBehaviour')[0].value = item.camBehaviour
                 Elem.$('#title').content.value = item.title
                 continue
             }
             if ('game' in item) {
-                Entity.toSpawn.push(item)
-            new あ({parent: あ['#camBehaviour'], tag:'option', value:item.Name,text:item.Name})
+                if (!item.imgSrc) {
+                    delete item.img
+                    delete item.imgSrc
+                }
+                Entity.toSpawn.add(item)
+            new あ({parent: あ.$('#camBehaviour'), tag:'option', value:item.Name,text:item.Name})
                 addMarble(item)
                 continue
             }
@@ -500,8 +506,8 @@ const bounds = {
             }
         }
         for (let o of Entity.toSpawn) {
-            if (o.img.src !== o.imgSrc) {
-                Entity.toSpawn.deleteWithin(o)
+            if (o.img?.src !== o.imgSrc) {
+                Entity.toSpawn.delete(o)
             }
         }
         Elem.$('#textData').content.value = ''
@@ -515,8 +521,8 @@ const bounds = {
         throw e
     }
 }, menu = function (type) {
-  [あ['#data'],あ['#data2'],あ['#data3'],あ['#data4'],].forEach(o=>o.addClass('hidden'))
-    あ[`#${type}`].removeClass('hidden')
+  [あ.$('#data'),あ.$('#data2'),あ.$('#data3'),あ.$('#data4')].forEach(o=>o.addClass('hidden'))
+    あ.$(`#${type}`).removeClass('hidden')
 
 }, deleteFrom = (o) => {
     if (!editorMode) {
@@ -529,7 +535,7 @@ const bounds = {
 
 }
 for (let [key, id] of [["data2", "put"], ["data", "edit"], ["data3", "marble"]]) {
-    あ[`#${id}`].addevent({
+    あ.$(`#${id}`).addevent({
         click() {
             select = id
             menu(key)
@@ -676,12 +682,12 @@ const cam = {
         this.following = this.firstPlace
         let lastzoom = cam.targetZoom
         cam.targetZoom = 1.2
-        let bodiesToFreeze = []
+        let bodiesToFreeze = new Set
         let lastx = cam.x,
             lasty = cam.y
         Entity.all.forEach(o => {
             if (!o.isStatic) {
-                bodiesToFreeze.push(o)
+                bodiesToFreeze.add(o)
             }
         })
         bodiesToFreeze.forEach(o => {
@@ -697,7 +703,7 @@ const cam = {
             cam.cutscene.firstPlace = cam.following
             cam.cutscene.firstPlace.victory()
             waitForFrames(() => {
-                if (!Entity.all.filter(o => o.isMarble).length) {
+                if (!Entity.getAllMarbles.size) {
                     return
                 }
                 this.frozen = false
@@ -716,7 +722,7 @@ const cam = {
             }, 100, 'backToPlayModeFromVictoryDance')
         }, 100, 'victorydance')
     },
-    delays: [],
+    delays: new Set,
     behaviour: 'leader',
     endGame: () => {
         if (!level) {
@@ -733,8 +739,8 @@ const cam = {
                 testsubject.killChildren()
                 testsubject.anim({ class: ['slide-in-blurred-top'] })
                 new Elem({ tag: 'div', id: 'winners', }).append(testsubject)
+                let index = 0
                 for (let placement of Entity.placements) {
-                    let index = Entity.placements.indexOf(placement)
                     let medal
                     if (index === 0) {
                         medal = '#f0ff21'
@@ -760,6 +766,7 @@ const cam = {
                             })
                         ]
                     }))
+                    index++
                 }
             },)
         }, 50, 'gameEnd')
@@ -840,8 +847,8 @@ const apply = () => {
     let idNames = {
 
     }
-    for (let element of あ["#data"].children) {
-        let mine = element.content
+    for (let element of あ.$("#data").children) {
+        let mine = element
         if ((mine.value != null || 'checked' in mine) && mine.id) {
             idNames[mine.id] = mine.value
         }
@@ -967,7 +974,7 @@ function update() {
 
         frame++
     }
-    if (!Entity.all.includes(cam.following) && cam.following) {
+    if (!Entity.all.has(cam.following) && cam.following) {
         waitForFrames(() => cam.following = null, 10, 'resetCam')
     }
     smooth++
@@ -978,7 +985,7 @@ function update() {
         if (!(delays.time--)) {
             delays.execute()
             Elem.debug(`Delay ${delays.label} executed`)
-            cam.delays.deleteWithin(delays)
+            cam.delays.delete(delays)
         }
     }
     if (!cam.easterEggs.acidMode) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1000,23 +1007,23 @@ function update() {
 
     for (const fr of Entity.toKill) {
         World.remove(world, fr)
-        Entity.all.deleteWithin(fr)
-
+        Entity.all.delete(fr)
+        Entity.toKill.delete(fr)
     }
 
     for (const o of Entity.temporarilyDead) {
         World.remove(world, o)
-        Entity.all.deleteWithin(o)
-        Entity.graveyard.push(o)
+        Entity.all.delete(o)
+        Entity.graveyard.add(o)
     }
-    Entity.temporarilyDead = []
+    Entity.temporarilyDead = new Set
 
     let pos = {
         x: cam.x / cam.zoom,
         y: cam.y / cam.zoom
     }
 
-    Entity.toKill = []
+    Entity.toKill = new Set
     for (let o of Entity.all) {
         if (o.dead) {
             o.dead = false
@@ -1080,14 +1087,14 @@ function update() {
         }
 
     }
-    let eve = Entity.getAllMarbles
+    let eve = [...Entity.getAllMarbles]
 
     if (eve.length) {
         let outliers = false;
 
         switch (!editorMode && !cam.frozen && cam.behaviour) {
             default: {
-                cam.following??= Entity.getAllMarbles.find(o=>o.Name===cam.behaviour)
+                cam.following ??= [...Entity.getAllMarbles].find(o=>o.Name===cam.behaviour)
             }
             break
             case 'leader': {
@@ -1156,7 +1163,7 @@ function update() {
             }
             case 'random': {
                 if (!(frame % 500) || !cam.following) {
-                    cam.following = eve.pick()
+                    cam.following = ran.choose(...eve)
 
                 }
                 break;
@@ -1270,8 +1277,8 @@ class Entity {
         const dy = Math.abs(a.position.y - b.position.y);
         return Math.hypot(dx, dy);
     }
-    static placements = [];
-    static losers = []
+    static placements = new Set;
+    static losers = new Set
     static calculateZoomForBoundingBox = function (bbox, canvasWidth, canvasHeight) {
         const bboxWidth = bbox.width;
         const bboxHeight = bbox.height;
@@ -1291,7 +1298,7 @@ class Entity {
         return zoom;
     }
     static get getAllMarbles() {
-        return this.all.filter(o => o.isMarble)
+        return new Set([...this.all].filter(o => o.isMarble))
     }
     static boundingBox = (function anonymous(positions) {
         /*     let positions = {
@@ -1315,14 +1322,14 @@ class Entity {
             height: maxY - minY
         };
     })
-    static all = Matter.Composite.allBodies(world)
-    static toKill = []
+    static all = new Set(Matter.Composite.allBodies(world))
+    static toKill = new Set
     static allClasses = {}
-    static graveyard = []
-    static temporarilyDead = []
+    static graveyard = new Set
+    static temporarilyDead = new Set
     //static Images = []
-    static toSpawn = []
-    static gameSpawns = []
+    static toSpawn = new Set
+    static gameSpawns = new Set
     static {
         window.a = this
         window.cam = cam
@@ -1395,7 +1402,7 @@ class Entity {
         out.selected = false
         out.canBeSaved = true
         out.isCustom = true
-        out.toggleable = ["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width', 'height']
+        out.toggleable = new Set(["angle", "Name", "circleRadius", "restitution", "color", 'opacity', 'width', 'height'])
         out.opacity = opts.opacity ?? 1
         out.interval = opts.interval ?? 50
         out.restitution = opts.restitution ?? 0
@@ -1441,15 +1448,15 @@ class Entity {
         out.width ?? Object.defineProperty(out, "width", { get: function () { return this.start.width } })
         out.height ?? Object.defineProperty(out, "height", { get: function () { return this.start.height } })
 
-        Entity.all.push(out)
+        Entity.all.add(out)
         //Defs
         out.reset = function () {
             this.isSleeping = true
 
             this.start.angle ??= this.angle
-            if (this.index === -1) {
-                Entity.all.push(this)
-                Entity.graveyard.deleteWithin(this)
+            if (!Entity.all.has(this)) {
+                Entity.all.add(this)
+                Entity.graveyard.delete(this)
                 World.add(world, this)
             }
             // console.log(this.start,this.angle)
@@ -1547,7 +1554,7 @@ class Entity {
             ctx.globalCompositeOperation = cam.easterEggs.compop
             this.illustrate?.(fr)
             if (editorMode && !level && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
-                if (!Entity.all.some(o => o.selected)) {
+                if (![...Entity.all].some(o => o.selected)) {
                     this.onclick?.()
                     this.selected = true
                     current = this
@@ -1584,22 +1591,22 @@ class Entity {
             if (cam.following === this) {
                 waitForFrames(o => cam.following = null, 50, 'follow')
             }
-            if (!Entity.all.filter(o => o.isMarble).length && !gameEnded) {
+            if (!Entity.getAllMarbles.size && !gameEnded) {
                 gameEnded = true;
                 cam.endGame()
             }
             this.dead = true
-            Entity.toKill.push(this)
+            Entity.toKill.add(this)
             if (this.isMarble && !isWinner) {
-                Entity.losers.push(this)
+                Entity.losers.add(this)
             }
         }
         out.tempKill = function () {
             if (!editorMode) {
 
-                Entity.temporarilyDead.push(this)
+                Entity.temporarilyDead.add(this)
                 if (cam.behaviour === this.Name) {
-                    cam.behaviour = Entity.getAllMarbles.pick().Name
+                    cam.behaviour = ran.choose(...Entity.getAllMarbles).Name
                 }
             }
 
@@ -1639,7 +1646,7 @@ class Marble extends Entity {
         }
         this.outOfBounds = () => {
             for (let i = 10; i--;) {
-                if (Entity.all.length > 100) {
+                if (Entity.all.size > 100) {
                     break
                 }
                 let p = new DeathParticle({ x: this.position.x, y: this.position.y, })
@@ -1650,11 +1657,8 @@ class Marble extends Entity {
         }
         this.collisionFilter.group = 0
         this.isMarble = true
-        this.toggleable.push("img")
-        this.toggleable.deleteWithin('angle')
-        this.toggleable.deleteWithin('width')
-        this.toggleable.deleteWithin('height')
-
+        this.toggleable.add("img")
+        ;['angle','width','height'].forEach(o=>this.toggleable.delete(o))
         this.victory = function () {
             if (this.finished) {
                 return
@@ -1662,14 +1666,14 @@ class Marble extends Entity {
 
             this.finished = true
             for (let i = 10; i--;) {
-                if (Entity.all.length > 100) {
+                if (Entity.all.size > 100) {
                     break
                 }
                 let p = new Confetti({ x: this.position.x, y: this.position.y, })
                 p.isTemporary = true
             }
             if (this.isMarble) {
-                Entity.placements.push(this)
+                Entity.placements.add(this)
             }
             this.kill(true)
         }
@@ -1748,8 +1752,8 @@ class Wall extends Entity {
             opts.isStatic = true
         }
         super(opts)
-        this.toggleable.deleteWithin("frictionAir")
-        this.toggleable.deleteWithin("restitution")
+        this.toggleable.delete("frictionAir")
+        this.toggleable.delete("restitution")
 
         this.illustrate = function (frame) {
 
@@ -1775,9 +1779,9 @@ class Circle extends Wall {
     constructor(opts) {
         opts.shape = 'circle'
         super(opts)
-        this.toggleable.deleteWithin('width')
-        this.toggleable.deleteWithin('height')
-        this.toggleable.push('size')
+        this.toggleable.delete('width')
+        this.toggleable.delete('height')
+        this.toggleable.add('size')
     }
 }
 class Ball extends Circle {
@@ -1795,7 +1799,7 @@ class Ball extends Circle {
         this.start.ignoreWind = this.ignoreWind = opts.ignoreWind ?? 0;
         this.start.respawn = this.respawn = opts.respawn ?? 0
         this.collisionFilter.group = 0
-        this.toggleable.push('mass', 'restitution', 'ignoreWind', 'respawn')
+        ;['mass', 'restitution', 'ignoreWind', 'respawn'].forEach(o=>this.toggleable.add(o))
     }
 }
 class MoveableWall extends Wall {
@@ -1807,7 +1811,7 @@ class MoveableWall extends Wall {
         opts.isStatic = false
         opts.color ??= MoveableWall.defaultColor
         super(opts)
-        this.toggleable.push('restitution', 'mass', 'ignoreWind', 'respawn')
+        ;['restitution', 'mass', 'ignoreWind', 'respawn'].forEach(o=>this.toggleable.add(o))
 
         this.start.ignoreWind = this.ignoreWind = opts.ignoreWind ?? false;
         this.start.respawn = this.respawn = opts.respawn ?? false
@@ -1828,7 +1832,8 @@ class Blade extends Wall {
         opts.isStatic = false
         super(opts)
         this.collisionFilter.group = -1
-        this.toggleable.push("frictionAir", "mass")
+        this.toggleable.add("frictionAir")
+        this.toggleable.add( "mass")
         this.draw = function () {
             Entity.prototype.draw.call(this)
             Body.setVelocity(this, { x: 0, y: 0 })
@@ -1848,12 +1853,12 @@ class WindZone extends Wall {
 
         o.color = c.blue
         super(o)
-        this.toggleable.push('windSpeed')
+        this.toggleable.add('windSpeed')
         this.windSpeed = this.start.windSpeed = o.windSpeed ?? 0.01
         this.isSensor = true
-        this.winds = []
+        this.winds = new Set
         for (let i = 0; i < 20; i++) {
-            this.winds.push({
+            this.winds.add({
                 x: (Math.random() * o.width) - o.width / 2,
                 y: (Math.random() * o.height) - o.height / 2,
                 radius: Math.random() * this.width / 20
@@ -1943,7 +1948,7 @@ class Portal extends Entity {
         this.pair = null
         this.active = true
         this.isSensor = true
-        this.toggleable.push("interval")
+        this.toggleable.add("interval")
 
         this.onenterplaymode = function () {
             this.active = true
@@ -1968,19 +1973,15 @@ class Portal extends Entity {
                 }
             }
         }
-        this.toggleable.push('size')
-        this.toggleable.deleteWithin('width')
-        this.toggleable.deleteWithin('height')
-        this.toggleable.deleteWithin('angle')
-        this.toggleable.deleteWithin('restitution')
-        this.toggleable.deleteWithin('opacity')
+        this.toggleable.add('size')
+        ;['width','height','angle','restitution','opacity'].forEach(o=>this.toggleable.delete(o))
         this.collision = function (coll) {
             if (coll === this?.pair || coll.isParticle || !this.pair || coll.isSensor) {
                 return
             }
             if (this.active) {
                     for (let i = 10; i--;) {
-                        if (Entity.all.length > 100) {
+                        if (Entity.all.size > 100) {
                             break
                         }
                         new PortalParticle({ x: coll.position.x, y: coll.position.y, })
@@ -2041,13 +2042,8 @@ class Cam extends Entity {
             }
         }
         this.isSensor = true
-        this.toggleable.push("speed")
-        this.toggleable.deleteWithin("Name")
-        this.toggleable.deleteWithin("restitution")
-        this.toggleable.deleteWithin("color")
-        this.toggleable.deleteWithin('width')
-        this.toggleable.deleteWithin('height')
-
+        this.toggleable.add("speed")
+      ;['Name','restitution','color','width','height'].forEach(o=>this.toggleable.delete(o))
         this.illustrate = function () {
             if (!editorMode) {
                 return
@@ -2072,11 +2068,7 @@ class Goal extends Entity {
         opts.width = 20;
         opts.height = 20
         super(opts)
-        this.toggleable.deleteWithin('width')
-        this.toggleable.deleteWithin('height')
-        this.toggleable.deleteWithin('Name')
-        this.toggleable.deleteWithin('angle')
-        this.toggleable.deleteWithin('restitution')
+        ;['width','height','Name','angle','restitution'].forEach(o=>this.toggleable.delete(o))
         this.color = c.red
         for (let o of Entity.all) {
             if (o.CREATOR === Goal && o !== this) {
@@ -2131,23 +2123,19 @@ class Spawner extends Entity {
         super(opts)
         this.interval = opts.interval || 50
         this.isSensor = true
-        this.toggleable.push("interval")
-        this.toggleable.deleteWithin("Name")
-        this.toggleable.deleteWithin("angle")
-        this.toggleable.deleteWithin("restitution")
-        this.toggleable.deleteWithin('width')
-        this.toggleable.deleteWithin('height')
+        this.toggleable.add("interval")
+        ;['Name','angle','restitution','width','height'].forEach(o=>this.toggleable.delete(o))
         this.illustrate = function (e) {
 
             if (!editorMode) {
                 if (!(e % this.interval) && !editorMode && !cam.frozen) {
-                    Entity.gameSpawns = Entity.gameSpawns.shuffle()
-                    let child = Entity.gameSpawns.pop()
-
+                    Entity.gameSpawns = new Set(shuffle(...Entity.gameSpawns))
+                    let child = [...Entity.gameSpawns].pop()
                     if (child) {
+                        Entity.gameSpawns.delete(child)
                         child.x = this.position.x + ran.range(-this.SIZE.x / 2, this.SIZE.x / 2)
                         child.y = this.position.y + ran.range(-this.SIZE.y / 2, this.SIZE.y / 2)
-                        child.restitution = +あ['#bounciness'].value
+                        child.restitution = +あ.$('#bounciness').value
                         if (aValue) {
                             child.restitution *= 3
                             //i dont know but This is required for some reason and im so fucking confused literally kill
@@ -2248,7 +2236,7 @@ let mouse = {
 
 update()
 
-あ['#can'].addevent({
+あ.$('#can').addevent({
     mousemove(e) {
         mouse.x = e.offsetX
         mouse.y = e.offsetY
@@ -2277,12 +2265,12 @@ function startGame(fade) {
     if (!editorMode) {
         cam.following = current = null
 
-        Entity.gameSpawns = [...Entity.toSpawn]
+        Entity.gameSpawns = new Set([...Entity.toSpawn])
         for (let o of Entity.graveyard) {
-            Entity.all.push(o)
+            Entity.all.add(o)
             World.add(world, o)
         }
-        Entity.graveyard = []
+        Entity.graveyard = new Set
         for (let o of Entity.all) {
 
             if (!o.isCustom) {
@@ -2303,8 +2291,8 @@ function startGame(fade) {
         for (let o of Entity.all) {
             o.onenterplaymode?.()
         }
-        Entity.placements = []
-        Entity.losers = []
+        Entity.placements = new Set
+        Entity.losers = new Set
      //    cam.behaviour = localStorage.getItem('cambehaviour') ?? 'leader'
         cam.following = current = null
         for (let o of Entity.all) {
@@ -2312,9 +2300,10 @@ function startGame(fade) {
         }
         select = null
         showData()
-        Entity.gameSpawns = [...Entity.toSpawn]
+        Entity.gameSpawns = new Set([...Entity.toSpawn,...Entity.gameSpawns])
+        console.assert(Entity.gameSpawns.size)
+        Entity.all = new Set([...Entity.graveyard,...Entity.all])
 
-        Entity.all.push(...Entity.graveyard)
     }
     /* let average = {
          x: [],
@@ -2365,7 +2354,7 @@ function showData(stats) {
         ]
     })
 
-    for (let statName of Object.values(stats.toggleable)) {
+    for (let statName of stats.toggleable) {
         let val = stats[statName]
 
         if (statName === 'angle') {
@@ -2378,7 +2367,7 @@ function showData(stats) {
             new Elem({ tag: 'input', class: ['color'], type: 'color', parent: me, id: statName, value: val })
         }
         if (statName.match(/width|height|opacity|Name|mass|frictionAir|windSpeed|interval|size|ignoreWind|respawn|restitution/)) {
-            new Elem({ tag: 'label', for: statName, text: statName.upper(), parent: me })
+            new Elem({ tag: 'label', for: statName, text: upper(statName), parent: me })
             new Elem({ tag: 'input', class: ['write'], parent: me, id: statName, value: val })
         }
 
@@ -2456,7 +2445,7 @@ function fileChange(o) {
     }
 }
 function findMarble() {
-    let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+    let foundYou = [...Entity.toSpawn].find(o => o.id === +this.name)
     /*for (let o of Entity.toSpawn) {
         if (o.id === +this.name) {
             foundYou = o
@@ -2470,7 +2459,7 @@ function findMarbleImage() {
     if (!this.value.length) {
         return
     }
-    let foundYou = Entity.toSpawn.find(o => o.id === +this.name)
+    let foundYou = [...Entity.toSpawn].find(o => o.id === +this.name)
     /*  for (let o of Entity.toSpawn) {
           if (o.id === +this.name) {
               foundYou = o
@@ -2534,9 +2523,8 @@ if (aValue) {
             levelData = await fetch('/levels/' + aValue + '.txt')
         }*/
         let text = await levelData.text()
-        あ.elements.forEach(o=>o.hide())
-        canvas.show()
-        あ['#hideme'].styleMe({display:'none'})
+        あ.elements.forEach(o=>o!==canvas&&o!==body&&o.hide())
+        あ.$('#hideme').styleMe({display:'none'})
         Elem.$('#camBehaviour').append(        Elem.$('#secondMenu')
     )
         Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
@@ -2552,14 +2540,16 @@ if (aValue) {
             Elem.$('#cutscenes').content.checked = false
 
         }
-        Elem.$('.gameMenu').forEach(o => {
+        Elem.elements.forEach((o) => {
+    
+            if (!o.content.classList.contains('gameMenu')) return
             if (o.content.id !== 'secondMenu') {
                 o.content.style.display = 'flex'
             } else {
                 o.content.style.display = 'grid'
             }
         })
-        Elem['#secondMenu'].styleMe({display:'none'})
+        Elem.$('#secondMenu').styleMe({display:'none'})
         Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => {
             Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
                 this.noevent('click')
@@ -2624,7 +2614,7 @@ new Elem({
 function turnToSettingsMenu() {
     Elem.$('#secondMenu').style.display = 'grid'
 
-    あ['#gameSettings'].kill()
+    あ.$('#gameSettings').kill()
 }
 /*addEventListener('resize',o=>{
     if (level) {

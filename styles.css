@@ -144,6 +144,7 @@ button:hover {
     z-index: 0;
     display: none;
     position:fixed;
+    text-align: center;
    /* max-height: 300px;*/
 
     overflow-y: scroll;

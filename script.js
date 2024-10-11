@@ -1,31 +1,20 @@
-'use strict';
-const あ = Elem;
+import {
+    Engine, World, Bodies, Events, Collision, Constraint, engine, Body, world,
+    config, global, worker
+} from './setup.js'
+import elements, { max, あ } from './dom.js'
 const c = color;
-window. loaded = false
-/*Elem.logLevels = {
-    debug: true,
-    warn: true,
-    error: true,
-    info: true,
-    success: true,
-}*/
-Elem.logLevels.error  = true
-let max = {
-    title: '20',
-    author: '16'
+window.loaded = false
+Elem.logLevels.error = true
+if (window.OffscreenCanvas) {
+    worker.addEventListener('message', msg => {
+        let oldData = msg.data.old
+        let newData = msg.data.new
+        let improved = URL.createObjectURL(newData)
+Entity.toSpawn.get(oldData).imgSrc = improved
+    })
 }
 
-let select = "edit",
-    current = null
-    , editorMode = true,
-    debugMode = false
-    , options = null
-    , chosenEntity = "Block"
-    , text = ""
-    , smooth = 0
-    , textColor = "#000000";
-let level = false
-let gameEnded=false 
 function waitForFrames(callback, frames, label, pauseDuringCutscene) {
     if (frames !== Math.round(frames)) return Elem.error('Expected int, instead got float')
     let out = {
@@ -40,131 +29,7 @@ function waitForFrames(callback, frames, label, pauseDuringCutscene) {
     cam.delays.add(out)
 
 }
-const elements = {
-    cont: new Elem({
-        _label_: 'father',
 
-        tag: 'div', id: 'cont', children: [
-            new Elem({ tag: 'canvas', width: 500, height: 500, id: 'can', }),
-                new Elem({tag:'div',id:'message',children:[
-                    new Elem({tag:'h3',message:''})
-                ]}),
-            
-            new Elem({
-                id: 'data', tag: 'div', class: ['menu'], children: [
-                    new Elem({ tag: 'p', text: 'Nothing Selected...' })
-                ]
-            }), new Elem({
-                tag: 'div', id: 'data2', class: ['menu', 'hidden'], children: [
-                    new Elem({ tag: 'div', id: 'buttonholder' })
-                ]
-            }),
-            new Elem({ tag: 'div', id: 'data4', class: ['menu', 'hidden'] }),
-            new Elem({
-                tag: 'div', id: 'data3', class: ['menu', 'hidden'], children: [
-                    new Elem({
-                        tag: 'div', children: [
-                            new Elem({ tag: 'button', id: 'marbleAdder', class: ['good'], text: 'Add Marble' }),
-                            new Elem({ tag: 'button', id: 'spawnImmediately', class: ['good'], text: 'Spawn All' }),
-                            new Elem({ tag: 'button', id: 'killAll', class: ['bad'], text: 'Destroy All' })
-
-                        ]
-                    }),
-                    new Elem({
-                        tag: 'div', class: ['separate'], children: [
-                            new Elem({ tag: 'label', for: 'title', text: 'Title' }),
-                            new Elem({ tag: 'input', id: 'title', class: ['write'], type: 'text', value: 'Untitled', maxLength: max.title }),
-                            new Elem({ tag: 'label', for: 'author', text: 'Author' }),
-                            new Elem({ tag: 'input', id: 'author', class: ['write'], type: 'text', value: 'Unknown', maxLength: max.author }),
-                            new Elem({ tag: 'label', for: 'bounciness', text: 'Marble bounce' }),
-                            new Elem({ tag: 'input', id: 'bounciness', class: ['write'], type: 'number', value: '1', }),
-                            new Elem({ tag: 'label', for: 'camBehaviour', text: 'Camera Behaviour', class: ['hidden'] }),
-                            new Elem({
-                                tag: 'select', id: 'camBehaviour', style: 'display: hidden;', class: ['hidden'], value: 'leader', children: [
-                                    new Elem({ tag: 'option', value: 'leader', text: 'Follow Leader' }),
-                                    new Elem({ tag: 'option', value: 'loser', text: 'Follow Loser' }),
-                                    new Elem({ tag: 'option', value: 'middle', text: 'Follow Middle' }),
-                                    new Elem({ tag: 'option', value: 'average', text: 'Average' }),
-                                    new Elem({ tag: 'option', value: 'outliers', text: 'Outliers' }),
-                                    new Elem({ tag: 'option', value: 'random', text: 'Pick randomly' }),
-                                    new Elem({ tag: 'option', value: 'free', text: 'Free' }),
-                                    new あ({ tag: 'optgroup', label: 'Contestants' })
-                                ]
-                            }),
-
-
-                        ]
-                    }),
-                    new Elem({ tag: 'p', class: ['danger'], text: 'If you use a link instead of uploading directly, there is a chance that the link will expire' }),
-                    new Elem({ tag: 'div', id: 'allMarbles' })
-                ]
-            })
-
-        ]
-    }, true),
-    startmenu: new Elem({
-        tag: 'div', id: 'startmenu', class: ['menu', 'gameMenu'],
-        children: [
-            new Elem({ tag: 'h1', text: 'Untitled', class: ['gameMenu'], id: 'levelTitle' }),
-            new Elem({ tag: 'cite', text: 'by Unknown', class: ['gameMenu'], id: 'authorName', parent: Elem.$('#levelTitle') }),
-
-            new Elem({
-                tag: 'button', id: 'gameStartButton', class: ['good', 'gameMenu'], text: 'Play',
-            }),
-            new Elem({
-                tag: 'div', class: ['gameMenu'], id: 'secondMenu', children: [
-                    new Elem({ tag: 'label', text: 'Play Cutscenes', for: 'cutscenes' }),
-                    new Elem({ tag: 'input', type: 'checkbox', id: 'cutscenes', checked: true, }),
-                    new Elem({ tag: 'label', for: 'camSpeed', text: 'Camera Speed', }),
-                    new Elem({ tag: 'input', id: 'camSpeed', value: 0.1, placeholder: 'Default: 0.1' }),
-                    new Elem({ tag: 'label', text: 'Camera Behaviour', for: 'camBehaviour' }),
-
-
-                ]
-            }),
-            new Elem({
-                tag: 'div', class: ['gameMenu'], children: [
-                    new Elem({
-                        tag: 'button', id: 'gameSettings', class: ['neutral', 'gameMenu'], text: 'Settings', events: [
-                            ['click', turnToSettingsMenu]
-                        ]
-                    })
-                ]
-            }),
-
-        ]
-    }, true),
-    hold: new Elem({
-        class: ['hold'],
-        id: 'hideme', tag: 'div', children: [
-            new Elem({ tag: 'button', id: 'saveButton', text: 'Download', class: ['good'] }),
-            new Elem({
-                class: ['good'], tag: 'button', id: 'loadButton', text: 'Load from file', events: [
-                    ['click', () => {
-                        Elem.$('#uploadedData').content.click()
-
-                    }]
-                ]
-            }),
-            new Elem({
-                class: ['good'], tag: 'button', id: 'loadButton2', text: 'Load from text field', events: [
-                    ['click', () => Load()]
-                ]
-            }),
-
-            new Elem({
-                class: ['good'], tag: 'button', text: 'Copy', events: [
-                    ['click', () => navigator.clipboard.writeText(あ.$('#textData').value)]
-                ]
-            }),
-            new Elem({ tag: 'textArea', id: 'textData', placeholder: 'Saved Data' }),
-            new Elem({ class: ['good'], tag: 'button', id: 'put', text: 'Put' }),
-            new Elem({ class: ['good'], tag: 'button', id: 'edit', text: 'Edit' }),
-            new Elem({ class: ['good'], tag: 'button', id: 'marble', text: 'Marbles' }),
-            new Elem({ class: ['good'], tag: 'button', id: 'startButton', text: 'Start' }),
-        ]
-    }, true)
-}
 let startmenu = document.getElementById('startmenu')
 
 const Del = function (num) {
@@ -199,7 +64,6 @@ const Del = function (num) {
         }
     }
     , Spawn = function (mx) {
-        console.log(mx)
         let foundYou = Entity.toSpawn.get(+mx)
         /*for (let o of Entity.toSpawn) {
             if (o.id === num) {
@@ -235,7 +99,6 @@ const Del = function (num) {
                 ['change', function (data) {
                     let reader = new FileReader()
                     reader.readAsDataURL(data.target.files[0])
-                    console.log(this)
                     reader.onload = (f) => {
                         let foundYou = Entity.toSpawn.get(+this.name)
                         /*for (let o of Entity.toSpawn) {
@@ -249,7 +112,7 @@ const Del = function (num) {
                         foundYou.imgSrc = foundYou.img.src
                         foundYou.customImage = true
                         Elem.$('#mrbl' + this.name).content.value = foundYou.imgSrc
-                        Text = 'Upload successful!#00FF00'
+                        cam.sendmessage('Upload successful!#00FF00')
                     }
                 }]
             ]
@@ -271,7 +134,7 @@ const Del = function (num) {
                    foundYou.img = new Image()
                    foundYou.img.src = f.target.result
                    foundYou.customImage = true
-                   //showData(current)
+                   //showData(global.current)
                }
            })*/
         new Elem({ tag: 'div', style: 'display:inline-flex;margin: 10px;', parent: 'brb' + me.id, id: `bottom${me.id}` })
@@ -284,7 +147,7 @@ const Del = function (num) {
             value: `${me.imgSrc ?? ''}`,
             events: [['focusout', findMarbleImage]],
             parent: 'bottom' + me.id
-        })
+        }).hide()
         inp = inp.content
         //    $("#allMarbles").append(inp)
         let random = new ran.Randomizer
@@ -298,7 +161,7 @@ const Del = function (num) {
             parent: `bottom${me.id}`,
             tag: 'button', name: `${me.id}`, id: `Del${random[1]}`, events: [
                 ['click', function () { deleteEvent(me.id); Elem.$('#brb' + me.id).killChildren().kill(); }]
-            ], text: '🗑️', class: ['bad', 'thin']
+            ], text: 'Delete', class: ['bad', 'thin']
         })
 
 
@@ -321,14 +184,14 @@ const Del = function (num) {
 
 
         new あ({
-            tag: 'button', class: ['good', 'thin'], parent: あ.$(`#top${me.id}`), text: 'Upload', events: {
+            tag: 'button', class: ['good', 'thin'], parent: あ.$(`#top${me.id}`), text: 'Upload Image', events: {
                 click() {
                     change.content.click()
                 }
             }
         })
         me.kill()
-        Entity.toSpawn.set(me.id,{ Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
+        Entity.toSpawn.set(me.id, { Name: me.Name, shape: "circle", size: 30, id: me.id, img: me.img, game: true, imgSrc: me.imgSrc })
     }
 function fill(color) {
     let old = ctx.fillStyle
@@ -354,8 +217,9 @@ function shapeToImage(ball) {
     cc.arc(c.width / 2, c.height / 2, c.width / 2.05, 0, Math.PI * 2)
     cc.fill()
     cc.stroke()
-    ball.img.src = c.toDataURL("image/png")
-
+    ball.img ??= new Image()
+    ball.img.src = ball.imgSrc = c.toDataURL("image/png")
+    ball.customImage = true
 }
 const bounds = {
     x: 3000,
@@ -364,14 +228,14 @@ const bounds = {
         return { x: this.x / 2, y: this.y / 2 }
     }
 }, save = function () {
-    editorMode || startGame()
+    global.editorMode || startGame()
     let arr = []
     arr.push({
         bounciness: あ.$('#bounciness').value,
         /*camBehaviour: $('#camBehaviour')[0].value,*/
-        title: utilString.shorten(Elem.$('#title').content.value, max.title), author: utilString.shorten(Elem.$('#authorName').content.value, max.author)
+        title: utilString.shorten(Elem.$('#title').content.value, max.title), author: utilString.shorten(Elem.$('#authorName', max.author).content.value, max.author)
     })
-    for (let o of a.all) {
+    for (let o of Entity.all.values()) {
         if (!o.canBeSaved) {
             continue
         }
@@ -379,16 +243,16 @@ const bounds = {
             case 'Wall':
             case 'Blade': {
                 delete o.start.interval
-
             }
         }
         delete o.start.dark
         if (o.start.opacity === 1) {
             delete o.start.opacity
         }
-        if (!o.start.imgSrc) {
+        delete o.start.img
+
+        if (!o.start.imgSrc || !o.start.imgSrc.startsWith('data')) {
             delete o.start.imgSrc
-            delete o.start.img
         }
         if (o.start.Name?.includes?.(o.CREATOR.name)) {
             delete o.start.Name
@@ -424,7 +288,7 @@ const bounds = {
         arr.push([info, o.CREATOR.name])
     }
 
-    for (let o of Entity.toSpawn) {
+    for (let o of Entity.toSpawn.values()) {
         if (o.size === Marble.defaultSize) {
             delete o.size
         }
@@ -446,19 +310,23 @@ const bounds = {
     URL.revokeObjectURL(tempurl);
     Elem.$('#textData').value = ''
 }, Load = function (information) {
-    editorMode || startGame()
+    global.editorMode || startGame()
 
     try {
         let data;
         if (information) {
-            data = JSON.parse(information)
+            if (typeof information == 'string') {
+                data = JSON.parse(information)
+            }
+            else data = information
         }
         else {
             data = JSON.parse(あ.$("#textData").content.value)
         }
+
         if (data[0].title) {
             Elem.$('#levelTitle').textContent = utilString.shorten(data[0].title, max.title)
-            document.title = `${utilString.shorten(data[0].title, max.title)} - Marbles`
+            document.title = `${data[0].title} - Marbles`
         }
         if (data[0].author) {
             Elem.$('#authorName').textContent = `by ${utilString.shorten(data[0].author, max.author)}`
@@ -483,7 +351,12 @@ const bounds = {
                     delete item.img
                     delete item.imgSrc
                 }
-                Entity.toSpawn.set(item.id,item)
+                Entity.toSpawn.set(item.id, item)
+             
+                    if (item.imgSrc && global.supportsOffscreenCanvas) {
+                        worker.postMessage({image:item.imgSrc,id:item.id})
+                    } 
+                
                 new あ({ parent: あ.$('#camBehaviour'), tag: 'option', value: item.Name, text: item.Name })
                 addMarble(item)
                 continue
@@ -502,7 +375,7 @@ const bounds = {
             }
         }
         for (let o of Entity.toSpawn.values()) {
-            if (o.imgSrc&&o.img?.src !== o.imgSrc) {
+            if (o.imgSrc && o.img?.src !== o.imgSrc) {
                 Entity.toSpawn.delete(o.id)
             }
         }
@@ -510,7 +383,7 @@ const bounds = {
 
     }
     catch (e) {
-        Text = 'Check logs please :(#FF0000'
+        cam.sendmessage('Check logs please :(#FF0000')
         Elem.$('#textData').content.value = ''
 
         throw e
@@ -520,8 +393,8 @@ const bounds = {
     あ.$(`#${type}`).removeClass('hidden')
 
 }, deleteFrom = (o) => {
-    if (!editorMode) {
-        return Text = "Exit play mode first!!!#ff0000"
+    if (!global.editorMode) {
+        return cam.sendmessage("Exit play mode first!!!#ff0000")
     }
     else {
         o.kill()
@@ -532,7 +405,7 @@ const bounds = {
 for (let [key, id] of [["data2", "put"], ["data", "edit"], ["data3", "marble"]]) {
     あ.$(`#${id}`).addevent({
         click() {
-            select = id
+            global.select = id
             menu(key)
         }
     })
@@ -547,25 +420,12 @@ for (let [id, event] of [
 ]) {
     Elem.$(`#${id}`).addevent(['click', event])
 }
-Object.defineProperty(window, "Text", {
-    set: function (o) {
-        let m = _('message')
-        m.anim({class:['fade-in-top']},()=>            m.anim({class:['fade-out-top']})    )
-        let col = o.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g)
-        if (col) {
-            o = o.replace(col[0], "")
-            m.styleMe({'background-color':col[0]})
 
-        }
-
-        m.children[0].textContent=o
-    }
-})
 {
     let r = new ran.Randomizer
     let naMes = [`block${r[1]}`, `motor${r[2]}`, `spawner${r[4]}`, `wind${r[5]}`, `moveableWall${r[6]}`, `circle${r[7]}`, `ball${r[8]}`, `goal${r[9]}`, `portal${r[10]}`]
     let gtrmnythr = Elem.$('#buttonholder')
-    let events = [() => chosenEntity = 'Block', () => chosenEntity = 'Motor', () => chosenEntity = 'Spawner', () => chosenEntity = 'WindZone', () => chosenEntity = 'Movable Wall', () => chosenEntity = 'Circle', () => chosenEntity = 'Ball', () => chosenEntity = 'Goal', () => chosenEntity = 'Portal']
+    let events = [() => global.chosenEntity = 'Block', () => global.chosenEntity = 'Motor', () => global.chosenEntity = 'Spawner', () => global.chosenEntity = 'WindZone', () => global.chosenEntity = 'Movable Wall', () => global.chosenEntity = 'Circle', () => global.chosenEntity = 'Ball', () => global.chosenEntity = 'Goal', () => global.chosenEntity = 'Portal']
     for (let i = 0; i < naMes.length; i++) {
         let me = new Elem({
             tag: 'button', class: ['good', 'thin'], id: naMes[i], text: naMes[i], events: [
@@ -586,64 +446,64 @@ function place(entity) {
 
     if (entity.includes("Block")) {
         let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
     if (entity.includes("Goal")) {
         let baby = new Goal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
     if (entity.includes("Movable Wall")) {
         let baby = new MoveableWall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: false })
-        current = baby
+        global.current = baby
         showData(baby)
     }
     if (entity.includes("Circle")) {
         let baby = new Circle({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: true })
-        current = baby
+        global.current = baby
         showData(baby)
     }
     if (entity.includes("Ball")) {
         let baby = new Ball({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: false })
-        current = baby
+        global.current = baby
         showData(baby)
     }
     /*if (entity.includes("Beam")) {
         let baby = new Beam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.red, height: 15, width: 70 * (modifier), isStatic: true })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }*/
     if (entity.includes("Motor")) {
         let baby = new Blade({ frictionAir: 0, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.yellow, size: 100, isStatic: false })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
     if (entity.includes("Cam")) {
         let baby = new Cam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
     if (entity.includes("Portal")) {
         let baby = new Portal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
     if (entity.includes("Spawner")) {
         let baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
     if (entity.includes("WindZone")) {
         let baby = new WindZone({ height: 50, width: 50, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
-        current = baby
+        global.current = baby
         showData(baby)
 
     }
@@ -655,6 +515,18 @@ canvas.height = canvas.content.height
 const cam = {
     x: 0,
     y: 0,
+    sendmessage(o) {
+        let m = _('message')
+        m.anim({ class: ['fade-in-top'] }, () => m.anim({ class: ['fade-out-top'] }))
+        let col = o.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g)
+        if (col) {
+            o = o.replace(col[0], "")
+            m.styleMe({ 'background-color': col[0] })
+
+        }
+
+        m.children[0].textContent = o
+    },
     firstPlace: null,
     frozen: false,
     cutscene: {
@@ -689,7 +561,7 @@ const cam = {
             cam.cutscene.firstPlace = cam.following
             cam.cutscene.firstPlace.victory()
             waitForFrames(() => {
-                if (!Entity.getAllMarbles.length) {
+                if (!Entity.getAllMarbles.length && !Entity.gameSpawns.size) {
                     return
                 }
                 this.frozen = false
@@ -711,7 +583,7 @@ const cam = {
     delays: new Set,
     behaviour: 'leader',
     endGame: () => {
-        if (!level) {
+        if (!global.playingLevel) {
             return
         }
         waitForFrames(o => {
@@ -724,37 +596,96 @@ const cam = {
                 testsubject.removeClass('slide-in-blurred-top', 'slide-out-blurred-top')
                 testsubject.content.style.zIndex = 2
                 testsubject.killChildren()
-                testsubject.anim({ class: ['slide-in-blurred-top'] })
-                new Elem({ tag: 'div', id: 'winners', }).append(testsubject)
-                let index = 0
-                for (let placement of Entity.placements) {
-                    let medal
-                    if (index === 0) {
-                        medal = '#f0ff21'
-                    }
-                    else if (index === 1) {
-                        medal = '#a3a3a0'
-                    }
-                    else {
-                        medal = '#704c21'
-                    }
-                    Elem.$('#winners').append(new Elem({ tag: 'p', style: `color: ${medal}`, text: `#${index + 1}` }),
-                    )
-                    Elem.$('#winners').append(new Elem({
-                        tag: 'div', id: `place${index}`, style: `width:50px; height: 50px; background-color: ${placement.color}; border-color: ${placement.dark}`, children: [
+                testsubject.anim({ class: ['slide-in-blurred-top'] }, () => {
+                    engine.enabled = false
+                })
+                new Elem({ tag: 'h1', text: 'Results', parent: testsubject, class: ['focus-in-contract'] })
+
+                let winning = new Elem({
+
+                    tag: 'div', styles: {
+                        'overflow-x': 'scroll',
+                        'max-width': 'inherit',
+                    }, id: 'winners', parent: testsubject
+                })
+                let col = color.yellow
+                let shadow = `0px 0px 4px ${col}`
+                let p;
+                Entity.placements.forEach(ball => {
+
+                    new Elem({
+                        tag: 'div', parent: winning, children: [
+                            p = new Elem({
+                                tag: 'p', styles: {
+                                    color: col,
+                                }, message: utilString.shorten(ball.Name, 10),
+                            }),
                             new Elem({
                                 tag: 'img',
-                                src: placement.imgSrc,
-                                events: [
-                                    ['error', (function anonymous() { Elem.$(`#place${index}`).content.style['border-style'] = 'solid'; this.content.kill() })]
-                                ],
-                                width: 50,
-                                height: 50
+                                title: ball.Name, alt: ball.Name,
+                                styles: {
+                                    'border-radius': '100%',
+                                    width: '100px',
+                                    height: '100px',
+                                    margin: '5px',
+                                    filter: `drop-shadow(${shadow})`
+                                }, src: ball.imgSrc, events: {
+                                    error() {
+                                        shapeToImage(ball)
+                                        this.content.src = ball.imgSrc
+                                    }
+                                }
                             })
                         ]
-                    }))
-                    index++
-                }
+                    })
+                    switch (col) {
+                        case color.yellow:
+                            col = color.silver
+                            shadow = `0px 0px 3px ${col}`
+                            break;
+                        case color.silver:
+                            col = color.brown;
+                            shadow = `0px 0px 2px ${col}`
+                            break;
+                        default:
+                            col = color.black
+                            shadow = ``
+                    }
+                })
+                //losers
+
+                utilArray.loopBackwards([...Entity.losers], ball => {
+                    new Elem({
+                        tag: 'div', parent: winning, children: [
+                            new Elem({
+                                tag: 'p', styles: {
+                                    opacity: ' 0.9'
+                                }, message: utilString.shorten(ball.Name, 10),
+                            }),
+                            new Elem({
+                                tag: 'img',
+                                title: ball.Name, alt: ball.Name,
+                                styles: {
+                                    'border-radius': '100%',
+                                    width: '100px',
+                                    height: '100px',
+                                    margin: '5px',
+                                    opacity: '0.2'
+                                }, src: ball.imgSrc, events: {
+                                    error() {
+                                        shapeToImage(ball)
+                                        this.content.src = ball.imgSrc
+                                    }
+                                }
+                            })
+                        ]
+                    })
+
+                })
+
+
+
+
             },)
         }, 50, 'gameEnd')
     },
@@ -816,27 +747,18 @@ if (Elem.elements.has('cambehaviour')) {
     cam.behaviour = Elem.$('#cambehaviour').content.value
 }
 else {
-    cam.behaviour =  'free'
+    cam.behaviour = 'free'
 
 }
 ctx.lineWidth = 4
 // Import or include Matter.js
-const Engine = Matter.Engine,
-    World = Matter.World,
-    Bodies = Matter.Bodies,
-    Events = Matter.Events,
-    Body = Matter.Body,
-    Collision = Matter.Collision,
-    Constraint = Matter.Constraint;
 
-const engine = Engine.create()
-const world = engine.world
 const apply = () => {
-    if (!editorMode) {
-        //return Text = "Exit play mode first!!!#ff0000"
+    if (!global.editorMode) {
+        //return cam.sendmessage( "Exit play mode first!!!#ff0000"
         startGame()
     }
-    Text = "Changes applied!!!#0dff00"
+    cam.sendmessage("Changes applied!!!#0dff00")
     let idNames = {
 
     }
@@ -846,16 +768,15 @@ const apply = () => {
             idNames[mine.id] = mine.value
         }
     }
-    for (let o of Entity.toSpawn) {
+    for (let o of Entity.toSpawn.values()) {
         //   console.log($(`#name${o.id}`))
         Elem.$(`#shh${o.id}`).content.value = o.Name
     }
     for (let name in idNames) {
-        console.log(idNames)
-        if (name in current) {
+        if (name in global.current) {
             if (name === "angle") {
-                Body.setAngle(current, +idNames[name] * Math.PI / 180)
-                current.start[name] = +idNames[name] * Math.PI / 180
+                Body.setAngle(global.current, +idNames[name] * Math.PI / 180)
+                global.current.start[name] = +idNames[name] * Math.PI / 180
 
             }
             if (name === "speed") {
@@ -863,81 +784,81 @@ const apply = () => {
             }
 
             if (name === "mass") {
-                Body.setMass(current, +idNames[name])
-                current.start[name] = +idNames[name]
+                Body.setMass(global.current, +idNames[name])
+                global.current.start[name] = +idNames[name]
 
             }
             if (name === "windSpeed") {
-                current.start[name] = current[name] = +idNames[name]
+                global.current.start[name] = global.current[name] = +idNames[name]
 
             }
 
             if (name === "interval") {
-                current[name] = Math.floor(+idNames[name])
-                current.start[name] = Math.floor(+idNames[name])
+                global.current[name] = Math.floor(+idNames[name])
+                global.current.start[name] = Math.floor(+idNames[name])
 
             }
             if (name.match(/ignoreWind|respawn/)) {
-                current[name] = idNames[name]
-                current.start[name] = idNames[name]
+                global.current[name] = idNames[name]
+                global.current.start[name] = idNames[name]
 
             }
             if (name === "Name") {
-                current.Name = current.start.Name = idNames[name]
+                global.current.Name = global.current.start.Name = idNames[name]
             }
             if (name.match(/opacity|restitution/)) {
-                current[name] = current.start[name] = +idNames[name]
+                global.current[name] = global.current.start[name] = +idNames[name]
             }
             if (name.match(/size/)) {
-                let modified = current.start
+                let modified = global.current.start
                 modified.size = +idNames[name]
-                let out = new current.CREATOR(modified)
-                current.kill()
-                current = out
-                showData(current)
+                let out = new global.current.CREATOR(modified)
+                global.current.kill()
+                global.current = out
+                showData(global.current)
             }
             /*  if (name === "angularSpeed") {
-                  Body.setAngularSpeed(current, (+(idNames[name])) || 0)
-                  current.start[name] = +(idNames[name])
+                  Body.setAngularSpeed(global.current, (+(idNames[name])) || 0)
+                  global.current.start[name] = +(idNames[name])
   
               }
               if (name === "angularVelocity") {
-                  Body.setAngularVelocity(current, (+(idNames[name])) || 0)
-                  current.start[name] = +(idNames[name])
+                  Body.setAngularVelocity(global.current, (+(idNames[name])) || 0)
+                  global.current.start[name] = +(idNames[name])
   
               }*/
             if (name.match(/restitution|frictionAir/)) {
-                current[name] = +(idNames[name])
-                current.start[name] = +(idNames[name])
+                global.current[name] = +(idNames[name])
+                global.current.start[name] = +(idNames[name])
 
             }
             if (name.match(/inertia/)) {
-                Body.setInertia(current, +(idNames[name]) || 0.1)
-                current.start[name] = +(idNames[name]) || 0.1
+                Body.setInertia(global.current, +(idNames[name]) || 0.1)
+                global.current.start[name] = +(idNames[name]) || 0.1
 
             }
             if (name.match(/width/)) {
-                let modified = current.start
+                let modified = global.current.start
                 modified.width = idNames[name]
-                let out = new current.CREATOR(modified)
-                current.kill()
-                current = out
-                showData(current)
+                let out = new global.current.CREATOR(modified)
+                global.current.kill()
+                global.current = out
+                showData(global.current)
             }
             if (name.match(/height/)) {
-                let modified = current.start
+                let modified = global.current.start
                 modified.height = idNames[name]
-                let out = new current.CREATOR(modified)
-                current.kill()
-                current = out
-                showData(current)
+                let out = new global.current.CREATOR(modified)
+                global.current.kill()
+                global.current = out
+                showData(global.current)
             }
             if (name === "color") {
-                current.start.color = current.color = idNames[name]
-                current.start.dark = current.dark = c.dhk(idNames[name], 40)
-                if (!current.customImage) {
-                    current.img = new Image()
-                    showData(current)
+                global.current.start.color = global.current.color = idNames[name]
+                global.current.start.dark = global.current.dark = c.dhk(idNames[name], 40)
+                if (!global.current.customImage) {
+                    global.current.img = new Image()
+                    showData(global.current)
                 }
 
             }
@@ -945,19 +866,19 @@ const apply = () => {
         }
 
     }
-    showData(current)
+    showData(global.current)
 }
 let frame = 0
 Matter.Runner.run(engine)
 let menuClicked = false
 window.menuClicked = menuClicked
-Events.on(engine,'afterUpdate',update)
+Events.on(engine, 'afterUpdate', update)
 function update() {
-    if (level) {
+    if (global.playingLevel) {
         resize()
     }
     if (!loaded) return
-    
+
     /*   if (getComputedStyle(startmenu).getPropertyValue('opacity') == 0 && !menuClicked) {
            startGame()
            menuClicked = true
@@ -971,7 +892,6 @@ function update() {
     if (!Entity.all.has(cam.following?.id) && cam.following) {
         waitForFrames(() => cam.following = null, 10, 'resetCam')
     }
-    smooth++
     for (let delays of cam.delays) {
         if (delays.pauseDuringCutscene && cam.frozen) {
             continue
@@ -1037,7 +957,7 @@ function update() {
         if (fr.CREATOR === Spawner && !cam.existingspawn) {
             cam.existingspawn = fr
         }
-        if (editorMode) {
+        if (global.editorMode) {
             fr.start.x ??= fr.position.x
             fr.start.y ??= fr.position.y
             fr.isSleeping = true
@@ -1086,7 +1006,7 @@ function update() {
     if (eve.length) {
         let outliers = false;
 
-        switch (!editorMode && !cam.frozen && cam.behaviour) {
+        switch (!global.editorMode && !cam.frozen && cam.behaviour) {
             default: {
                 cam.following ??= Entity.getAllMarbles.find(o => o.Name === cam.behaviour)
             }
@@ -1126,8 +1046,8 @@ function update() {
                 })
 
                 const avg = {
-                    x: utilArray.avg(positions.x,outliers),
-                    y: utilArray.avg(positions.y,outliers)
+                    x: utilArray.avg(positions.x, outliers),
+                    y: utilArray.avg(positions.y, outliers)
                 }
                 let pos = {
                     x: -avg.x + canvas.width / 2 / cam.zoom,
@@ -1171,7 +1091,7 @@ function update() {
     }
     cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.05)
 
-    if (editorMode) {
+    if (global.editorMode) {
         ctx.save()
         ctx.lineWidth = 1
         ctx.fillStyle = c.gray
@@ -1185,7 +1105,7 @@ function update() {
     // Step 1: Draw your normal content
     // (Insert your code to draw any content here, e.g., images, shapes, text, etc.)
 
-    // Step 2: Save the current canvas state
+    // Step 2: Save the global.current canvas state
 
     /* if (cam.cutscene.focus) {
          if (!cam.following) {
@@ -1205,7 +1125,7 @@ function update() {
          cam.following.draw()
      }*/
 
-    ctx.save()
+    /*ctx.save()
     ctx.translate(canvas.width / 2, canvas.height / 2)
     ctx.font = "30px " + cam.easterEggs.gameFont
     ctx.textBaseline = "middle"
@@ -1216,7 +1136,7 @@ function update() {
     ctx.font = `30px ${cam.easterEggs.messageFont}`
     ctx.fillText(text, 0, Math.min(-30, -(smooth - 100) * 4))
     ctx.strokeText(text, 0, Math.min(-30, -(smooth - 100) * 4))
-    ctx.restore()
+    ctx.restore()*/
     ctx.save()
     ctx.translate(cam.x, cam.y)
     ctx.scale(cam.zoom, cam.zoom)
@@ -1247,7 +1167,7 @@ function update() {
     }
     ctx.restore()*/
 
-    if (debugMode) {
+    if (global.debugMode) {
         ctx.save()
         ctx.beginPath()
         ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2)
@@ -1317,7 +1237,7 @@ class Entity {
     })
     static all = new Map()
     static {
-        Matter.Composite.allBodies(world).forEach(o=>this.all.set(o.id,o))
+        Matter.Composite.allBodies(world).forEach(o => this.all.set(o.id, o))
     }
     static toKill = new Set
     static allClasses = {}
@@ -1339,15 +1259,15 @@ class Entity {
     static *[Symbol.iterator]() {
         yield* this.all
     }
-    static kill (isWinner) {
+    static kill(isWinner) {
         if (this.dead) {
             return
         }
         if (cam.following === this) {
             waitForFrames(o => cam.following = null, 50, 'follow')
         }
-        if (Entity.getAllMarbles.length===0 && !gameEnded) {
-            gameEnded = true;
+        if (Entity.getAllMarbles.length === 0 && !Entity.gameSpawns.size && !global.gameEnded) {
+            global.gameEnded = true;
             cam.endGame()
         }
         this.dead = true
@@ -1359,10 +1279,10 @@ class Entity {
     static update(fr) {
         if (isNaN(this.position.x) || isNaN(this.position.y)) {
             this.kill()
-            editorMode || startGame()
+            global.editorMode || startGame()
             console.error('NaN: ', this)
             showData()
-            Text = 'Check logs please :(#FF0000'
+            cam.sendmessage('Check logs please :(#FF0000')
             this.isTemporary &&= false
             throw RangeError('NaN Position detected')
 
@@ -1384,7 +1304,7 @@ class Entity {
             this.outOfBounds?.()
         }
         for (let oj of Entity.all.values()) {
-            if (editorMode) {
+            if (global.editorMode) {
                 break
             }
             if (oj === this || !oj.isSensor) {
@@ -1395,88 +1315,88 @@ class Entity {
             }
         }
 
-            this.draw(fr)
-           
+        this.draw(fr)
+
     }
-    static draw(fr=frame,{x,y}=this.position) {
-           
-            ctx.save()
-         
+    static draw(fr = frame, { x, y } = this.position) {
 
-            ctx.translate(cam.x, cam.y)
-            ctx.scale(cam.zoom, cam.zoom)
+        ctx.save()
 
-            ctx.rotate(cam.existingcam?.angle ?? 0)
-            ctx.translate(x,y)
 
-            this.circleRadius && ctx.rotate(this.angle)
+        ctx.translate(cam.x, cam.y)
+        ctx.scale(cam.zoom, cam.zoom)
 
-            ctx.beginPath()
-            if (editorMode) {
+        ctx.rotate(cam.existingcam?.angle ?? 0)
+        ctx.translate(x, y)
 
-                if (this.selected) {
-                    this.opacity = 0.6
-                }
-                else {
-                    this.opacity = this.start.opacity ?? this.opacity
-                }
+        this.circleRadius && ctx.rotate(this.angle)
 
-            }
+        ctx.beginPath()
+        if (global.editorMode) {
 
             if (this.selected) {
-                if (true/* Math.abs(mouse.x - this.start.x) > this.SIZE.x / 4 && Math.abs(mouse.y - this.start.y) > this.SIZE.y / 4 */) {
-                    if (this.start.isStatic) {
-                        Body.setStatic(this, false)
-                    }
-                    Body.setPosition(this, { x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
-                    //this.start.x = Infinity
-                    //this.start.y = Infinity
-
-                }
-                this.velocity.x = 0
-                this.velocity.y = 0
+                this.opacity = 0.6
+            }
+            else {
+                this.opacity = this.start.opacity ?? this.opacity
             }
 
-            if (this === current) {
-                ctx.shadowBlur = 15 + Math.sin(frame / 40)
-                ctx.shadowColor = c.blue
-            }
-      
-            if (!editorMode) {
-                ctx.globalAlpha = this.opacity
-            }
-            ctx.globalCompositeOperation = cam.easterEggs.compop
-            this.illustrate?.(fr)
-            if (editorMode && !level && select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
-                if (!Entity.all.values().some(o => o.selected)) {
-                    this.onclick?.()
-                    this.selected = true
-                    current = this
-                    menu("data")
-                    showData(this)
+        }
 
-                }
-
-            }
-            else if (editorMode && !level && (!cam.click.x || !cam.click.y)) {
-                if (this.selected) {
-                    this.velocity.x = this.velocity.y = 0
-                    this.start.x = this.position.x
-                    this.start.y = this.position.y
-                }
-                this.selected = false
+        if (this.selected) {
+            if (true/* Math.abs(mouse.x - this.start.x) > this.SIZE.x / 4 && Math.abs(mouse.y - this.start.y) > this.SIZE.y / 4 */) {
                 if (this.start.isStatic) {
-                    Body.setStatic(this, true)
-
+                    Body.setStatic(this, false)
                 }
+                Body.setPosition(this, { x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
+                //this.start.x = Infinity
+                //this.start.y = Infinity
 
             }
-            if (ctx.isPointInPath(mouse.x, mouse.y) && cam.click.x && cam.click.y && !editorMode && this.isMarble) {
-                cam.following = this
-            }
-            ctx.restore()
+            this.velocity.x = 0
+            this.velocity.y = 0
+        }
 
-        
+        if (this === global.current) {
+            ctx.shadowBlur = 15 + Math.sin(frame / 40)
+            ctx.shadowColor = c.blue
+        }
+
+        if (!global.editorMode) {
+            ctx.globalAlpha = this.opacity
+        }
+        ctx.globalCompositeOperation = cam.easterEggs.compop
+        this.illustrate?.(fr)
+        if (global.editorMode && !global.playingLevel && global.select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
+            if (!Entity.all.values().some(o => o.selected)) {
+                this.onclick?.()
+                this.selected = true
+                global.current = this
+                menu("data")
+                showData(this)
+
+            }
+
+        }
+        else if (global.editorMode && !global.playingLevel && (!cam.click.x || !cam.click.y)) {
+            if (this.selected) {
+                this.velocity.x = this.velocity.y = 0
+                this.start.x = this.position.x
+                this.start.y = this.position.y
+            }
+            this.selected = false
+            if (this.start.isStatic) {
+                Body.setStatic(this, true)
+
+            }
+
+        }
+        if (ctx.isPointInPath(mouse.x, mouse.y) && cam.click.x && cam.click.y && !global.editorMode && this.isMarble) {
+            cam.following = this
+        }
+        ctx.restore()
+
+
 
     }
     constructor(opts) {
@@ -1491,6 +1411,7 @@ class Entity {
         if (opts.shape === "circle") {
             out = Bodies.circle(opts.x ?? center.x, opts.y ?? center.y, opts.size ?? 30, {
                 friction: 0.02,
+                sleepThreshold: config.sleepThreshold,
                 //frictionStatic: 0,
                 inertia: 2000,
                 isStatic: opts.isStatic ?? false,
@@ -1505,6 +1426,7 @@ class Entity {
         else if (opts.shape === "rect") {
             out = Bodies.rectangle(opts.x ?? center.x, opts.y ?? center.y, opts.width ?? 30, opts.height ?? 30, {
                 friction: 0,
+                sleepThreshold: config.sleepThreshold,
                 mass: opts.mass ?? 2.799984164,
                 isStatic: opts.isStatic ?? false,
                 restitution: opts.bounce ?? opts.restitution ?? 0,
@@ -1517,7 +1439,7 @@ class Entity {
         }
         else {
             console.error(this)
-            Text = 'Check logs please :(#FF0000'
+            cam.sendmessage('Check logs please :(#FF0000')
             throw TypeError('No shape was provided.')
         }
         out.CREATOR = new.target
@@ -1530,9 +1452,14 @@ class Entity {
         out.color ??= ran.choose(...Object.values(c))
         out.dead = false
         Body.setAngle(out, opts.angle ?? 0)
-        out.img = opts.img ?? new Image()
-        if (!opts.img) { out.img.src = "" }
-        out.imgSrc = out.img.src
+        if (opts.imgSrc) {
+            out.imgSrc = opts.imgSrc
+            out.img = new Image()
+            out.img.src = out.imgSrc
+            out.customImage = true
+        }
+
+     
         out.dark = c.dhk(out.color, 40)
         out.selected = false
         out.canBeSaved = true
@@ -1550,8 +1477,7 @@ class Entity {
             height: opts.height,
             width: opts.width,
             angle: opts.angle ?? 0,
-            img: out.img,
-            imgSrc: out.img.src,
+            imgSrc: out.imgSrc,
             // angularSpeed: Body.getAngularSpeed(out),
             //  angularVelocity: Body.getAngularVelocity(out),
             frictionAir: out.frictionAir,
@@ -1583,14 +1509,14 @@ class Entity {
         out.width ?? Object.defineProperty(out, "width", { get: function () { return this.start.width } })
         out.height ?? Object.defineProperty(out, "height", { get: function () { return this.start.height } })
 
-        Entity.all.set(out.id,out)
+        Entity.all.set(out.id, out)
         //Defs
         out.reset = function () {
             this.isSleeping = true
 
             this.start.angle ??= this.angle
             if (!Entity.all.has(this.id)) {
-                Entity.all.set(this.id,this)
+                Entity.all.set(this.id, this)
                 Entity.graveyard.delete(this)
                 World.add(world, this)
             }
@@ -1609,9 +1535,10 @@ class Entity {
         out.draw = Entity.draw.bind(out)
         out.kill = Entity.kill.bind(out)
         out.tempKill = function () {
-            if (!editorMode) {
+            if (!global.editorMode) {
 
                 Entity.temporarilyDead.add(this)
+                if (this.isLoser) Entity.losers.add(this)
                 if (cam.behaviour === this.Name) {
                     cam.behaviour = ran.choose(...Entity.getAllMarbles).Name
                 }
@@ -1641,17 +1568,12 @@ class Marble extends Entity {
         opts.shape ??= Marble.defaultShape
         opts.size ??= Marble.defaultSize
         super(opts)
+        this.isLoser = false
         this.finished = false
         this.img = opts.img
-        if (opts.img) {
-            this.customImage = true
-        } else {
-            this.img = new Image()
-            this.img.src = ""
-            this.customImage = false
 
-        }
         this.outOfBounds = () => {
+            this.isLoser = true
             for (let i = 10; i--;) {
                 if (Entity.all.size > 100) {
                     break
@@ -1685,10 +1607,10 @@ class Marble extends Entity {
             this.kill(true)
         }
         Marble.prototype.illustrate = this.illustrate = function (frame) {
-            if (!editorMode && !cam.frozen && this.isSleeping) {
+            if (!global.editorMode && !cam.frozen && this.isSleeping) {
                 this.outOfBounds()
             }
-            if (editorMode || cam.easterEggs.showNamesInPlayMode && cam.zoom >= 0.6) {
+            if (global.editorMode || cam.easterEggs.showNamesInPlayMode && cam.zoom >= 0.6) {
                 ctx.save()
                 ctx.rotate(-this.angle)
                 ctx.font = `13px ${cam.easterEggs.gameFont}`
@@ -1707,10 +1629,7 @@ class Marble extends Entity {
             ctx.beginPath()
             ctx.arc(0, 0, this.circleRadius, 0, Math.PI * 2)
             ctx.clip()
-            ctx.fillStyle = this.color
-            ctx.strokeStyle = this.dark
-            ctx.fill()
-            ctx.stroke()
+
 
             if (this.img && this.customImage) {
                 this.customImage = true
@@ -1722,11 +1641,16 @@ class Marble extends Entity {
                         this.circleRadius * 2)
                 }
                 catch (e) {
-                    // Text = 'Check logs please :(#FF0000'
+                    // cam.sendmessage( 'Check logs please :(#FF0000'
                     console.error('The following "image" is broken: ', this.img)
                     this.customImage = false
                 }
 
+            } else {
+                ctx.fillStyle = this.color
+                ctx.strokeStyle = this.dark
+                ctx.fill()
+                ctx.stroke()
             }
 
 
@@ -1844,7 +1768,7 @@ class Blade extends Wall {
         this.update = function () {
             Entity.update.call(this)
             Body.setVelocity(this, { x: 0, y: 0 })
-            if (!editorMode) {
+            if (!global.editorMode) {
                 Body.setPosition(this, this.start)
             }
         }
@@ -1918,7 +1842,7 @@ class WindZone extends Wall {
 
             }
             //     ctx.stroke()
-            if (editorMode) {
+            if (global.editorMode) {
                 ctx.beginPath()
                 ctx.moveTo(-5, 20 - 20)
                 ctx.lineTo(5, 20 - 20)
@@ -1933,7 +1857,7 @@ class WindZone extends Wall {
                 ctx.lineTo(this.vertices[i].x - this.position.x, this.vertices[i].y - this.position.y)
 
             }
-            if (editorMode) {
+            if (global.editorMode) {
                 ctx.closePath()
                 ctx.stroke()
             }
@@ -1996,7 +1920,7 @@ class Portal extends Entity {
                     new PortalParticle({ x: coll.position.x, y: coll.position.y, })
                 }
 
-                waitForFrames(() => (!editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + Math.max(this.id, this.pair.id), true)
+                waitForFrames(() => (!global.editorMode) && (this.active = this.pair.active = true), this.interval, 'portal' + Math.max(this.id, this.pair.id), true)
                 this.active = this.pair.active = false
                 Body.setPosition(coll, this.pair.position)
                 Body.setVelocity(coll, { x: -coll.velocity.x, y: -coll.velocity.y })
@@ -2009,14 +1933,14 @@ class Portal extends Entity {
             let b = 0.3
             if (!this.active) {
                 this.opacity = 0.3
-            } else if (this.opacity !== 1 && !editorMode) {
+            } else if (this.opacity !== 1 && !global.editorMode) {
                 this.opacity += 0.1
             } else {
                 this.opacity = 1
             }
             if (this.pair) {
                 for (let o of Entity.all.values()) {
-                    if (o.pair === this && editorMode) {
+                    if (o.pair === this && global.editorMode) {
                         ctx.beginPath()
                         ctx.moveTo(0, 0)
                         ctx.lineTo((o.position.x - this.position.x) / 2, (o.position.y - this.position.y) / 2)
@@ -2054,7 +1978,7 @@ class Cam extends Entity {
         this.toggleable.add("speed")
             ;['Name', 'restitution', 'color', 'width', 'height'].forEach(o => this.toggleable.delete(o))
         this.illustrate = function () {
-            if (!editorMode) {
+            if (!global.editorMode) {
                 return
             }
             ctx.arc(0, 0, 30, 0, Math.PI * 2)
@@ -2136,8 +2060,8 @@ class Spawner extends Entity {
             ;['Name', 'angle', 'restitution', 'width', 'height'].forEach(o => this.toggleable.delete(o))
         this.illustrate = function (e) {
 
-            if (!editorMode) {
-                if (!(e % this.interval) && !editorMode && !cam.frozen) {
+            if (!global.editorMode) {
+                if (!(e % this.interval) && !global.editorMode && !cam.frozen) {
                     let child = ran.choose([...Entity.gameSpawns]).pop()
                     if (child) {
                         Entity.gameSpawns.delete(child)
@@ -2196,7 +2120,7 @@ class Particle extends Entity {
             if (!(this.lifetime--) || this.opacity <= 0) {
                 this.kill()
             }
-            else this.particleDraw?.(smooth)
+            else this.particleDraw?.(fr)
         }
     }
 }
@@ -2259,23 +2183,23 @@ update()
         }
         cam.click.x = e.offsetX
         cam.click.y = e.offsetY
-        //      console.log(chosenEntity)
-        if (select === "put" && editorMode && !level) {
-            place(chosenEntity)
+        //      console.log(global.chosenEntity)
+        if (global.select === "put" && global.editorMode && !global.playingLevel) {
+            place(global.chosenEntity)
         }
-        if (select === "edit" && !level) {
-            editorMode && (cam.following = null)
+        if (global.select === "edit" && !global.playingLevel) {
+            global.editorMode && (cam.following = null)
         }
     }
 })
 
 function startGame(fade) {
-    if (!editorMode) {
-        cam.following = current = null
+    if (!global.editorMode) {
+        cam.following = global.current = null
 
         Entity.gameSpawns = new Set([...Entity.toSpawn.values()])
         for (let o of Entity.graveyard) {
-            Entity.all.set(o.id,o)
+            Entity.all.set(o.id, o)
             World.add(world, o)
         }
         Entity.graveyard = new Set
@@ -2302,14 +2226,15 @@ function startGame(fade) {
         Entity.placements = new Set
         Entity.losers = new Set
         //    cam.behaviour = localStorage.getItem('cambehaviour') ?? 'leader'
-        cam.following = current = null
+        cam.following = global.current = null
         for (let o of Entity.all.values()) {
             o.selected = false
         }
-        select = null
+        global.select = null
         showData()
-        Entity.gameSpawns = new Set([...Entity.toSpawn.values(), ...Entity.gameSpawns])
-        Entity.graveyard.forEach(o=>Entity.all.set(o.id,o))
+        Entity.gameSpawns = new Set(ran.shuffle(...[...Entity.toSpawn.values(), ...Entity.gameSpawns]))
+     
+        Entity.graveyard.forEach(o => Entity.all.set(o.id, o))
 
     }
     /* let average = {
@@ -2331,13 +2256,13 @@ function startGame(fade) {
     }
 
 
-    editorMode = !editorMode
+    global.editorMode = !global.editorMode
 }
 function showData(stats) {
 
     let me = Elem.$('#data').killChildren()
     if (!stats) {
-        new Elem({ tag: 'p', text: 'Nothing Selected...', parent: me })
+        new Elem({ tag: 'p', text: 'Nothing selected...', parent: me })
         return
     }
     if (stats.hint) {
@@ -2405,29 +2330,29 @@ addEventListener('keyup', function (e) {
     }
 },)
 addEventListener('keydown', function (e) {
-    if (!e.key) {
+    if (!e.key || cam.frozen) {
         return
     }
     const key = e.key.toLowerCase()
     if (key === "w") {
         cam.key.w = true
         cam.key.s = false
-cam.following=null
+        cam.following = null
     }
     if (key === "s") {
         cam.key.s = true
         cam.key.w = false
-cam.following=null
+        cam.following = null
     }
     if (key === "a") {
         cam.key.a = true
         cam.key.d = false
-cam.following=null
+        cam.following = null
     }
     if (key === "d") {
         cam.key.d = true
-        cam.key.s = false
-cam.following=null
+        cam.key.a = false
+        cam.following = null
     }
 })
 
@@ -2442,12 +2367,12 @@ function fileChange(o) {
     reader.readAsDataURL(o.target.files[0])
     reader.onload = (o) => {
 
-        current.img.src = o.target.result
-        current.imgSrc = o.target.result
-        current.start.img.src = o.target.result
-        current.start.imgSrc = o.target.result
-        current.customImage = true
-        showData(current)
+        global.current.img.src = o.target.result
+        global.current.imgSrc = o.target.result
+        global.current.start.img.src = o.target.result
+        global.current.start.imgSrc = o.target.result
+        global.current.customImage = true
+        showData(global.current)
     }
 }
 function findMarble() {
@@ -2465,7 +2390,7 @@ function findMarbleImage() {
     if (!this.value.length) {
         return
     }
-    let foundYou =Entity.toSpawn.get(+this.name)
+    let foundYou = Entity.toSpawn.get(+this.name)
     /*  for (let o of Entity.toSpawn) {
           if (o.id === +this.name) {
               foundYou = o
@@ -2486,13 +2411,13 @@ function deleteEvent(id) {
 }
 function clone() {
 
-    let params = { ...current.start }
+    let params = { ...global.current.start }
     params.x += 100
     params.y += 100
-    let clone = new current.CREATOR(params)
+    let clone = new global.current.CREATOR(params)
     clone.Name = `${clone.CREATOR.name} ${clone.id}`
-    current = select = clone
-    //current.start = {...params}
+    global.current = global.select = clone
+    //global.current.start = {...params}
     showData(clone)
     /*for (let o of Entity.all) {
         o.selected = false;
@@ -2502,7 +2427,7 @@ function clone() {
     }*/
 
 }
-// Get the current URL
+// Get the global.current URL
 const url = new URL(window.location.href)
 
 // Create a URLSearchParams object from the URL's query string
@@ -2522,92 +2447,91 @@ if (levelvalue) {
     canvas.append(body)
     document.body.style.padding = '0px';
     document.body.style.overflow = 'hidden';
- try {
-       void async function () {
-           //let url = new URL('./levels/' + levelvalue + '.txt', location.hostname)
-           let levelData = await fetch(`./levels/${levelvalue}.txt`)
-           /*if (!levelData.ok) {
-               levelData = await fetch('/levels/' + aValue + '.txt')
-           }*/
-           let text = await levelData.text()
-           あ.elements.forEach(o => o !== canvas && o !== body && o.hide())
-           あ.$('#hideme').styleMe({ display: 'none' })
-           Elem.$('#camBehaviour').parent = Elem.$('#secondMenu')
-           Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
-   
-           Load(text)
-           cam.x = cam.y = NaN
-           //startGame()
-           Elem.$('#camBehaviour').value = localStorage.getItem('cambehaviour')
-           Elem.$('#camSpeed').content.value = cam.easterEggs.lerp
-           if (cam.cutscene.enabled) {
-               Elem.$('#cutscenes').content.checked = true
-           } else {
-               Elem.$('#cutscenes').content.checked = false
-   
-           }
-           Elem.elements.forEach((o) => {
-   
-               if (!o.content.classList.contains('gameMenu')) return
-               if (o.content.id !== 'secondMenu') {
-                   o.content.style.display = 'flex'
-               } else {
-                   o.content.style.display = 'grid'
-               }
-           })
-           Elem.$('#secondMenu').styleMe({ display: 'none' })
-           Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => {
-               Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
-                   this.noevent('click')
-                   this.parent.anim({ class: ['slide-out-blurred-top'] }, function () {
-                       this.content.style.zIndex = -1
-                       let checked = Elem.$('#cutscenes').content.checked
-                       localStorage.setItem('cutscenes', checked)
-                       if (checked + '' === 'true') {
-                           cam.cutscene.enabled = true
-                       } else {
-                           cam.cutscene.enabled = false
-                       }
-                       let bhv = Elem.$('#camBehaviour').value
-                       cam.behaviour = bhv
-                       if ((['leader', 'loser', 'middle', 'outliers', 'average', 'random', 'free'].some(o => o === bhv))) {
-                           localStorage.setItem('cambehaviour', bhv)
-                           
-                       }
-                       localStorage.setItem('camspeed', Elem.$('#camSpeed').value)
-   
-                       cam.easterEggs.lerp = +localStorage.getItem('camspeed') ?? 0.1
-   
-                       Elem.$('#startmenu').hide()
-                       waitForFrames(a => {
-                           cam.following = cam.existinggoal ?? cam.existingspawn
-                           if (!cam.cutscene.enabled) {
-                               cam.x = cam.existingspawn?.x ?? cam.x
-                               cam.y = cam.existingspawn?.y ?? cam.y
-                               cam.following = null
-                               return startGame()
-                           }
-                           waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
-                       }, 30, 'intro')
-   
-                   }, true)
-               })])
-               Elem.$('#startmenu').removeClass('slide-in-blurred-top');
-               Elem.$('#gameStartButton').content.focus()
-           },)
-           body.style.display=''
-       }()
- } finally {
-    level = true;
-    setTimeout(()=>loaded=true,10,'afgrt')   
+    try {
+        void async function () {
+            //     let url = new URL('./levels/' + levelvalue + '.txt', location.hostname)
+            let levelData = await fetch(`./levels/${levelvalue}.txt`)
 
- }
+            let text = await levelData.text()
+            あ.elements.forEach(o => o !== canvas && o !== body && o.hide())
+            あ.$('#hideme').styleMe({ display: 'none' })
+            Elem.$('#camBehaviour').parent = Elem.$('#secondMenu')
+            Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
+
+            Load(text)
+            cam.x = cam.y = NaN
+            //startGame()
+            Elem.$('#camBehaviour').value = localStorage.getItem('cambehaviour')
+            Elem.$('#camSpeed').content.value = cam.easterEggs.lerp
+            if (cam.cutscene.enabled) {
+                Elem.$('#cutscenes').content.checked = true
+            } else {
+                Elem.$('#cutscenes').content.checked = false
+
+            }
+            Elem.elements.forEach((o) => {
+
+                if (!o.content.classList.contains('gameMenu')) return
+                if (o.content.id !== 'secondMenu') {
+                    o.content.style.display = 'flex'
+                } else {
+                    o.content.style.display = 'grid'
+                }
+            })
+            canvas.styleMe({ 'border-radius': '0px' })
+            Elem.$('#secondMenu').styleMe({ display: 'none' })
+            Elem.$('#startmenu').anim({ class: ['slide-in-blurred-top'] }, () => {
+                Elem.$('#gameStartButton').addevent(['click', (function anonymous() {
+                    this.noevent('click')
+                    this.parent.anim({ class: ['slide-out-blurred-top'] }, function () {
+                        this.content.style.zIndex = -1
+                        let checked = Elem.$('#cutscenes').content.checked
+                        localStorage.setItem('cutscenes', checked)
+                        if (checked + '' === 'true') {
+                            cam.cutscene.enabled = true
+                        } else {
+                            cam.cutscene.enabled = false
+                        }
+                        let bhv = Elem.$('#camBehaviour').value
+                        cam.behaviour = bhv
+                        if ((['leader', 'loser', 'middle', 'outliers', 'average', 'random', 'free'].some(o => o === bhv))) {
+                            localStorage.setItem('cambehaviour', bhv)
+
+                        }
+                        localStorage.setItem('camspeed', Elem.$('#camSpeed').value)
+
+                        cam.easterEggs.lerp = +localStorage.getItem('camspeed') ?? 0.1
+
+                        Elem.$('#startmenu').hide()
+                        waitForFrames(a => {
+                            cam.following = cam.existinggoal ?? cam.existingspawn
+                            if (!cam.cutscene.enabled) {
+                                cam.x = cam.existingspawn?.x ?? cam.x
+                                cam.y = cam.existingspawn?.y ?? cam.y
+                                cam.following = null
+                                return startGame()
+                            }
+                            waitForFrames(a => { cam.following = cam.existingspawn; waitForFrames(startGame, 100, 'start') }, 100, 'outro')
+                        }, 30, 'intro')
+
+                    }, true)
+                })])
+                Elem.$('#startmenu').removeClass('slide-in-blurred-top');
+                Elem.$('#gameStartButton').content.focus()
+            },)
+            body.style.display = ''
+        }()
+    } finally {
+        global.playingLevel = true;
+        setTimeout(() => loaded = true, 10, 'afgrt')
+
+    }
 
 
 }
 else {
-    loaded=true
-    document.body.style.display=''
+    loaded = true
+    document.body.style.display = ''
 }
 function lerp(start, end, t) {
     return start + (end - start) * t
@@ -2625,14 +2549,9 @@ new Elem({
     ]
 }, true).style.display = 'none'
 
-function turnToSettingsMenu() {
-    _('secondMenu').content.style.display='grid'
-    Elem.$('#secondMenu').children.forEach(o=>o.removeClass('hidden')+o.show()+(o.content.style.display='grid'))
 
-    あ.$('#gameSettings').kill()
-}
 /*addEventListener('resize',o=>{
-    if (level) {
+    if global.playingLevel {
        resize
     }
 })*/

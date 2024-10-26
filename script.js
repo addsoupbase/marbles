@@ -7,11 +7,12 @@ const c = color;
 window.loaded = false
 Elem.logLevels.error = true
 if (window.OffscreenCanvas) {
+    global.supportsOffscreenCanvas = true
     worker.addEventListener('message', msg => {
         let oldData = msg.data.old
         let newData = msg.data.new
         let improved = URL.createObjectURL(newData)
-Entity.toSpawn.get(oldData).imgSrc = improved
+        Entity.toSpawn.get(oldData).imgSrc = improved
     })
 }
 
@@ -42,7 +43,7 @@ const Del = function (num) {
         }
     }*/
     Entity.toSpawn.delete(foundYou.id)
-    あ.elements.forEach(o => {
+    あ.allElements.forEach(o => {
         if (o.name === foundYou.id) {
             this.kill()
         }
@@ -352,11 +353,11 @@ const bounds = {
                     delete item.imgSrc
                 }
                 Entity.toSpawn.set(item.id, item)
-             
-                    if (item.imgSrc && global.supportsOffscreenCanvas) {
-                        worker.postMessage({image:item.imgSrc,id:item.id})
-                    } 
-                
+
+                if (item.imgSrc && global.supportsOffscreenCanvas) {
+                    worker.postMessage({ image: item.imgSrc, id: item.id })
+                }
+
                 new あ({ parent: あ.$('#camBehaviour'), tag: 'option', value: item.Name, text: item.Name })
                 addMarble(item)
                 continue
@@ -592,9 +593,9 @@ const cam = {
                 class: ['blur-element']
             }, () => {
                 let testsubject = Elem.$('#startmenu')
-                testsubject.show().content.style.display = 'flex'
+                testsubject.show()
+                testsubject.styleMe({display:'flex','z-index':2})
                 testsubject.removeClass('slide-in-blurred-top', 'slide-out-blurred-top')
-                testsubject.content.style.zIndex = 2
                 testsubject.killChildren()
                 testsubject.anim({ class: ['slide-in-blurred-top'] }, () => {
                     engine.enabled = false
@@ -612,7 +613,6 @@ const cam = {
                 let shadow = `0px 0px 4px ${col}`
                 let p;
                 Entity.placements.forEach(ball => {
-
                     new Elem({
                         tag: 'div', parent: winning, children: [
                             p = new Elem({
@@ -650,6 +650,7 @@ const cam = {
                         default:
                             col = color.black
                             shadow = ``
+                            break;
                     }
                 })
                 //losers
@@ -1459,7 +1460,7 @@ class Entity {
             out.customImage = true
         }
 
-     
+
         out.dark = c.dhk(out.color, 40)
         out.selected = false
         out.canBeSaved = true
@@ -2233,7 +2234,7 @@ function startGame(fade) {
         global.select = null
         showData()
         Entity.gameSpawns = new Set(ran.shuffle(...[...Entity.toSpawn.values(), ...Entity.gameSpawns]))
-     
+
         Entity.graveyard.forEach(o => Entity.all.set(o.id, o))
 
     }
@@ -2439,7 +2440,7 @@ if (levelvalue) {
 
 
 
-    Elem.elements.forEach(o => {
+    Elem.allElements.forEach(o => {
         if (o === canvas) {
             o.content.classList.contains('hidden') && o.hide()
         }
@@ -2453,7 +2454,7 @@ if (levelvalue) {
             let levelData = await fetch(`./levels/${levelvalue}.txt`)
 
             let text = await levelData.text()
-            あ.elements.forEach(o => o !== canvas && o !== body && o.hide())
+            あ.allElements.forEach(o => o !== canvas && o !== body && o.hide())
             あ.$('#hideme').styleMe({ display: 'none' })
             Elem.$('#camBehaviour').parent = Elem.$('#secondMenu')
             Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
@@ -2469,7 +2470,7 @@ if (levelvalue) {
                 Elem.$('#cutscenes').content.checked = false
 
             }
-            Elem.elements.forEach((o) => {
+            Elem.allElements.forEach((o) => {
 
                 if (!o.content.classList.contains('gameMenu')) return
                 if (o.content.id !== 'secondMenu') {

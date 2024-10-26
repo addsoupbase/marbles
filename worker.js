@@ -9,5 +9,4 @@ addEventListener('message', async event=> {
   ctx.drawImage(bitmap,0,0)
   let data = await off.convertToBlob()
   postMessage({new: data, old:event.data.id})
-
 })

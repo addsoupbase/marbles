@@ -1375,7 +1375,7 @@ class Entity {
         ctx.globalCompositeOperation = cam.easterEggs.compop
         this.illustrate?.(fr)
         if (global.editorMode && !global.playingLevel && global.select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
-            if (!Entity.all.values().some(o => o.selected)) {
+            if (![...Entity.all.values()].some(o => o.selected)) {
                 this.onclick?.()
                 this.selected = true
                 global.current = this
@@ -1895,7 +1895,7 @@ class Portal extends Entity {
             this.active = true
         }
         this.kill = function () {
-            Entity.all.values().forEach(o => {
+            [...Entity.all.values()].forEach(o => {
                 if (o.pair === this) {
                     o.pair = null
                     o.kill()

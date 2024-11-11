@@ -1,10 +1,11 @@
-const Engine = Matter.Engine,
-    World = Matter.World,
-    Bodies = Matter.Bodies,
-    Events = Matter.Events,
-    Body = Matter.Body,
-    Collision = Matter.Collision,
-    Constraint = Matter.Constraint;
+const {Engine, 
+    World, 
+    Bodies, 
+    Events, 
+    Body,
+    Collision, 
+    Constraint, 
+    Vertices} = Matter
 
 const engine = Engine.create({
     enableSleeping: true
@@ -13,7 +14,9 @@ const world = engine.world
 const config = {
     sleepThreshold: 20
 }
+export let cachedImages= new Map
 const worker = new Worker('worker.js');
+const drawingWorker = new Worker('reusable.js')
 const global = {
     select: 'edit',
     current: null,
@@ -24,4 +27,4 @@ const global = {
     playingLevel: false
 
 }
-export {Engine,World,Bodies,Events,Collision,Constraint,engine,Body,world,config,global,worker}
+export {Engine,World,Bodies,Events,drawingWorker,Collision,Constraint,engine,Body,world,config,global,worker,Vertices}

@@ -1,10 +1,14 @@
 import {
     Engine, World, Bodies, Events, Collision, Constraint, engine, Body, world,
-    config, global, worker
+    config, global, worker,drawingWorker,cachedImages
 } from './setup.js'
 import elements, { max, あ } from './dom.js'
+
 const c = color;
 window.loaded = false
+window.d=drawingWorker
+drawingWorker.addEventListener('message',imagerecieved)
+window.n = cachedImages
 Elem.logLevels.error = true
 if (window.OffscreenCanvas) {
     global.supportsOffscreenCanvas = true
@@ -17,7 +21,7 @@ if (window.OffscreenCanvas) {
 }
 
 function waitForFrames(callback, frames, label, pauseDuringCutscene) {
-    if (frames !== Math.round(frames)) return Elem.error('Expected int, instead got float')
+    if (frames !== Math.round(frames)) throw TypeError('Expected int, instead got float')
     let out = {
         time: frames,
         label: label,
@@ -25,7 +29,7 @@ function waitForFrames(callback, frames, label, pauseDuringCutscene) {
         pauseDuringCutscene: pauseDuringCutscene
     }
     if (!callback) {
-        Elem.warn('No callback provided')
+        console.warn('No callback provided')
     }
     cam.delays.add(out)
 
@@ -233,8 +237,8 @@ const bounds = {
     let arr = []
     arr.push({
         bounciness: あ.$('#bounciness').value,
-        /*camBehaviour: $('#camBehaviour')[0].value,*/
         title: utilString.shorten(Elem.$('#title').content.value, max.title), author: utilString.shorten(Elem.$('#authorName', max.author).content.value, max.author)
+        /*camBehaviour: $('#camBehaviour')[0].value,*/
     })
     for (let o of Entity.all.values()) {
         if (!o.canBeSaved) {
@@ -594,7 +598,7 @@ const cam = {
             }, () => {
                 let testsubject = Elem.$('#startmenu')
                 testsubject.show()
-                testsubject.styleMe({display:'flex','z-index':2})
+                testsubject.styleMe({ display: 'flex', 'z-index': 2 })
                 testsubject.removeClass('slide-in-blurred-top', 'slide-out-blurred-top')
                 testsubject.killChildren()
                 testsubject.anim({ class: ['slide-in-blurred-top'] }, () => {
@@ -611,78 +615,80 @@ const cam = {
                 })
                 let col = color.yellow
                 let shadow = `0px 0px 4px ${col}`
-                let p;
-                Entity.placements.forEach(ball => {
-                    new Elem({
-                        tag: 'div', parent: winning, children: [
-                            p = new Elem({
-                                tag: 'p', styles: {
-                                    color: col,
-                                }, message: utilString.shorten(ball.Name, 10),
-                            }),
-                            new Elem({
-                                tag: 'img',
-                                title: ball.Name, alt: ball.Name,
-                                styles: {
-                                    'border-radius': '100%',
-                                    width: '100px',
-                                    height: '100px',
-                                    margin: '5px',
-                                    filter: `drop-shadow(${shadow})`
-                                }, src: ball.imgSrc, events: {
-                                    error() {
-                                        shapeToImage(ball)
-                                        this.content.src = ball.imgSrc
+                let win = ball => {
+                        let p
+                        new Elem({
+                            tag: 'div', parent: winning, children: [
+                                p = new Elem({
+                                    tag: 'p', styles: {
+                                        color: col,
+                                    }, message: utilString.shorten(ball.Name, 10),
+                                }),
+                                new Elem({
+                                    tag: 'img',
+                                    title: ball.Name, alt: ball.Name,
+                                    styles: {
+                                        'border-radius': '100%',
+                                        width: '100px',
+                                        height: '100px',
+                                        margin: '5px',
+                                        filter: `drop-shadow(${shadow})`
+                                    }, src: ball.imgSrc, events: {
+                                        error() {
+                                            shapeToImage(ball)
+                                            this.content.src = ball.imgSrc
+                                        }
                                     }
-                                }
-                            })
-                        ]
-                    })
-                    switch (col) {
-                        case color.yellow:
-                            col = color.silver
-                            shadow = `0px 0px 3px ${col}`
-                            break;
-                        case color.silver:
-                            col = color.brown;
-                            shadow = `0px 0px 2px ${col}`
-                            break;
-                        default:
-                            col = color.black
-                            shadow = ``
-                            break;
+                                })
+                            ]
+                        })
+                        switch (col) {
+                            case color.yellow:
+                                col = color.silver
+                                shadow = `0px 0px 3px ${col}`
+                                break;
+                            case color.silver:
+                                col = color.brown;
+                                shadow = `0px 0px 2px ${col}`
+                                break;
+                            default:
+                                col = color.black
+                                shadow = ``
+                                break;
+                        }
                     }
-                })
+                 
+                Entity.placements.forEach(win);
                 //losers
-
-                utilArray.loopBackwards([...Entity.losers], ball => {
-                    new Elem({
-                        tag: 'div', parent: winning, children: [
-                            new Elem({
-                                tag: 'p', styles: {
-                                    opacity: ' 0.9'
-                                }, message: utilString.shorten(ball.Name, 10),
-                            }),
-                            new Elem({
-                                tag: 'img',
-                                title: ball.Name, alt: ball.Name,
-                                styles: {
-                                    'border-radius': '100%',
-                                    width: '100px',
-                                    height: '100px',
-                                    margin: '5px',
-                                    opacity: '0.2'
-                                }, src: ball.imgSrc, events: {
-                                    error() {
-                                        shapeToImage(ball)
-                                        this.content.src = ball.imgSrc
+                    let imsobadatthis = ball => {
+                        new Elem({
+                            tag: 'div', parent: winning, children: [
+                                new Elem({
+                                    tag: 'p', styles: {
+                                        opacity: ' 0.9'
+                                    }, message: utilString.shorten(ball.Name, 10),
+                                }),
+                                new Elem({
+                                    tag: 'img',
+                                    title: ball.Name, alt: ball.Name,
+                                    styles: {
+                                        'border-radius': '100%',
+                                        width: '100px',
+                                        height: '100px',
+                                        margin: '5px',
+                                        opacity: '0.2'
+                                    }, src: ball.imgSrc, events: {
+                                        error() {
+                                            shapeToImage(ball)
+                                            this.content.src = ball.imgSrc
+                                        }
                                     }
-                                }
-                            })
-                        ]
-                    })
-
-                })
+                                })
+                            ]
+                        })
+    
+                    }
+                [...Entity.losers].toReversed().forEach(imsobadatthis)
 
 
 
@@ -1212,7 +1218,7 @@ class Entity {
         return zoom;
     }
     static get getAllMarbles() {
-        return [...this.all.values().filter(o => o.isMarble)]
+        return [...this.all.values()].filter(o => o.isMarble)
     }
     static boundingBox = (function anonymous(positions) {
         /*     let positions = {
@@ -1618,6 +1624,7 @@ class Marble extends Entity {
                 ctx.textBaseline = 'middle'
                 ctx.textAlign = 'center'
                 ctx.fillText(this.Name, 0, -50)
+                d.postMessage({state: JSON.stringify(getStateOfCanvas(ctx)), operation: 'fillText'})
                 ctx.lineWidth = 1
                 ctx.beginPath()
                 ctx.moveTo(5, -40)
@@ -2561,3 +2568,22 @@ function resize() {
     if (canvas.height !== innerHeight) canvas.height = innerHeight
     if (canvas.width !== innerWidth) canvas.width = innerWidth
 }
+function getStateOfCanvas(context) {
+    let obj = {}
+    for (let prop of ["direction","fillStyle","filter","font","fontKerning","fontStretch","fontVariantCaps","globalAlpha","globalCompositeOperation","imageSmoothingEnabled","imageSmoothingQuality","letterSpacing","lineCap","lineDashOffset","lineJoin","lineWidth","miterLimit","shadowBlur","shadowColor","shadowOffsetX","shadowOffsetY","strokeStyle","textAlign","textBaseline","textRendering","wordSpacing"]){
+        obj[prop] = context[prop]
+    }
+    return obj
+}
+function requestImage(input) {
+    if (!cachedImages.has(JSON.stringify(input.state))) {
+        d.postMessage({state:getStateOfCanvas(ctx),value: input.value})
+    }
+    else {
+        let bit = cachedImages.get({...getStateOfCanvas(ctx)}).deref()
+    }
+}
+function imagerecieved({data}){
+cachedImages.set(JSON.stringify({...data.state,value:data.value}),data.image)
+}
+requestImage({state:ctx,value:'1234'})

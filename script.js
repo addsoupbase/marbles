@@ -547,8 +547,8 @@ const cam = {
         cam.targetZoom = 1.2
         let bodiesToFreeze = new Set
         let lastx = cam.x,
-            lasty = cam.y
-        Entity.all.values().forEach(o => {
+            lasty = cam.y;
+        [...Entity.all.values()].forEach(o => {
             if (!o.isStatic) {
                 bodiesToFreeze.add(o)
             }

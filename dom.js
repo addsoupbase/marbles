@@ -3,7 +3,7 @@ const max = {
     author: '16'
 }
 const あ = Elem;
-const   elements = {
+const elements = {
     cont: new Elem({
         tag: 'div', id: 'cont', children: [
             new Elem({ tag: 'canvas', width: 500, height: 500, id: 'can', }),

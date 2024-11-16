@@ -326,7 +326,8 @@ const bounds = {
             else data = information
         }
         else {
-            data = JSON.parse(あ.$("#textData").content.value)
+         data = JSON.parse(あ.$("#textData").content.value)
+         
         }
 
         if (data[0].title) {
@@ -370,7 +371,7 @@ const bounds = {
             //inputargs.height = item[2].height ?? item[2].start.height
             //inputargs.width = item[2].width ?? item[2].start.width
             inputargs.img = new Image()
-            inputargs.img.src = inputargs.imgSrc
+           // inputargs.img.src = inputargs.imgSrc
             try {
                 let x = new Entity.allClasses[item[1]](inputargs)
                 x.start = inputargs
@@ -390,7 +391,15 @@ const bounds = {
     catch (e) {
         cam.sendmessage('Check logs please :(#FF0000')
         Elem.$('#textData').content.value = ''
-
+        if (global.playingLevel) {
+           _('levelTitle').textContent='Error'
+           _('levelTitle').styleMe({color:'darkred'})
+           _('authorName').kill()
+           let n =  _('gameStartButton');
+           _('gameSettings').kill()
+             n.addevent({click(){location.reload()}})
+             n.textContent='Reload?'
+        }
         throw e
     }
 }, menu = function (type) {
@@ -2459,14 +2468,21 @@ if (levelvalue) {
         void async function () {
             //     let url = new URL('./levels/' + levelvalue + '.txt', location.hostname)
             let levelData = await fetch(`./levels/${levelvalue}.txt`)
-
             let text = await levelData.text()
             あ.allElements.forEach(o => o !== canvas && o !== body && o.hide())
             あ.$('#hideme').styleMe({ display: 'none' })
             Elem.$('#camBehaviour').parent = Elem.$('#secondMenu')
             Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')
+            try {
 
-            Load(text)
+                Load(text)
+            }
+            catch {
+            }
+            finally {
+                
+            }
+
             cam.x = cam.y = NaN
             //startGame()
             Elem.$('#camBehaviour').value = localStorage.getItem('cambehaviour')
@@ -2529,7 +2545,9 @@ if (levelvalue) {
             },)
             body.style.display = ''
         }()
-    } finally {
+    } 
+   
+    finally {
         global.playingLevel = true;
         setTimeout(() => loaded = true, 10, 'afgrt')
 

@@ -46,6 +46,25 @@ color: black
     flex-direction: column;
     gap: 10px;
 }
+#opts {
+    width: 30px;
+    height: 30px;
+    /*border-style: solid;
+    border-width: 1px;
+    border-color: red;*/
+    position: fixed;
+    left: 10px;
+    bottom: 10px;
+    border-radius: 100%;
+    background-image: url("./images/gear.svg");
+    background-size: 23px 23px;
+    background-repeat: no-repeat;
+    background-position: center center;
+    transition: background-size 0.05s linear;
+}
+#opts:hover {
+    background-size:  27px 27px;
+}
 #gameStartButton {
     width:300px;
     height:40px;
@@ -103,7 +122,6 @@ button {
     margin-top: 15px;
     margin-bottom: 15px;
 }
-
 button:hover {
     background-color: #0056b3;
 }
@@ -146,8 +164,10 @@ button:hover {
     background-color: #fff;
     border-radius: 4px;
 }
-
-#startmenu {
+.range {
+    accent-color: #208637;
+}
+.mainmenu {
     z-index: 0;
     display: none;
     position:fixed;
@@ -190,6 +210,9 @@ label {
     display: flex;
     justify-content: center;
     gap: 10px;
+
+    left:calc(vw/2)
+
 }
 
 

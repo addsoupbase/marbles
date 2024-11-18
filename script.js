@@ -1,13 +1,15 @@
 import {
     Engine, World, Bodies, Events, Collision, Constraint, engine, Body, world,
-    config, global, worker,drawingWorker,cachedImages
+    config, global, worker, drawingWorker, cachedImages,
+    audio,
+    playAudio
 } from './setup.js'
 import elements, { max, あ } from './dom.js'
 
 const c = color;
 window.loaded = false
-window.d=drawingWorker
-drawingWorker.addEventListener('message',imagerecieved)
+window.d = drawingWorker
+drawingWorker.addEventListener('message', imagerecieved)
 window.n = cachedImages
 Elem.logLevels.error = true
 if (window.OffscreenCanvas) {
@@ -235,9 +237,11 @@ const bounds = {
 }, save = function () {
     global.editorMode || startGame()
     let arr = []
+    let images = new Set
     arr.push({
         bounciness: あ.$('#bounciness').value,
-        title: utilString.shorten(Elem.$('#title').content.value, max.title), author: utilString.shorten(Elem.$('#authorName', max.author).content.value, max.author)
+        title: utilString.shorten(_('title').value, max.title), 
+        author: utilString.shorten(_('author').value, max.author)
         /*camBehaviour: $('#camBehaviour')[0].value,*/
     })
     for (let o of Entity.all.values()) {
@@ -256,9 +260,9 @@ const bounds = {
         }
         delete o.start.img
 
-        if (!o.start.imgSrc || !o.start.imgSrc.startsWith('data')) {
+        if (!o.start.imgSrc && o.start.imgSrc!=='0' || !o.start.imgSrc.startsWith('data')) {
             delete o.start.imgSrc
-        }
+        } 
         if (o.start.Name?.includes?.(o.CREATOR.name)) {
             delete o.start.Name
         }
@@ -288,21 +292,26 @@ const bounds = {
             if (info[o] == undefined || /*(o.match(/restitution|friction/)) ||*/ o === 'img' || o == null || (o === 'imgSrc' && info[o] === location.href || info[o] === location.href + 'undefined' || info[o] === '')) {
                 delete info[o]
             }
-
         }
         arr.push([info, o.CREATOR.name])
     }
 
     for (let o of Entity.toSpawn.values()) {
+        if ('restitution'in o) continue
         if (o.size === Marble.defaultSize) {
             delete o.size
         }
         if (o.shape === Marble.defaultShape) {
             delete o.shape
         }
+        if (o.imgSrc) {
+           images.add(o.imgSrc)
+        o.imgSrc = images.size
+        }
         delete o.img
         arr.push(o)
     }
+    arr[0].images = [...images]
     let output = JSON.stringify(arr)
     あ.$('#textData').content.value = output
     let blob = new Blob([output], { type: 'text/plain;' })
@@ -326,15 +335,16 @@ const bounds = {
             else data = information
         }
         else {
-         data = JSON.parse(あ.$("#textData").content.value)
-         
-        }
+            data = JSON.parse(あ.$("#textData").content.value)
 
+        }
+        Entity.toSpawn.clear()
         if (data[0].title) {
             Elem.$('#levelTitle').textContent = utilString.shorten(data[0].title, max.title)
             document.title = `${data[0].title} - Marbles`
         }
         if (data[0].author) {
+            console.log(data)
             Elem.$('#authorName').textContent = `by ${utilString.shorten(data[0].author, max.author)}`
         }
         ;[Entity.all, Entity.toSpawn, Entity.graveyard, Entity.gameSpawns, Entity.temporarilyDead].forEach(o => o.clear())
@@ -350,19 +360,22 @@ const bounds = {
                 あ.$('#bounciness').value = item['bounciness']
                 //$('#camBehaviour')[0].value = item.camBehaviour
                 Elem.$('#title').content.value = item.title
+
                 continue
             }
+          
             if ('game' in item) {
                 if (!item.imgSrc) {
                     delete item.img
                     delete item.imgSrc
+                } else {
+                    if (!item.imgSrc.startsWith('data')) {
+                        item.imgSrc = data[0].images[item.imgSrc-1]
+                    }
                 }
-                Entity.toSpawn.set(item.id, item)
-
                 if (item.imgSrc && global.supportsOffscreenCanvas) {
                     worker.postMessage({ image: item.imgSrc, id: item.id })
                 }
-
                 new あ({ parent: あ.$('#camBehaviour'), tag: 'option', value: item.Name, text: item.Name })
                 addMarble(item)
                 continue
@@ -371,7 +384,7 @@ const bounds = {
             //inputargs.height = item[2].height ?? item[2].start.height
             //inputargs.width = item[2].width ?? item[2].start.width
             inputargs.img = new Image()
-           // inputargs.img.src = inputargs.imgSrc
+            // inputargs.img.src = inputargs.imgSrc
             try {
                 let x = new Entity.allClasses[item[1]](inputargs)
                 x.start = inputargs
@@ -392,13 +405,13 @@ const bounds = {
         cam.sendmessage('Check logs please :(#FF0000')
         Elem.$('#textData').content.value = ''
         if (global.playingLevel) {
-           _('levelTitle').textContent='Error'
-           _('levelTitle').styleMe({color:'darkred'})
-           _('authorName').kill()
-           let n =  _('gameStartButton');
-           _('gameSettings').kill()
-             n.addevent({click(){location.reload()}})
-             n.textContent='Reload?'
+            _('levelTitle').textContent = 'Error'
+            _('levelTitle').styleMe({ color: 'darkred' })
+            _('authorName').kill()
+            let n = _('gameStartButton');
+            _('gameSettings').kill()
+            n.addevent({ click() { location.reload() } })
+            n.textContent = 'Reload?'
         }
         throw e
     }
@@ -411,6 +424,7 @@ const bounds = {
         return cam.sendmessage("Exit play mode first!!!#ff0000")
     }
     else {
+        playAudio({ src: 'pop.mp3' })
         o.kill()
         showData()
     }
@@ -437,54 +451,46 @@ for (let [id, event] of [
 
 {
     let r = new ran.Randomizer
-    let naMes = [`block${r[1]}`, `motor${r[2]}`, `spawner${r[4]}`, `wind${r[5]}`, `moveableWall${r[6]}`, `circle${r[7]}`, `ball${r[8]}`, `goal${r[9]}`, `portal${r[10]}`]
+    let naMes = [`block:${r[1]}`, `motor:${r[2]}`, `spawner:${r[4]}`, `wind:${r[5]}`, `moveableWall:${r[6]}`, `circle:${r[7]}`, `ball:${r[8]}`, `goal:${r[9]}`, `portal:${r[10]}`]
     let gtrmnythr = Elem.$('#buttonholder')
     let events = [() => global.chosenEntity = 'Block', () => global.chosenEntity = 'Motor', () => global.chosenEntity = 'Spawner', () => global.chosenEntity = 'WindZone', () => global.chosenEntity = 'Movable Wall', () => global.chosenEntity = 'Circle', () => global.chosenEntity = 'Ball', () => global.chosenEntity = 'Goal', () => global.chosenEntity = 'Portal']
-    for (let i = 0; i < naMes.length; i++) {
+    for (let i = 0, {length} = naMes; i < length; ++i) {
         let me = new Elem({
-            tag: 'button', class: ['good', 'thin'], id: naMes[i], text: naMes[i], events: [
-                ['click', events[i]]
+            tag: 'button', class: ['good', 'thin'], id: naMes[i].replace(':',''), text: utilString.upper(naMes[i].split(':')[0]), events: [
+                ['click', function(){
+                    events[i]()
+                    naMes.forEach(o=>{
+                        _('buttonholder').children.forEach(o=>{
+                            o.styleMe({color:'grey'})
+                        })
+                    })
+                    this.styleMe({color:'white'})
+                }]
             ]
         })
         me.append(gtrmnythr)
-
     }
-
-
-
-
-
+    _(`block${r[1]}`).content.click()
 }
 
 function place(entity) {
-
+    let baby;
     if (entity.includes("Block")) {
-        let baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
-        global.current = baby
-        showData(baby)
-
+        baby = new Wall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
     }
     if (entity.includes("Goal")) {
-        let baby = new Goal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
-        global.current = baby
-        showData(baby)
-
+        baby = new Goal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: true })
     }
     if (entity.includes("Movable Wall")) {
-        let baby = new MoveableWall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: false })
-        global.current = baby
-        showData(baby)
+        baby = new MoveableWall({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), width: 30, height: 30, isStatic: false })
     }
     if (entity.includes("Circle")) {
-        let baby = new Circle({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: true })
-        global.current = baby
-        showData(baby)
+        baby = new Circle({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: true })
     }
     if (entity.includes("Ball")) {
-        let baby = new Ball({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: false })
-        global.current = baby
-        showData(baby)
+        baby = new Ball({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), size: 30, isStatic: false })
     }
+
     /*if (entity.includes("Beam")) {
         let baby = new Beam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.red, height: 15, width: 70 * (modifier), isStatic: true })
         global.current = baby
@@ -492,34 +498,24 @@ function place(entity) {
 
     }*/
     if (entity.includes("Motor")) {
-        let baby = new Blade({ frictionAir: 0, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.yellow, size: 100, isStatic: false })
-        global.current = baby
-        showData(baby)
-
+        baby = new Blade({ frictionAir: 0, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.yellow, size: 100, isStatic: false })
     }
     if (entity.includes("Cam")) {
-        let baby = new Cam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray })
-        global.current = baby
-        showData(baby)
-
+        baby = new Cam({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray })
     }
     if (entity.includes("Portal")) {
-        let baby = new Portal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
-        global.current = baby
-        showData(baby)
-
+        baby = new Portal({ x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
     }
     if (entity.includes("Spawner")) {
-        let baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
-        global.current = baby
-        showData(baby)
-
+        baby = new Spawner({ width: 100, height: 100, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
     }
     if (entity.includes("WindZone")) {
-        let baby = new WindZone({ height: 50, width: 50, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
+        baby = new WindZone({ height: 50, width: 50, x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom), color: c.gray, shape: "circle" })
+    }
+    if (baby) {
+        playAudio({ src: 'click.mp3' })
         global.current = baby
         showData(baby)
-
     }
 }
 const canvas = Elem.$('#can'),
@@ -625,78 +621,78 @@ const cam = {
                 let col = color.yellow
                 let shadow = `0px 0px 4px ${col}`
                 let win = ball => {
-                        let p
-                        new Elem({
-                            tag: 'div', parent: winning, children: [
-                                p = new Elem({
-                                    tag: 'p', styles: {
-                                        color: col,
-                                    }, message: utilString.shorten(ball.Name, 10),
-                                }),
-                                new Elem({
-                                    tag: 'img',
-                                    title: ball.Name, alt: ball.Name,
-                                    styles: {
-                                        'border-radius': '100%',
-                                        width: '100px',
-                                        height: '100px',
-                                        margin: '5px',
-                                        filter: `drop-shadow(${shadow})`
-                                    }, src: ball.imgSrc, events: {
-                                        error() {
-                                            shapeToImage(ball)
-                                            this.content.src = ball.imgSrc
-                                        }
+                    let p
+                    new Elem({
+                        tag: 'div', parent: winning, children: [
+                            p = new Elem({
+                                tag: 'p', styles: {
+                                    color: col,
+                                }, message: utilString.shorten(ball.Name, 10),
+                            }),
+                            new Elem({
+                                tag: 'img',
+                                title: ball.Name, alt: ball.Name,
+                                styles: {
+                                    'border-radius': '100%',
+                                    width: '100px',
+                                    height: '100px',
+                                    margin: '5px',
+                                    filter: `drop-shadow(${shadow})`
+                                }, src: ball.imgSrc, events: {
+                                    error() {
+                                        shapeToImage(ball)
+                                        this.content.src = ball.imgSrc
                                     }
-                                })
-                            ]
-                        })
-                        switch (col) {
-                            case color.yellow:
-                                col = color.silver
-                                shadow = `0px 0px 3px ${col}`
-                                break;
-                            case color.silver:
-                                col = color.brown;
-                                shadow = `0px 0px 2px ${col}`
-                                break;
-                            default:
-                                col = color.black
-                                shadow = ``
-                                break;
-                        }
+                                }
+                            })
+                        ]
+                    })
+                    switch (col) {
+                        case color.yellow:
+                            col = color.silver
+                            shadow = `0px 0px 3px ${col}`
+                            break;
+                        case color.silver:
+                            col = color.brown;
+                            shadow = `0px 0px 2px ${col}`
+                            break;
+                        default:
+                            col = color.black
+                            shadow = ``
+                            break;
                     }
-                 
+                }
+
                 Entity.placements.forEach(win);
                 //losers
-                    let imsobadatthis = ball => {
-                        new Elem({
-                            tag: 'div', parent: winning, children: [
-                                new Elem({
-                                    tag: 'p', styles: {
-                                        opacity: ' 0.9'
-                                    }, message: utilString.shorten(ball.Name, 10),
-                                }),
-                                new Elem({
-                                    tag: 'img',
-                                    title: ball.Name, alt: ball.Name,
-                                    styles: {
-                                        'border-radius': '100%',
-                                        width: '100px',
-                                        height: '100px',
-                                        margin: '5px',
-                                        opacity: '0.2'
-                                    }, src: ball.imgSrc, events: {
-                                        error() {
-                                            shapeToImage(ball)
-                                            this.content.src = ball.imgSrc
-                                        }
+                let imsobadatthis = ball => {
+                    new Elem({
+                        tag: 'div', parent: winning, children: [
+                            new Elem({
+                                tag: 'p', styles: {
+                                    opacity: ' 0.9'
+                                }, message: utilString.shorten(ball.Name, 10),
+                            }),
+                            new Elem({
+                                tag: 'img',
+                                title: ball.Name, alt: ball.Name,
+                                styles: {
+                                    'border-radius': '100%',
+                                    width: '100px',
+                                    height: '100px',
+                                    margin: '5px',
+                                    opacity: '0.2'
+                                }, src: ball.imgSrc, events: {
+                                    error() {
+                                        shapeToImage(ball)
+                                        this.content.src = ball.imgSrc
                                     }
-                                })
-                            ]
-                        })
-    
-                    }
+                                }
+                            })
+                        ]
+                    })
+
+                }
                 [...Entity.losers].toReversed().forEach(imsobadatthis)
 
 
@@ -778,6 +774,7 @@ const apply = () => {
     let idNames = {
 
     }
+    playAudio({src:'confirm.mp3'})
     for (let element of あ.$("#data").children) {
         let mine = element
         if ((mine.value != null || 'checked' in mine) && mine.id) {
@@ -1359,12 +1356,18 @@ class Entity {
 
         }
 
-        if (this.selected) {
+        if (this.selected && !isNaN(mouse.x) && !isNaN(mouse.y) && global.editorMode) {
             if (true/* Math.abs(mouse.x - this.start.x) > this.SIZE.x / 4 && Math.abs(mouse.y - this.start.y) > this.SIZE.y / 4 */) {
                 if (this.start.isStatic) {
                     Body.setStatic(this, false)
                 }
-                Body.setPosition(this, { x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
+                let c = new Vector2(cam.click.x,cam.click.y),
+                cc = new Vector2(mouse.x,mouse.y)
+                if (Vector2.distance(cc,c) / cam.zoom > 10) {
+                    cam.click.x = this.position.x
+                    cam.click.y = this.position.y
+                    Body.setPosition(this, { x: (mouse.x / cam.zoom) - (cam.x / cam.zoom), y: (mouse.y / cam.zoom) - (cam.y / cam.zoom) })
+                }
                 //this.start.x = Infinity
                 //this.start.y = Infinity
 
@@ -1386,6 +1389,8 @@ class Entity {
         if (global.editorMode && !global.playingLevel && global.select != "put" && ctx.isPointInPath(mouse.x, mouse.y) && (cam.click.x && cam.click.y)) {
             if (![...Entity.all.values()].some(o => o.selected)) {
                 this.onclick?.()
+                playAudio({ src: 'click.mp3' })
+
                 this.selected = true
                 global.current = this
                 menu("data")
@@ -1633,7 +1638,7 @@ class Marble extends Entity {
                 ctx.textBaseline = 'middle'
                 ctx.textAlign = 'center'
                 ctx.fillText(this.Name, 0, -50)
-                d.postMessage({state: JSON.stringify(getStateOfCanvas(ctx)), operation: 'fillText'})
+                d.postMessage({ state: JSON.stringify(getStateOfCanvas(ctx)), operation: 'fillText' })
                 ctx.lineWidth = 1
                 ctx.beginPath()
                 ctx.moveTo(5, -40)
@@ -2178,38 +2183,42 @@ class PortalParticle extends Confetti {
     }
 }
 let mouse = {
-    x: 0,
-    y: 0
+    x: NaN,
+    y: NaN
 }
 
 
 update()
 
-あ.$('#can').addevent({
+canvas.addevent({ 
+    mouseup(e) {
+        cam.click.x = cam.click.y = NaN
+    },
+    mouseout(){
+        for (let [,m]of Entity.all) {
+            m.selected=false
+        } 
+        mouse.x=mouse.y=NaN
+    },
     mousemove(e) {
         mouse.x = e.offsetX
         mouse.y = e.offsetY
     },
-    mouseup(e) {
-        cam.click.x = cam.click.y = NaN
-
-    },
+   
     mousedown(e) {
-        if (cam.frozen) {
-            return
-        }
-        cam.click.x = e.offsetX
-        cam.click.y = e.offsetY
-        //      console.log(global.chosenEntity)
-        if (global.select === "put" && global.editorMode && !global.playingLevel) {
-            place(global.chosenEntity)
-        }
-        if (global.select === "edit" && !global.playingLevel) {
-            global.editorMode && (cam.following = null)
-        }
+    if (cam.frozen) {
+        return
     }
-})
-
+    cam.click.x = e.offsetX
+    cam.click.y = e.offsetY
+    //      console.log(global.chosenEntity)
+    if (global.select === "put" && global.editorMode && !global.playingLevel) {
+        place(global.chosenEntity)
+    }
+    if (global.select === "edit" && !global.playingLevel) {
+        global.editorMode && (cam.following = null)
+    }
+}})
 function startGame(fade) {
     if (!global.editorMode) {
         cam.following = global.current = null
@@ -2238,7 +2247,8 @@ function startGame(fade) {
         //Enter Play Mode
         frame = 0
         for (let o of Entity.all.values()) {
-            o.onenterplaymode?.()
+Matter.Sleeping.set(o,false)    
+        o.onenterplaymode?.()
         }
         Entity.placements = new Set
         Entity.losers = new Set
@@ -2247,7 +2257,7 @@ function startGame(fade) {
         for (let o of Entity.all.values()) {
             o.selected = false
         }
-        global.select = null
+      //  global.select = null
         showData()
         Entity.gameSpawns = new Set(ran.shuffle(...[...Entity.toSpawn.values(), ...Entity.gameSpawns]))
 
@@ -2326,10 +2336,15 @@ function showData(stats) {
 window.ctx = ctx
 addEventListener('mousewheel', function (e) {
     //resize()
-    cam.zoomChange = e.deltaY / 2000;
-    cam.targetZoom = Math.max(0.1, cam.zoom - cam.zoomChange);
-    cam.targetZoom = Math.abs(cam.targetZoom);
-},)
+    ctx.beginPath()
+    ctx.rect(0, 0, canvas.width, canvas.height)
+    if (ctx.isPointInPath(mouse.x, mouse.y)) {
+        e.preventDefault()
+        cam.zoomChange = e.deltaY / 2000;
+        cam.targetZoom = Math.max(0.1, cam.zoom - cam.zoomChange);
+        cam.targetZoom = Math.abs(cam.targetZoom);
+    }
+}, { passive: false })
 
 addEventListener('keyup', function (e) {
     const key = e.key.toLowerCase()
@@ -2348,6 +2363,11 @@ addEventListener('keyup', function (e) {
 },)
 addEventListener('keydown', function (e) {
     if (!e.key || cam.frozen) {
+        return
+    }
+    ctx.beginPath()
+    ctx.rect(0, 0, canvas.width, canvas.height)
+    if (!ctx.isPointInPath(mouse.x, mouse.y)) {
         return
     }
     const key = e.key.toLowerCase()
@@ -2436,6 +2456,7 @@ function clone() {
     global.current = global.select = clone
     //global.current.start = {...params}
     showData(clone)
+    playAudio({src:'click.mp3',interrupt:true})
     /*for (let o of Entity.all) {
         o.selected = false;
         if (o === clone) {
@@ -2480,7 +2501,7 @@ if (levelvalue) {
             catch {
             }
             finally {
-                
+
             }
 
             cam.x = cam.y = NaN
@@ -2495,7 +2516,7 @@ if (levelvalue) {
             }
             Elem.allElements.forEach((o) => {
 
-                if (!o.content.classList.contains('gameMenu')) return
+                if (!o.content.classList.contains('gameMenu')|| o.id==='o') return
                 if (o.content.id !== 'secondMenu') {
                     o.content.style.display = 'flex'
                 } else {
@@ -2545,8 +2566,8 @@ if (levelvalue) {
             },)
             body.style.display = ''
         }()
-    } 
-   
+    }
+
     finally {
         global.playingLevel = true;
         setTimeout(() => loaded = true, 10, 'afgrt')
@@ -2588,20 +2609,20 @@ function resize() {
 }
 function getStateOfCanvas(context) {
     let obj = {}
-    for (let prop of ["direction","fillStyle","filter","font","fontKerning","fontStretch","fontVariantCaps","globalAlpha","globalCompositeOperation","imageSmoothingEnabled","imageSmoothingQuality","letterSpacing","lineCap","lineDashOffset","lineJoin","lineWidth","miterLimit","shadowBlur","shadowColor","shadowOffsetX","shadowOffsetY","strokeStyle","textAlign","textBaseline","textRendering","wordSpacing"]){
+    for (let prop of ["direction", "fillStyle", "filter", "font", "fontKerning", "fontStretch", "fontVariantCaps", "globalAlpha", "globalCompositeOperation", "imageSmoothingEnabled", "imageSmoothingQuality", "letterSpacing", "lineCap", "lineDashOffset", "lineJoin", "lineWidth", "miterLimit", "shadowBlur", "shadowColor", "shadowOffsetX", "shadowOffsetY", "strokeStyle", "textAlign", "textBaseline", "textRendering", "wordSpacing"]) {
         obj[prop] = context[prop]
     }
     return obj
 }
 function requestImage(input) {
     if (!cachedImages.has(JSON.stringify(input.state))) {
-        d.postMessage({state:getStateOfCanvas(ctx),value: input.value})
+        d.postMessage({ state: getStateOfCanvas(ctx), value: input.value })
     }
     else {
-        let bit = cachedImages.get({...getStateOfCanvas(ctx)}).deref()
+        let bit = cachedImages.get({ ...getStateOfCanvas(ctx) }).deref()
     }
 }
-function imagerecieved({data}){
-cachedImages.set(JSON.stringify({...data.state,value:data.value}),data.image)
+function imagerecieved({ data }) {
+    cachedImages.set(JSON.stringify({ ...data.state, value: data.value }), data.image)
 }
-requestImage({state:ctx,value:'1234'})
+requestImage({ state: ctx, value: '1234' })

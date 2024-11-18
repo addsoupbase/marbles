@@ -1,3 +1,4 @@
+import { audio } from "./setup.js";
 const max = {
     title: '20',
     author: '16'
@@ -66,7 +67,7 @@ const elements = {
         ]
     }, true),
     startmenu: new Elem({
-        tag: 'div', id: 'startmenu', class: ['menu', 'gameMenu'],
+        tag: 'div', id:'startmenu', class: 'menu gameMenu mainmenu',
         children: [
             new Elem({ tag: 'h1', text: 'Untitled', class: ['gameMenu'], id: 'levelTitle' }),
             new Elem({ tag: 'cite', text: 'by Unknown', class: ['gameMenu'], id: 'authorName', parent: Elem.$('#levelTitle') }),
@@ -128,6 +129,42 @@ const elements = {
         ]
     }, true)
 }
+let opts = new Elem({tag:'div',id:'opts',parent:body,events:{
+    click(){
+       this.fadeOut()
+       optionsMenu.show()
+       optionsMenu.fadeIn()
+    }
+}})
+elements.startmenu.hide()
+let optionsMenu = $({tag:'div',id:'o',parent:body,class:'menu gameMenu mainmenu',children:[
+    $({tag:'div',children:[
+        $({tag:'h2',text:'Volume'}),
+        $({tag:'input',class:'range',type:'range',min:0,max:100,value:local.volume*100,events:{
+            change(){
+               audio.setVolume(this.value / 100)
+            }
+        }}),
+        $({tag:'h2',text:'Device'}),
+        $({tag:'select',children:[
+            $({tag:'option',text:'Desktop',value: 'Desktop'}),
+            $({tag:'option',text:'Mobile',value: 'Mobile'}),
+
+        ]})
+    ]}),
+    $({tag:'div',children:[
+        $({tag:'button',class: 'bad',text:'Close',events:{
+            click() {
+                opts.fadeIn()
+                optionsMenu.fadeOut(optionsMenu.hide)
+            }
+        }})
+    ]})
+
+]})
+optionsMenu.hide()
+let fadeManager = new utilMath.Cycle(optionsMenu.fadeIn.bind(optionsMenu),optionsMenu.fadeOut.bind(optionsMenu))
+
 function turnToSettingsMenu() {
     _('secondMenu').content.style.display = 'grid'
     Elem.$('#secondMenu').children.forEach(o => o.removeClass('hidden') + o.show() + (o.content.style.display = 'grid'))

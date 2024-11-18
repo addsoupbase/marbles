@@ -369,7 +369,7 @@ const bounds = {
                     delete item.img
                     delete item.imgSrc
                 } else {
-                    if (!item.imgSrc.startsWith('data')) {
+                    if (!isNaN(+item.imgSrc)) {
                         item.imgSrc = data[0].images[item.imgSrc-1]
                     }
                 }

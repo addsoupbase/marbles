@@ -2490,7 +2490,7 @@ if (levelvalue) {
             //     let url = new URL('./levels/' + levelvalue + '.txt', location.hostname)
             let levelData = await fetch(`./levels/${levelvalue}.txt`)
             let text = await levelData.text()
-            あ.allElements.forEach(o => o !== canvas && o !== body && o.hide())
+            あ.allElements.forEach(o => o !== canvas && o!== html && o !== body && o.hide())
             あ.$('#hideme').styleMe({ display: 'none' })
             Elem.$('#camBehaviour').parent = Elem.$('#secondMenu')
             Elem.$('#camBehaviour').children.forEach(o => o.content.style.display = 'flex')

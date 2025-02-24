@@ -1,5 +1,5 @@
-import { Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, } from '../game.js'
-import { canvas as can, mouse, cam, marbles } from '../setup.js'
+import { Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, } from 'https://addsoupbase.github.io/marbles/play/game.js'
+import { canvas as can, mouse, cam, marbles } from 'https://addsoupbase.github.io/marbles/play/setup.js'
 import ran from 'https://addsoupbase.github.io/random.js'
 import * as math from 'https://addsoupbase.github.io/num.js'
 import { on, getObjUrl } from 'https://addsoupbase.github.io/handle.js'

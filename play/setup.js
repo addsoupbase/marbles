@@ -1,7 +1,7 @@
-import $ from 'https://addsoupbase.github.io/yay.js'
-import { on } from 'https://addsoupbase.github.io/handle.js'
-import { getJson } from 'https://addsoupbase.github.io/arrays.js'
-import * as math from 'https://addsoupbase.github.io/num.js'
+import $ from '../../addsoupbase.github.io/yay.js'
+import { on, wait } from '../../addsoupbase.github.io/handle.js'
+import { getJson } from '../../addsoupbase.github.io/arrays.js'
+import * as math from '../../addsoupbase.github.io/num.js'
 const { vect } = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
@@ -11,6 +11,10 @@ export const marbles = new Map
 export const game = {
     isPaused: true,
     frame: 0,
+    frozen: false,
+    end() {
+
+    },
     send() {
         console.debug(`Message ignored since not in editor mode`)
     },
@@ -24,13 +28,20 @@ export const game = {
     toggleDOM() { },
     werentSleeping: [],
     thaw() {
-        for (let body of this.werentSleeping) body.sleeping = false
+        this.frozen = false
+        for (let [body, save] of this.werentSleeping) {
+            body.sleeping = false
+            for(let i in save) {
+                body[i] = save[i]
+            }
+        }
     },
     freeze() {
+        this.frozen = true
         for (let body of entities.values())
             if (!body.sleeping)
-                body.sleeping = true,
-                    this.werentSleeping.push(body)
+                this.werentSleeping.push([body, { velocity: [body.body.velocity.x, body.body.velocity.y], angularVelocity: body.angularVelocity, angularSpeed: body.angularSpeed, }]),
+                    body.sleeping = true
     },
     pause() {
         this.frame = 0
@@ -43,9 +54,25 @@ export const game = {
         this.isPaused = true
         this.toggleDOM(false)
     },
-    play() {
+    async play() {
+        if (!inEditor) {
+            let delay = 1500
+            let spawn = [...entities.values()].find(o => o.constructor.name === 'spawn'),
+                goal = [...entities.values()].find(o => o.constructor.name === 'goal')
+            if (goal) {
+                cam.following = goal
+                await wait(delay)
+                if (spawn) {
+                    cam.following = spawn
+                    await wait(delay)
+                }
+            } else {
+                cam.following = spawn
+                await wait(delay)
+            }
+        }
+        else top.postMessage('hideData')
         this.frame = 0
-        top.postMessage('hideData')
         mouse.reset()
         for (let body of entities.values()) {
             body.sleeping = false
@@ -67,7 +94,7 @@ export const mouse = {
     lastmovement: vect(0, 0),
     draggingBody: null,
     clickedBody: null,
-    isPlacing: false,
+    isPlacing: true,
     reset() {
         this.draggingBody = this.clickedBody = this.selectedBody = null
         game.send(null)
@@ -82,9 +109,11 @@ export const mouse = {
 export const cam = {
     position: vect(0, 0),
     zoom: 1,
+    alreadyDidTheWinnerCutsceneThingy: false,
+    targetZoom: 1,
     id: 0,
     following: null,
-    speed: 30,
+    speed: 9,
     waiting: new Map,
     async waitForFrames(frames, id = cam.id++) {
         frames = Math.abs(+frames | 0)
@@ -105,11 +134,10 @@ export const cam = {
         }
     }
 }
-window.cam = cam
 canvas.on({
     wheel({ deltaY }) {
-        cam.zoom -= Math.sign(deltaY) / 80
-        cam.zoom = math.clamp(cam.zoom, 0.01, 10)
+        cam.targetZoom -= Math.sign(deltaY) / 80
+        cam.targetZoom = math.clamp(cam.targetZoom, 0.01, 10)
     },
     pointerdown(event) {
         let { offsetX: x, offsetY: y, button, pointerId } = event
@@ -121,7 +149,7 @@ canvas.on({
                 mouse.click.set(pos)
                 if (mouse.isPlacing) {
                     let { x, y } = mouse.click
-                    mouse.place(x, y)
+                    inEditor && mouse.place(x, y)
                     /* switch(mouse.willPlace) {
                          default: return reportError(Error(`Unknown placement: '${mouse.willPlace}'`))
                          case 'square': {
@@ -169,11 +197,12 @@ function resize() {
 on(window, resize)
 resize()
 let url = new URL(location)
-let levelName = url.searchParams.get('level')
+export let levelName = url.searchParams.get('level')
 if (top !== window) {
     init()
     top.marbles = marbles
     top.imageCache = images
+    top.entities = entities
     on(window, {
         message(e) {
             let { data } = e
@@ -198,9 +227,9 @@ if (top !== window) {
                 else if ('title' in data && 'url' in data) {
                     images.set(data.title, data.url)
                 }
-                else if ('title'in data && 'svg' in data) {
-                    let doc = new DOMParser().parseFromString(data.svg,'image/svg+xml')
-                    svgs.set(data.title,[...doc.querySelectorAll('path')])
+                else if ('title' in data && 'svg' in data) {
+                    let doc = new DOMParser().parseFromString(data.svg, 'image/svg+xml')
+                    svgs.set(data.title, [...doc.querySelectorAll('path')])
                 }
             }
         }

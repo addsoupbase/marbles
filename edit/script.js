@@ -1,7 +1,7 @@
-import $ from 'https://addsoupbase.github.io/yay.js'
-import color from 'https://addsoupbase.github.io/color.js'
-import { on, getObjUrl as cou } from 'https://addsoupbase.github.io/handle.js'
-import * as math from 'https://addsoupbase.github.io/num.js'
+import $ from '../../yay.js'
+import color from '../../color.js'
+import { on, getObjUrl as cou, until, download, } from '../../handle.js'
+import * as math from '../../num.js'
 let leftControls = $.gid('left-controls')
 leftControls.createState(0, $('div'))
 $.gid('reset-cam').on({
@@ -9,6 +9,61 @@ $.gid('reset-cam').on({
         game.postMessage('resetcam')
     }
 })
+let xport = $.gid('export-button')
+    .on({
+        async click() {
+            let ctx = document.createElement('canvas').getContext('2d')
+            Object.assign(ctx.canvas, {
+                width: 256,
+                height: 256
+            })
+            let obj = {
+                __proto__: null, settings,
+                racers: [...marbles.values()], map: Array.from(entities.values(), o => {
+                    let { spawn } = o
+                    if (o.constructor.name !== 'obj')
+                        spawn.type = o.constructor.name
+                    return spawn
+                }
+                )
+            }
+            let allImages = new Set
+            let seen = new Set
+            for (let n of obj.racers.concat(obj.map)) {
+                let { image } = n
+                console.log(image)
+                let count = 0
+                if (image !== null && image !== 'none') {
+                    if (seen.has(image)) {
+                        n.image = count
+                        continue
+                    }
+                    let img = new Image
+                    img.src = image
+                    await until(img, 'load')
+                    await img.decode()
+                    ctx.drawImage(img, 0, 0, 256, 256)
+                    n.image = count++
+                    allImages.add(ctx.canvas.toDataURL('image/png', .5))
+                    seen.add(image)
+                } else delete n.image
+            }
+            for (let n of obj.map) {
+                delete n.isSensor
+                for (let i in n) {
+                    let val = n[i]
+                    if (val === base[i]) delete n[i]
+                    else switch (i) {
+                        case 'opacity': if (val === 1) delete n[i]; break
+                        case 'angle': if (val === 0) delete n[i]; break
+                        case 'isStatic': if (val === false) delete n[i]; break
+                    }
+                }
+            }
+            obj.images = [...allImages]
+            download(new Blob([JSON.stringify(obj)]), 'data.json')
+        }
+    })
 let cached = new WeakSet
 let cachedVertices = new WeakSet
 on(window, {
@@ -43,27 +98,26 @@ let files = uploadButton.after.on({
                 //  Do something...
             }
             else {
+                let url = cou(file)
                 cached.add(file)
                 game.postMessage({
                     title: file.name,
-                    url: cou(file)
+                    url
                 })
+                for (let el of document.getElementsByName('marbleimageselect')) {
+                    el = $(el)
+                    // el.destroyChildren()
+                    // el.$(`<option value="none">None</option>`)
+                    el.last.after = $(`<option value="${url}">${file.name}</option>`)
+                    // el.push(...Array.from(imageCache.entries(),
+                    // function ([title, src]) {
+                    // console.log(src, title)
+                    // return $(`<option value="${src}">${title}</option>`)
 
+                }
             }
         }
-        for (let el of document.getElementsByName('marbleimageselect')) {
-            el = $(el)
-            el.destroyChildren()
-            el.$(`<option value="none">None</option>`)
-            setTimeout(() =>
-                el.push(...Array.from(imageCache.entries(),
-                    function ([title, src]) {
-                        console.log(src, title)
-                        return $(`<option value="${src}">${title}</option>`)
-                    })), 1000)
-        }
         message({ data: 'hideData' })
-
     }
 })
 function message(e) {
@@ -114,15 +168,15 @@ function message(e) {
                                     }
                                 }
                             })),
-                        $(`<label title="Density" class="stat" for="d-${selected.body.id}">Density</label>`, {
+                        $(`<label title="Mass" class="stat" for="d-${selected.body.id}">Mass</label>`, {
                             start() {
-                                dontShow.has('density') && this.hide3()
+                                dontShow.has('mass') && this.hide3()
                             }
                         },
-                            $(`<input type="number" min="0" placeholder="Density" value="${selected.spawn.restitution}" id="d-${selected.body.id}">`, {
+                            $(`<input type="number" min="0" placeholder="Mass" value="${selected.spawn.mass}" id="d-${selected.body.id}">`, {
                                 events: {
                                     input() {
-                                        selected.spawn.density = +this.value || 1
+                                        selected.spawn.mass = +this.value || 1
                                         selected.reset()
                                     }
                                 }
@@ -132,7 +186,7 @@ function message(e) {
                                 dontShow.has('scale') && this.hide3()
                             }
                         },
-                            $(`<input type="number" min="0" placeholder="Restitution" value="${selected.spawn.radius}" id="S-${selected.body.id}">`, {
+                            $(`<input type="number" max="9007199254740991" min="-9007199254740991" placeholder="Negative = Mirrored" value="${selected.spawn.radius}" id="S-${selected.body.id}">`, {
                                 events: {
                                     input() {
                                         selected.spawn.radius = +this.value || 1
@@ -162,7 +216,7 @@ function message(e) {
                                 events: {
                                     input() {
                                         selected.spawn.angle = math.toRad(+this.value)
-                                        this.after.value = (+this.value).toPrecision(4)
+                                        this.after.value = (+this.value)
                                         selected.reset()
                                     }
                                 },
@@ -177,7 +231,7 @@ function message(e) {
                                     input() {
                                         let val = math.clamp(+this.value, -180, 180)
                                         selected.spawn.angle = math.toRad(val)
-                                        this.before.value = val.toPrecision(4)
+                                        this.before.value = val
                                         selected.reset()
                                     }
                                 },
@@ -222,8 +276,6 @@ function message(e) {
                                 }
                             })
                         ),
-                     
-
                     )
                 if (selected.constructor.name === 'spawn') $(`<label class="stat" for="sp-${selected.body.id}">Spawn Rate</label>`, null,
                     $(`<input value="${selected.spawnRate}" type="number" id="sp-${selected.body.id}">`, {
@@ -234,8 +286,6 @@ function message(e) {
                             }
                         }
                     })).parent = theState
-
-
                 theState.push($(`<button class="cute-green-button">Clone</button>`, {
                     events: {
                         click() {
@@ -265,8 +315,8 @@ function message(e) {
             opacity.value = selected.opacity
             angleMain.value = angleInput.value = math.toDeg(selected.angle)
             let select = $(state.querySelector('select'))
-            let density = $(state.getElementById(`d-${selected.body.id}`))
-            density.value = selected.density
+            let mass = $(state.getElementById(`d-${selected.body.id}`))
+            mass.value = selected.mass
             let scale = $(state.getElementById(`S-${selected.body.id}`))
             scale.value = selected.scale
             let restitution = $(state.getElementById(`r-${selected.body.id}`))
@@ -280,8 +330,6 @@ function message(e) {
                 }))
             col.value = selected.spawn.color
             leftControls.setState(selected.body.id)
-
-
         } else if (selected == null) leftControls.setState(0)
             break
     }
@@ -299,7 +347,6 @@ let toggle = $.gid('play-button').on({
         game.postMessage('Toggle')
     }
 })
-game.postMessage('Placing')
 let placingOrMoving = $.gid('place-toggle').on({
     click() {
         isPlacing = !isPlacing
@@ -310,7 +357,7 @@ let placingOrMoving = $.gid('place-toggle').on({
 let chosen = $.gid('place-entity')
     .on({
         change() {
-            if (this.value === 'svg') return uploadSvgs.click()
+            if (this.value === 'svg') return uploadSvgs.showPicker()
             game.postMessage({ select: this.value })
         }
     })
@@ -323,9 +370,10 @@ let uploadSvgs = $(`<input type="file" accept=".svg,.txt" multiple></input>`, {
                 }
                 else {
                     cachedVertices.add(file)
-                    file.text().then(data=> {
-                        chosen.push($(`<option value="${file.name}">${file.name}</option>`))
+                    file.text().then(data => {
+                        chosen.last.before = ($(`<option value="${file.name}">${file.name}</option>`))
                         chosen.value = file.name
+                        game.postMessage({ select: file.name })
                         game.postMessage({
                             title: file.name,
                             svg: data

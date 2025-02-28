@@ -4,6 +4,8 @@
 <head>
     <title>Marbles</title>
     <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../animations.css">
+
     <meta charset="UTF-8">
     <meta http-equiv="content-language" content="en">
     <meta property="og:locale" content="en_US">
@@ -33,9 +35,9 @@
     <link rel="canonical" href="your url.com">
     <link rel="icon" type="image/x-icon" href="favicon.ico" defer>
     <script src="https://cdn.jsdelivr.net/npm/pathseg@1.2.1/pathseg.min.js"></script>
-    <script src="./setup.js" type="module" defer></script>
 </head>
 <body style="display:flex">
+    
     <noscript>
         You have a really bad browser :&lpar;
     </noscript>
@@ -43,9 +45,11 @@
         alert('You have a really bad browser :(')
     </script>
     <main>
-      
+      <div id="overlay" class="center mainmenu" style="display: none;"></div>
     <canvas id="can-vas"></canvas>
     <!-- <script src="matter.min.js"></script> -->
 </main>
+<script src="./setup.js" type="module"></script>
+
 </body>
 </html>

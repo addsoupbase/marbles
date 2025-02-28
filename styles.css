@@ -4,6 +4,52 @@ canvas {
     pointer-events: auto;
 }
 
+#overlay {
+    z-index: 2;
+}
+
+.mainmenu {
+    background-color: #28a745;
+    color: white;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    width: 400px;
+    max-height: 400px;
+    overflow-x: hidden;
+    text-align: center;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.place {
+    border-radius: 100%;
+    width: 80px;
+    height: 80px;
+    margin: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    overflow: hidden;
+}
+.prev {
+    width:inherit;
+    height:inherit;
+}
+/* .first::after {
+       transform: scale(1.5) translateY(-4px);
+       display: inline-block;
+       content: url(./play/media/crown.png);
+       image-rendering: pixelated;
+} */
+.holdthis {
+    display: -webkit-inline-box;
+    overflow-x: scroll; 
+}
+
 iframe {
     width: 50vw;
     height: 500px;
@@ -28,40 +74,49 @@ html {
     height: 100vh;
     width: 100vw;
 }
+
 select:active {
-    box-shadow:#1d8a7a 0px 0px 2px 0px;
+    box-shadow: #1d8a7a 0px 0px 2px 0px;
 }
+
 input[type=range] {
     width: 100px;
 }
+
 input[type=color] {
     border-radius: 100%;
-    width:30px;
-    height:30px;
+    width: 30px;
+    height: 30px;
     margin: 10px
 }
 
 input[type=color]::-webkit-color-swatch {
     border-radius: 100%;
 }
+
 input[type=color]::-moz-color-swatch {
     border-radius: 100%;
 
 }
-input[type=checkbox], input[type=range] {
+
+input[type=checkbox],
+input[type=range] {
     cursor: pointer;
 }
+
 select {
     border-radius: 15px;
     width: 120px;
     height: 30px;
-    background-color: #1d8a7a;;
-    border-color:#176b5e;
+    background-color: #1d8a7a;
+    ;
+    border-color: #176b5e;
     border-width: 2px;
-    border-style:solid;
+    border-style: solid;
     text-align: center;
     font-family: monospace;
 }
+
 .cute-green:hover {
     background-color: #67db71;
 }
@@ -110,7 +165,8 @@ input::placeholder {
     flex-flow: column;
 }
 
-input[type=file]::file-selector-button,.cute-green-button {
+input[type=file]::file-selector-button,
+.cute-green-button {
     background-color: #b0e57c;
     text-decoration: none;
     border: 2px solid #8bc34a;
@@ -132,10 +188,12 @@ input[type=file]::file-selector-button:active,
     scale: .97 .97
         /* Slight scale effect */
 }
-.cute-blue-button{
+
+.cute-blue-button {
     filter: hue-rotate(300deg) brightness(80%);
     width: 100px
 }
+
 input.cute-green {
     background-color: #43b363;
     opacity: 0.8;
@@ -153,32 +211,36 @@ input.cute-green {
 
 .preview {
     background-size: cover;
-    width:50px;
-    height:50px;
-    display:inline;
+    width: 50px;
+    height: 50px;
+    display: inline;
     background-repeat: no-repeat;
     background-position: center center;
     /* border-radius: 100%; */
 }
+
 #pick-level {
     scale: 1.2 1.2;
 }
+
 .uhh {
-    display: grid 
-    ;
-        justify-content: center;
-        justify-items: center;
+    display: grid;
+    justify-content: center;
+    justify-items: center;
 }
-.stat > * {
+
+.stat>* {
     margin: 10px;
 }
+
 .stat {
     justify-content: center;
-  display: grid;
+    display: grid;
     font-size: 1.5rem;
     justify-self: center;
     margin: 5px;
 }
+
 #play {
     display: block;
     margin: 15px;
@@ -212,9 +274,9 @@ input.cute-green {
 @font-face {
     font-family: 'Choco';
     src: url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff2'),
-      /* Super Modern Browsers */
-      url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff');
+        /* Super Modern Browsers */
+        url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff');
     /* Pretty Modern Browsers */
     font-weight: normal;
     font-style: normal;
-  }
+}

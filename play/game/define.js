@@ -1,13 +1,46 @@
-import { Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, } from 'https://addsoupbase.github.io/marbles/play/game.js'
-import { canvas as can, mouse, cam, marbles } from 'https://addsoupbase.github.io/marbles/play/setup.js'
-import ran from 'https://addsoupbase.github.io/random.js'
-import * as math from 'https://addsoupbase.github.io/num.js'
-import { on, getObjUrl } from 'https://addsoupbase.github.io/handle.js'
-import color from 'https://addsoupbase.github.io/color.js'
+import { Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, } from '../game.js'
+import { canvas as can, mouse, cam, marbles, levelName } from '../setup.js'
+import ran from '../../../random.js'
+import * as math from '../../../num.js'
+import { getObjUrl, on, until, wait } from '../../../handle.js'
+import $ from '../../../yay.js'
+import { getJson } from '../../../arrays.js'
+import color from '../../../color.js'
 import { game, entities, inEditor, svgs } from '../setup.js'
 let ctx = can.getContext('2d')
 let background = new Image
-let svg = new DOMParser().parseFromString(await (await fetch('./media/test.svg')).text(), 'image/svg+xml')
+game.end = async () => {
+    overlay.destroyChildren()
+    await can.animate([{ filter: '', }, { filter: 'blur(5px)' }], { duration: 500, fill: 'forwards', endDelay: 300 })
+    overlay.classList.remove('slide-out-blurred-top')
+    overlay.classList.add('slide-in-blurred-top')
+    overlay.push($(`<div class="holdthis"></div>`, null, ...placements.winners.map((o, index) => {
+        let out = $(`div.place`, {
+            styles: {
+                'background-color': o.color
+            },
+            start() {
+                index || this.classList.add('first')
+            },
+            attributes: {
+                title: o.name
+            }
+        },)
+        console.log(o)
+        if (o.image != null) {
+            let n = new OffscreenCanvas(o.image.width, o.image.height).getContext("bitmaprenderer")
+            n.transferFromImageBitmap(o.image)
+            n.canvas.convertToBlob().then(blob=>{
+                out.push($(`img.prev`, {
+                    attributes: {
+                        src: getObjUrl(blob)
+                    }
+                }))
+            })
+        }
+        return out
+    })))
+}
 const placements = {
     winners: [],
     losers: [],
@@ -26,23 +59,25 @@ const { vect } = math
 let doc = top.document
 let marbleSize = doc.getElementById("marble-size"),
     marbleRestitution = doc.getElementById('marble-rest'),
-    marbleDensity = doc.getElementById('marble-density'),
+    marbleMass = doc.getElementById('marble-mass'),
     marbleFriction = doc.getElementById('marble-friction'),
     marbleFrictionair = doc.getElementById('marble-frictionair')
 const marbleStats = inEditor ? {
     radius: marbleSize?.value ?? null,
-    density: marbleDensity?.value ?? null,
+    mass: marbleMass?.value ?? null,
     restitution: marbleRestitution?.value ?? null,
     friction: marbleFriction?.value ?? null,
     frictionAir: marbleFrictionair?.value ?? null
 } : {
     radius: 30,
-    density: base.density,
+    mass: base.mass,
     restitution: base.restitution,
     friction: base.friction,
     frictionAir: base.frictionAir
 }
 if (inEditor) {
+    top.base = base
+    top.settings = marbleStats
     on(marbleSize, {
         change() {
             marbleStats.radius = marbleSize.value
@@ -53,9 +88,9 @@ if (inEditor) {
             marbleStats.restitution = marbleRestitution.value
         }
     })
-    on(marbleDensity, {
+    on(marbleMass, {
         change() {
-            marbleStats.density = marbleDensity.value
+            marbleStats.mass = marbleMass.value
         }
     })
     on(marbleFriction, {
@@ -69,7 +104,7 @@ if (inEditor) {
         }
     })
     game.toggleDOM = function (state) {
-        [marbleSize, marbleRestitution, marbleDensity, marbleFriction, marbleFrictionair].forEach(o =>
+        [marbleSize, marbleRestitution, marbleMass, marbleFriction, marbleFrictionair].forEach(o =>
             o.toggleAttribute('disabled', state)
         )
     }
@@ -80,18 +115,18 @@ if (inEditor) {
         } else if (!top.selected && !data) top.postMessage(null)
     }
     mouse.place = function (x, y) {
-        ({ x, y } = vect(x, y).subtract(cam.position.clone.scale(1 / cam.zoom))).scale(1 / cam.zoom)
+        ({ x, y } = vect(x, y).subtract(cam.position.clone.iScale(cam.zoom))).iScale(cam.zoom)
         switch (this.willPlace) {
-            case 'square': var out = new obj({ x, y, shape: 4, radius: 30 }); break
-            case 'triangle': var out = new obj({ x, y, shape: 3, radius: 30 }); break
-            case 'hexagon': var out = new obj({x,y,shape:6,radius:30});break
-            case 'pentagon': var out = new obj({x,y,shape:5,radius:30});break
+            case 'square': var out = new obj({ x, y, shape: 4, radius: 30, restitution: 1.5, mass: 1 }); break
+            case 'triangle': var out = new obj({ x, y, shape: 3, radius: 30, restitution: 1.5, mass: 1 }); break
+            case 'hexagon': var out = new obj({ x, y, shape: 6, radius: 30, restitution: 1.5, mass: 1 }); break
+            case 'pentagon': var out = new obj({ x, y, shape: 5, radius: 30, restitution: 1.5, mass: 1 }); break
             case 'goal': {
-                for (let n of entities.values()) n instanceof goal && n.remove()
+                for (let n of entities.values()) n.constructor === goal && n.remove()
                 var out = new goal({ x, y, radius: 30 }); break
             }
             case 'spawn': {
-                for (let n of entities.values()) n instanceof spawn && n.remove()
+                for (let n of entities.values()) n.constructor === spawn && n.remove()
                 var out = new spawn({ x, y, }); break
             }
             default: {
@@ -100,7 +135,7 @@ if (inEditor) {
             }
         }
         game.send(out)
-        cam.following = out
+        //cam.following = out
         mouse.selectedBody = out
     }
 }
@@ -114,33 +149,58 @@ Object.assign(ctx, {
     lineJoin: 'round'
 })
 let antOffset = 0
-// import {vect} from '../../../addsoupbase.github.io/num.js'
+// import {vect} from '../../../num.js'
 class obj {
-    static #images = new Map
+    static images = new Map
     #image = null
     filter = 'none'
+    isEnteringGoal = false
     get image() {
         return this.#image
     }
+    #t = null
+    enterGoal({ x, y }) {
+        this.static = this.body.isSensor = true
+        this.isEnteringGoal = true
+        this.#t = vect(x, y)
+    }
+    *animateEnteredGoal() {
+        let { scale } = this
+        this.showName = false
+        for (let i = 0; i < 100; ++i) {
+            this.pos = this.pos.lerp(this.#t, .1)
+            //  this.filter = `invert(${i / 100})`
+            //    filter causes big lag :(
+            this.scale -= scale / 100
+            this.angle += 0.1
+            yield i
+        }
+        this.#anim = null
+        this.kill(true)
+    }
     showName = false
     set image(src) {
-
         if (typeof src !== 'string') {
             this.#image = src
+            this.spawn.image = src.src
         }
         else if (typeof src == null || src === 'none') {
             this.#image = null
+            this.spawn.image = null
         }
-        else if (obj.#images.has(src)) {
-            this.#image = obj.#images.get(src)
+        else if (obj.images.has(src)) {
+            this.spawn.image = src
+            this.#image = obj.images.get(src)
         }
         else {
             let i = new Image
             i.src = src
             on(i, {
-                _load: () => {
-                    this.#image = i
-                    obj.#images.set(src, i)
+                _load: async () => {
+                    let bitmap = await createImageBitmap(i)
+                    this.spawn.image = src
+                    this.#image = bitmap
+                    obj.images.set(src, bitmap)
                 }
             })
         }
@@ -152,12 +212,12 @@ class obj {
     get x() {
         return this.body.position.x
     }
-    get density() {
-        return this.body.density
+    /*get mass() {
+        return this.body.mass
     }
-    set density(val) {
-        Body.setDensity(this.body, val)
-    }
+    set mass(val) {
+        Body.setMass(this.body, val)
+    }*/
     get y() {
         return this.body.position.y
     }
@@ -185,6 +245,9 @@ class obj {
         return this.body.label
     }
     nameImage = null
+    get name() {
+        return this.body.label
+    }
     set name(name) {
         this.body.label = name
         if (this.dontShow.has('name')) return
@@ -206,7 +269,8 @@ class obj {
         cx.lineTo(0, 4)
         cx.closePath()
         cx.stroke()
-        this.nameImage = c
+        // createImageBitmap(c).then(data => this.nameImage = data)
+        this.nameImage = c.transferToImageBitmap()
     }
     set sleeping(state) {
         Sleeping.set(this.body, state)
@@ -230,9 +294,8 @@ class obj {
         Composite.remove(world, this.body)
     }
     reset() {
-
         this.static = this.spawn.isStatic
-        this.density = this.spawn.density
+        this.mass = this.spawn.mass
         this.scale = this.spawn.radius
         this.angle = this.spawn.angle
         this.velocity = [0, 0]
@@ -242,12 +305,25 @@ class obj {
         this.angularVelocity = this.angularSpeed = 0
     }
     clone() {
-        let n = new this.constructor({ ...this.spawn, x: this.spawn.x + this.scale, y: this.spawn.y + this.scale, static: this.spawn.isStatic })
+        let n = new this.constructor({
+            ...this.spawn,
+            x: (-cam.position.x + can.width / 2) * 1 / cam.zoom, y: (-cam.position.y + can.height / 2) * 1 / cam.zoom, static: this.spawn.isStatic
+        })
         game.send(n)
         mouse.reset()
         mouse.selectedBody =
             mouse.clickedBody = n
         game.send(n)
+    }
+    antThing() {
+        if (mouse.selectedBody === this) {
+            ctx.setLineDash([4, 2])
+            ctx.lineDashOffset = antOffset
+            ctx.lineWidth = 3 / cam.zoom
+            ctx.strokeStyle = color.black
+            return true
+        }
+        return false
     }
     draw(x = this.x, y = this.y, scale) {
         ctx.save()
@@ -258,18 +334,10 @@ class obj {
         ctx.strokeStyle = this.darkColor
         ctx.filter = this.filter
         if (game.isPaused) ctx.globalAlpha = math.clamp(this.opacity, 0.25, 1)
-        let isSelected = false
-        if (mouse.selectedBody === this) {
-            ctx.setLineDash([4, 2])
-            isSelected = true
-            ctx.lineDashOffset = antOffset
-            ctx.lineWidth = 3 / cam.zoom
-            ctx.strokeStyle = color.black
-        }
-
+        let isSelected = this.antThing()
         if (this.body.circleRadius) {
             ctx.beginPath()
-            ctx.arc(0, 0, this.body.circleRadius, 0, Math.PI * 2)
+            ctx.arc(0, 0, Math.abs(this.body.circleRadius), 0, Math.PI * 2)
         }
         else if (this.shape) {
             //  Totally didnt use ai for this part
@@ -298,11 +366,12 @@ class obj {
                 }
             }
             else {
-                const vertices = this.body.vertices
+                const { vertices } = this.body
                 ctx.beginPath()
                 ctx.moveTo(vertices[0].x - x, vertices[0].y - y)
                 for (let i = 1, { length } = vertices; i < length; ++i) {
-                    ctx.lineTo(vertices[i].x - x, vertices[i].y - y)
+                    let v = vertices[i]
+                    ctx.lineTo(v.x - x, v.y - y)
                 }
             }
         }
@@ -333,7 +402,7 @@ class obj {
             ctx.globalAlpha = 1
             ctx.imageSmoothingQuality = 'high'
             height = -height * (this.shape === 0 ? 1.5 : 1)
-            ctx.drawImage(this.nameImage, -50, (-this.scale) - 40)
+            ctx.drawImage(this.nameImage, -50, -Math.abs(this.scale) - 40)
         }
         ctx.restore()
     }
@@ -395,93 +464,106 @@ class obj {
     set speed(speed) {
         Body.setSpeed(this.body, speed)
     }
+    #anim
     update() {
+        let { x, y } = this.pos
         if (game.isPaused) {
-            this.pos = [math.clamp(this.x, 0, bounds.x), math.clamp(this.y, 0, bounds.y)]
+            this.pos = [math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y)]
             if (mouse.draggingBody === this && mouse.clickedBody === this && !mouse.clickedThisFrame) {
                 mouse.clickedThisFrame = true
-                this.pos = mouse.cursor.clone.subtract(cam.position.clone.scale(1 / cam.zoom))
-                Object.assign(this.spawn, { x: this.x, y: this.y })
+                this.pos = mouse.cursor.clone.subtract(cam.position.clone.iScale(cam.zoom))
+                Object.assign(this.spawn, { x, y })
             }
         }
-        else if (this.x > bounds.x || this.x < 0 || this.y > bounds.y || this.y < 0)
+        else if (x > bounds.x || x < 0 || y > bounds.y || y < 0)
             this.outOfBounds?.()
-        if (isNaN(this.x) || isNaN(this.y)) this.pos = [this.spawn.x, this.spawn.y]
-        this.draw(this.x, this.y)
+        if (isNaN(x) || isNaN(y)) this.pos = [this.spawn.x, this.spawn.y]
+        if (this.isEnteringGoal) {
+            if (!this.#anim) this.#anim = this.animateEnteredGoal()
+            else {
+                let { value } = this.#anim.next()
+                x += Math.cos(game.frame / 10) * (value / 4)
+                y += Math.sin(game.frame / 10) * (value / 4)
+            }
+        }
+        this.draw(x, y)
     }
     constructor({ x = 0, y = 0, shape = 0, opacity = 1, isSensor = false, name, color: col = color.choose(), radius = 1, static: isStatic = false,
         friction = base.friction,
         image = 'none',
         angle = 0,
         restitution = base.restitution,
-        // inertia = base.inertia,
-        density = base.density,
-        // mass = base.mass,
+        inertia = base.inertia,
+        //    density = base.density,
+        mass = base.mass,
         frictionAir = base.frictionAir }) {
         const options = {
             isStatic,
             friction,
             restitution,
-            name,
             radius,
             image,
             frictionAir,
             angle,
             opacity,
-            density,
-            // mass,
+            // density,
+            mass,
             color: col,
-            // inertia,
+            inertia,
             isSensor,
             shape
         }
         // Svg.pathToVertices(path, 30)
-       /*if (true) {
-            console.log(svg)
-            top.s=svg
+        /*if (true) {
+             console.log(svg)
+             top.s=svg
+ 
+             var body = Bodies.fromVertices(x, y, Svg.pathToVertices(svg.querySelector('path')), 30)
+         } else*/
+        if (shape && +shape) {
+            var body = Bodies.polygon(x, y, shape, radius, options)
+        }
+        else if (Array.isArray(shape)) {
+            let vertices = shape.map(map)
+            var body = Bodies.fromVertices(x, y, vertices, options)
+            if (!body) throw TypeError("Vertices are probably broken")
+            function map(o, index) {
+                let correct = Array.isArray(o)
+                console.log(o)
+                if (!correct) return Svg.pathToVertices(o,
+                    //Idk what this param does
+                )
+                console.assert(correct, `Vertices should be an array or .svg: `, o)
+                return correct ? { x: o[0], y: o[1], index, isInternal: false, body: undefined } : o
+            }
+            shape = -1
 
-            var body = Bodies.fromVertices(x, y, Svg.pathToVertices(svg.querySelector('path')), 30)
-        } else*/
-            if (shape && +shape) {
-                var body = Bodies.polygon(x, y, shape, radius, options)
-            }
-            else if (Array.isArray(shape)) {
-                let vertices = shape.map(map)
-                var body = Bodies.fromVertices(x, y, vertices, options)
-                if (!body) throw TypeError("Vertices are probably broken")
-                function map(o, index) {
-                    let correct = Array.isArray(o)
-                    console.log(o)
-                    if (!correct) return Svg.pathToVertices(o,30)
-                    console.assert(correct, `Vertices should be an array: `, o)
-                    return correct ? { x: o[0] * radius, y: o[1] * radius, index, isInternal: false, body: undefined } : o
-
-                }
-                shape = -1
-                //   Body.scale(body, radius, radius)
-                Body.setDensity(body, density)
-                // Body.setMass(body, mass)
-                // Body.setInertia(body, inertia)
-                // Body.setAngle(body, angle)
-                // Body.setPosition(body, { x, y })
-            }
-            else {
-                var body = Bodies.circle(x, y, radius, options)
-            }
+            // Body.setPosition(body, { x, y })
+        }
+        else
+            var body = Bodies.circle(x, y, radius, options)
         this.color = col
-        if (image) this.image = image
-        Object.defineProperty(this, 'shape', { value: shape, enumerable: 1 })
-        Object.defineProperty(this, 'body', { value: body })
-        delete options.isSensor
         Object.defineProperty(this, 'spawn', {
             value: { ...options, x, y, }
         })
         Object.defineProperty(this, '__shape__', {
             value: shape
         })
+        if (image) this.image = image
+        else this.image = 'none'
+        Object.defineProperty(this, 'shape', { value: shape, enumerable: 1 })
+        Object.defineProperty(this, 'body', { value: body })
+        delete options.isSensor
+
         this.opacity = opacity
         this.sleeping = game.isPaused
         this.radius = radius
+        // Body.scale(body, radius, radius)
+        // Body.setDensity(body, density)
+        // body.restitution = restitution
+        // Body.setMass(body, mass)
+        // Body.setInertia(body, inertia)
+        // Body.setAngle(body, angle)
         Composite.add(world, body)
         entities.set(body.id, this)
         if (name) this.name = name
@@ -496,28 +578,53 @@ class goal extends obj {
         opts.radius = 30
         opts.static = true
         opts.isSensor = true
+        opts.name = 'Goal'
         super(opts)
     }
     clone() {
         super.clone()
         this.remove()
     }
-    collisionenter(body) {
+
+
+    async collisionenter(body) {
         if (!(body instanceof marble)) return
-        body.kill(true)
+        if (!inEditor && !placements.winners.length && !cam.alreadyDidTheWinnerCutsceneThingy) {
+            cam.alreadyDidTheWinnerCutsceneThingy = true
+            game.freeze()
+            let { x, y } = cam.position
+            let old = cam.following
+            cam.following = this
+            let { zoom, targetZoom } = cam
+            cam.targetZoom = 1.2
+            await wait(1300)
+            body.enterGoal(this)
+            await wait(1000)
+            game.thaw()
+            cam.targetZoom = targetZoom
+            cam.zoom = zoom
+            cam.following = old
+            cam.position.set(x, y)
+        }
+        else if (!inEditor) {
+            body.enterGoal(this)
+        }
+        else body.remove()
     }
     draw(x = this.x, y = this.y) {
         let f = game.frame
         ctx.save()
-        ctx.globalCompositeOperation = "destination-over"
-        ctx.strokeStyle = ctx.fillStyle = this.lightColor
+        // ctx.globalCompositeOperation = "source-out"
+        ctx.strokeStyle = this.darkColor
+        ctx.fillStyle = this.lightColor
         ctx.translate(x, y)
         ctx.rotate(f / 100)
+        let c = Math.abs(Math.cos(f / 20))
         for (let i = 0, arrows = 6; i < arrows; i++) {
             ctx.beginPath()
-            ctx.moveTo(5, -50 + Math.abs(Math.cos(f / 20)) * 40)
-            ctx.lineTo(-5, -50 + Math.abs(Math.cos(f / 20)) * 40)
-            ctx.lineTo(-0, -46 + Math.abs(Math.cos(f / 20)) * 40)
+            ctx.moveTo(5, -50 + c * 40)
+            ctx.lineTo(-5, -50 + c * 40)
+            ctx.lineTo(-0, -46 + c * 40)
             ctx.closePath()
             ctx.stroke()
             ctx.fill()
@@ -525,11 +632,13 @@ class goal extends obj {
         }
         ctx.beginPath()
         ctx.lineWidth = 3
-        ctx.arc(0, 0, this.scale + Math.abs(Math.cos(f / 20)) * 30, 0, Math.PI * 2)
+        ctx.arc(0, 0, (this.scale / 4) + (c * 30), 0, Math.PI * 2)
         this.inCurrentPath()
+        this.antThing()
         ctx.stroke()
+        ctx.globalAlpha = this.opacity / 4
+        ctx.fill()
         ctx.restore()
-
     }
 }
 class spawn extends goal {
@@ -552,23 +661,25 @@ class spawn extends goal {
     }
     update() {
         super.update()
-        if (!game.isPaused && this.#deck.length && !(game.frame % 40)) {
+        if (!game.isPaused && !game.frozen && this.#deck.length && !(game.frame % this.spawnRate)) {
             let m = this.#deck.pop()
-            new marble({ ...m, x: this.x + ran.range(-this.scale, this.scale), y: this.y + ran.range(-this.scale, this.scale) })
+            new marble({ ...m, x: this.x + ran.range(-this.scale, this.scale) / 2, y: this.y + ran.range(-this.scale, this.scale) / 2 })
         }
     }
     draw(x = this.x, y = this.y) {
         let f = game.frame
         ctx.save()
-        ctx.globalCompositeOperation = "destination-over"
-        ctx.strokeStyle = ctx.fillStyle = this.lightColor
+        // ctx.globalCompositeOperation = "source-out"
+        ctx.strokeStyle = this.darkColor
+        ctx.fillStyle = this.lightColor
         ctx.translate(x, y)
         ctx.rotate(f / 100)
+        let c = Math.abs(Math.sin(f / 20))
         for (let i = 0, arrows = 6; i < arrows; i++) {
             ctx.beginPath()
-            ctx.moveTo(5, -70 + Math.abs(Math.sin(f / 20)) * 50)
-            ctx.lineTo(-5, -70 + Math.abs(Math.sin(f / 20)) * 50)
-            ctx.lineTo(-0, -75 + Math.abs(Math.sin(f / 20)) * 50)
+            ctx.moveTo(5, -70 + c * 50)
+            ctx.lineTo(-5, -70 + c * 50)
+            ctx.lineTo(-0, -75 + c * 50)
             ctx.closePath()
             ctx.stroke()
             ctx.fill()
@@ -576,28 +687,37 @@ class spawn extends goal {
         }
         ctx.beginPath()
         ctx.lineWidth = 3
-        ctx.arc(0, 0, this.scale + Math.abs(Math.sin(f / 20)) * 30, 0, Math.PI * 2)
+        ctx.arc(0, 0, (this.scale / 4) + (c * 30), 0, Math.PI * 2)
         this.inCurrentPath()
+        this.antThing()
         ctx.stroke()
+        ctx.globalAlpha = this.opacity / 4
+        ctx.fill()
         ctx.restore()
     }
 }
 // new goal({})
-goal.prototype.dontShow = new Set(`name restitution density image static angle scale opacity`.split(' '))
+goal.prototype.dontShow = new Set(`name restitution mass image static angle scale opacity`.split(' '))
 class marble extends obj {
     showName = true
     constructor(opts) {
         opts.shape = 0
         opts.static = false
         opts.isSensor = false
-        o.name = 'Goal'
         Object.assign(opts, marbleStats)
         super(opts)
     }
+    draw(...o) {
+        ctx.globalCompositeOperation = 'source-over'
+        super.draw(...o)
+    }
     kill(winOrLose) {
-        let o = { name: this.body.label, color: this.lightColor, image: this.image?.src ?? null }
+        let o = { name: this.body.label, color: this.lightColor, image: this.image ?? null }
         placements[winOrLose ? 'winners' : 'losers'].push(o)
         this.remove()
+        if (placements.winners.length + placements.losers.length === marbles.size) {
+            game.end()
+        }
     }
     ontoggle(state) {
         state === 'pause' && this.remove()
@@ -610,10 +730,8 @@ function afterUpdate() {
     for (let { length } = all
         , i = 0; i < length; ++i
         //; length--;
-
-    ) {
+    )
         entities.get(all[i].id).update()
-    }
     if (mouse.selectedBody) {
         let { globalCompositeOperation } = ctx
         ctx.globalCompositeOperation = 'source-over'
@@ -631,16 +749,21 @@ function beforeRemove() {
 Runner.run(runner, engine)
 Events.on(world, 'afterRemove', afterRemove)
 Events.on(world, 'beforeRemove', beforeRemove)
+function lerp(start, end, t) {
+    return start + (end - start) * t
+}
 Events.on(engine, 'afterUpdate', () => {
     ctx.clearRect(0, 0, can.width, can.height)
     ctx.fillStyle = 'black'
-    ctx.drawImage(background, 0, 0, can.width, can.height)
+    // ctx.drawImage(background, 0, 0, can.width, can.height)
     ctx.save()
     ctx.translate(cam.position.x, cam.position.y)
+    cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.07)
     ctx.scale(cam.zoom, cam.zoom)
-    ctx.beginPath()
-    ctx.clearRect(0, 0, bounds.x, bounds.y)
-    if (game.isPaused) ctx.globalCompositeOperation = "destination-over"
+
+    // ctx.clearRect(0, 0, bounds.x, bounds.y)
+    //if (game.isPaused)
+    ctx.globalCompositeOperation = "destination-over"
     afterUpdate(game.frame++)
     // ctx.beginPath()
     // let r = 20
@@ -659,7 +782,7 @@ Events.on(engine, 'afterUpdate', () => {
     }
     if (cam.following && !mouse.leftClicking) {
         let { x, y } = cam.following.body.position
-        cam.position.lerp(vect(-x, -y).scale(cam.zoom).add(can.width / 2, can.height / 2), cam.speed / 100)
+        cam.position.lerp(vect(-x, -y).scale(cam.zoom).add(can.width / 2, can.height / 2), (cam.speed / 100) / cam.zoom)
     }
 })
 Events.on(engine, 'beforeUpdate', beforeUpdate)
@@ -696,3 +819,42 @@ function collisionActive({ pairs }) {
                 a.collision?.(b)
     })
 }
+
+let overlay = $.gid('overlay')
+if (levelName) {
+    overlay.style.display = ''
+    overlay.classList.add('slide-in-blurred-top')
+    overlay.push(
+        $('<h1>Title</h1>'),
+        $('<cite>By author</cite>'),
+        $("<div></div>", null,
+            $('<button class="cute-green-button">Play</button>', {
+                events: {
+                    async _click() {
+                        overlay.classList.add('slide-out-blurred-top')
+                        await until(overlay.anims[0], 'finish')
+                        await wait(500)
+                        game.play()
+                    }
+                }
+            })
+        )
+    )
+    let { images, map, racers, settings } = await getJson(`./levels/${levelName}.json`)
+    Object.assign(marbleStats, settings)
+    racers.forEach((o, i) => {
+        if ('image' in o) {
+            o.image = images[o.image]
+        }
+        marbles.set(i, o)
+        console.log(o)
+    })
+    map.forEach(o => {
+        switch (o.type) {
+            default: return new obj({ ...o, static: o.isStatic })
+            case 'spawn': return new spawn(o)
+            case 'goal': return new goal(o)
+        }
+    })
+}
+window.placements = placements

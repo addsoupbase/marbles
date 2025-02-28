@@ -60,6 +60,7 @@
         #controls {
             margin: 30px;
             z-index: 2;
+            --user-select:none;
             text-align: center;
             justify-content: center;
             display: ruby;
@@ -158,6 +159,7 @@
 
 <body style="display:none">
     <main>
+        <h3>its not done so dont expect everything to work</h3>
         <div class="center" id="hol-der">
             <div class="centery menu" id="left-controls">
 
@@ -191,24 +193,28 @@
                         </label>
                         <label for="marble-rest" class="stat">
                             Bounciness
-                            <input id="marble-rest" type="number" value="0.95" step="0.25">
+                            <input id="marble-rest" type="number" value="2.5" step="0.25">
                         </label>
                         <label for="marble-friction" class="stat">
                             Friction
                             <input id="marble-friction" type="number" value="0.02" step="0.01">
                         </label>
-                        <label for="marble-density" class="stat">
-                            Density
-                            <input id="marble-density" type="number" value="1">
+                        <label for="marble-mass" class="stat">
+                            Mass
+                            <input id="marble-mass" type="number" value="5">
                         </label>
                         <label for="marble-frictionair" class="stat">
                             Friction Air
-                            <input id="marble-frictionair" type="number" value="0">
+                            <input id="marble-frictionair" type="number" value="0.01">
+                        </label>
+                        <label for="marble-collide" title="can marbles collide with other marbles?" class="stat">
+                            Collide
+                            <input id="marble-collide" type="checkbox" checked disabled>
                         </label>
                     </section>
                 </div>
             </div>
-            <iframe src="https://addsoupbase.github.io/marbles/play/index.html"></iframe>
+            <iframe src="../play/index.html"></iframe>
             <div id="controls">
 
                 <button class="cute-green-button" id="play-button">Play</button>
@@ -226,6 +232,7 @@
                     </select>
                 </span>
                 <button class="cute-green-button" id="reset-cam">Reset Camera</button>
+                <button class="cute-green-button" id="export-button">Export</button>
             </div>
         </div>
 

@@ -1,7 +1,7 @@
-import $ from '../../addsoupbase.github.io/yay.js'
-import { on, wait } from '../../addsoupbase.github.io/handle.js'
-import { getJson } from '../../addsoupbase.github.io/arrays.js'
-import * as math from '../../addsoupbase.github.io/num.js'
+import $ from 'https://addsoupbase.github.io/yay.js'
+import { on, wait } from 'https://addsoupbase.github.io/handle.js'
+import { getJson } from 'https://addsoupbase.github.io/arrays.js'
+import * as math from 'https://addsoupbase.github.io/num.js'
 const { vect } = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
@@ -291,7 +291,7 @@ else {
     init()
 }
 function init() {
-    import('./game/define.js')
+    import('https://addsoupbase.github.io/marbles/play/game/define.js')
 }
 // Audio stuff later
 export const inEditor = top !== window

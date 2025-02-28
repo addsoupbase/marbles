@@ -1,11 +1,11 @@
 import { Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, } from '../game.js'
 import { canvas as can, mouse, cam, marbles, levelName } from '../setup.js'
-import ran from '../../../random.js'
-import * as math from '../../../num.js'
-import { getObjUrl, on, until, wait } from '../../../handle.js'
-import $ from '../../../yay.js'
-import { getJson } from '../../../arrays.js'
-import color from '../../../color.js'
+import ran from 'https://addsoupbase.github.io/random.js'
+import * as math from 'https://addsoupbase.github.io/num.js'
+import { getObjUrl, on, until, wait } from 'https://addsoupbase.github.io/handle.js'
+import $ from 'https://addsoupbase.github.io/yay.js'
+import { getJson } from 'https://addsoupbase.github.io/arrays.js'
+import color from 'https://addsoupbase.github.io/color.js'
 import { game, entities, inEditor, svgs } from '../setup.js'
 let ctx = can.getContext('2d')
 let background = new Image

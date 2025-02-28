@@ -1,7 +1,7 @@
-import $ from '../../yay.js'
-import color from '../../color.js'
-import { on, getObjUrl as cou, until, download, } from '../../handle.js'
-import * as math from '../../num.js'
+import $ from 'https://addsoupbase.github.io/yay.js'
+import color from 'https://addsoupbase.github.io/color.js'
+import { on, getObjUrl as cou, until, download, } from 'https://addsoupbase.github.io/handle.js'
+import * as math from 'https://addsoupbase.github.io/num.js'
 let leftControls = $.gid('left-controls')
 leftControls.createState(0, $('div'))
 $.gid('reset-cam').on({

@@ -46,9 +46,9 @@ export const game = {
         mouse.reset()
         this.isPaused = true
         for (let body of this.all) {
+            body.ontoggle?.('pause')
             body.setSleeping(true)
             body.reset()
-            body.ontoggle?.('pause')
         }
         this.toggleDOM(false)
     },
@@ -73,11 +73,11 @@ export const game = {
         else top.postMessage('hideData')
         this.frame = 0
         mouse.reset()
-        for (let body of this.all) {
-            body.setSleeping(false)
-            body.ontoggle?.('play')
-        }
         this.isPaused = false
+        for (let body of this.all) {
+            body.ontoggle?.('play')
+            body.setSleeping(false)
+        }
         this.toggleDOM(true)
     }
 }
@@ -239,74 +239,82 @@ export function msg(e) {
         }
     }
 }
-if (top !== window) {
-    init()
-    top.marbles = marbles
-    top.imageCache = images
-    Object.defineProperty(top, 'entities', {
-        get() {
-            return game.all
+void function start(ignore) {
+    if (ignore || top !== window) {
+        try {
+            init()
+            top.marbles = marbles
+            top.imageCache = images
+            Object.defineProperty(top, 'entities', {
+                get() {
+                    return game.all
+                }
+            })
+            on(window, {
+                message: msg
+            })
         }
-    })
-    on(window, {
-        message: msg
-    })
-}
-else if (!levelName) {
-    document.title = 'Choose a level - Marbles'
-    let pick = $(`<div id="pick-level">
-        <h1>Choose your level</h1>
-        </div>`, { parent: main })
-    let id
-    let firstdiv = $('form #form', {
-        parent: pick,
-        events: {
-            async $submit() {
-                id = this.first.value
-                message.hide3()
-                author.hide3()
-                anchor.hide3()
-                delete message.styles.color
-                await loader.fadeIn()
-                message.fadeIn()
-                try {
-                    // let json = await getJson(`./${id}`)
-                    //doSomethingWithJSON(json)
-                    author.fadeIn()
-                    anchor.fadeIn()
-                    anchor.setAttributes({ href: `?level=${id}` })
-                }
-                catch (e) {
-                    message.textContent = 'Error'
-                    message.setStyles({ color: 'darkred' })
+        catch(e) {
+            alert(e)
+            return start(true)
+        }
+    }
+    else if (!levelName) {
+        document.title = 'Choose a level - Marbles'
+        let pick = $(`<div id="pick-level">
+            <h1>Choose your level</h1>
+            </div>`, { parent: main })
+        let id
+        let firstdiv = $('form #form', {
+            parent: pick,
+            events: {
+                async $submit() {
+                    id = this.first.value
+                    message.hide3()
+                    author.hide3()
+                    anchor.hide3()
+                    delete message.styles.color
+                    await loader.fadeIn()
                     message.fadeIn()
-                }
-                finally {
-                    loader.hide3()
+                    try {
+                        // let json = await getJson(`./${id}`)
+                        //doSomethingWithJSON(json)
+                        author.fadeIn()
+                        anchor.fadeIn()
+                        anchor.setAttributes({ href: `?level=${id}` })
+                    }
+                    catch (e) {
+                        message.textContent = 'Error'
+                        message.setStyles({ color: 'darkred' })
+                        message.fadeIn()
+                    }
+                    finally {
+                        loader.hide3()
+                    }
                 }
             }
-        }
-    })
-    $('<input placeholder="Enter Level Id..." class="cute-green" required>', {
-        parent: firstdiv
-    })
-    $('<button class="cute-green-button">Enter</button>', {
-        parent: firstdiv,
-    })
-    let loader = $('<div class="loader"></div>', {
-        parent: pick
-    }).hide3()
-    let message = $('<h2>Level Title</h2>', {
-        parent: pick
-    }).hide3()
-    let author = $('<cite>By Author</cite>', {
-        parent: pick
-    }).hide3()
-    let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, { parent: pick }).hide3()
-}
-else {
-    init()
-}
+        })
+        $('<input placeholder="Enter Level Id..." class="cute-green" required>', {
+            parent: firstdiv
+        })
+        $('<button class="cute-green-button">Enter</button>', {
+            parent: firstdiv,
+        })
+        let loader = $('<div class="loader"></div>', {
+            parent: pick
+        }).hide3()
+        let message = $('<h2>Level Title</h2>', {
+            parent: pick
+        }).hide3()
+        let author = $('<cite>By Author</cite>', {
+            parent: pick
+        }).hide3()
+        let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, { parent: pick }).hide3()
+    }
+    else {
+        init()
+    }
+}()
 function init() {
     import('./define.js')
 }

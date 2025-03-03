@@ -16,9 +16,9 @@ import color from '../../color.js'
 // function defineFuncs(obj, funcs) {
 // return Object.defineProperties(obj, Object.getOwnPropertyDescriptors(funcs))
 // }
-function copyTo(copy, paste) {
+function implement({ prototype }, paste) {
     //  lazy
-    return Object.defineProperties(paste, Object.getOwnPropertyDescriptors(copy))
+    return Object.defineProperties(paste, Object.getOwnPropertyDescriptors(prototype))
 }
 let ctx = can.getContext('2d')
 // let joints = new Set
@@ -108,6 +108,9 @@ const marbleStats = inEditor ? {
 }
 Object.defineProperty(game, 'all', {
     get: getAllBodies
+})
+Object.defineProperty(game, 'allConstraints', {
+    get: getAllConstraints
 })
 if (inEditor) {
     top.base = base
@@ -208,6 +211,63 @@ let outlineOffsetThingy = 0
 //  a normal class based thingy
 //  but i then decided do just use the base object thingy
 //  and just assign to that
+function obj() {
+    throw TypeError('Abstract class cannot be instantiated directly')
+}
+obj.prototype = {
+    constraints: new Set,
+    ontoggle(state) {
+        if (state === 'play') this.constraints.forEach(o => o.add())
+        else this.constraints.forEach(o => o.remove())
+    },
+    add() {
+        Composite.add(world, this)
+    },
+    remove() {
+        Composite.remove(world, this)
+    },
+    setColor(val) {
+        this.render.fillStyle = val
+        this.render.strokeStyle = color.dhk(val)
+    },
+    getColor() {
+        return {
+            __proto__: null,
+            dark: this.render.strokeStyle,
+            light: this.render.fillStyle
+        }
+    },
+}
+function joint({ bodyA, bodyB, stiffness = 1, damping = 0.05, length = 50 }) {
+    let out = Constraint.create({ bodyA, bodyB, stiffness, damping, length })
+    implement(obj, out)
+    implement(joint, out)
+    bodyA?.constraints.add(out)
+    bodyB?.constraints.add(out)
+    return out
+}
+let JOINT_SYMBOL = Symbol('joint')
+joint.prototype = {
+    __proto__: obj.prototype,
+    [JOINT_SYMBOL]: true,
+    constructor: joint,
+    update() {
+        this.draw()
+    },
+    draw() {
+        ctx.beginPath()
+        ctx.moveTo(this.bodyA.position.x, this.bodyA.position.y)
+        ctx.lineTo(this.bodyB.position.x, this.bodyB.position.y)
+        ctx.strokeStyle = this.render.strokeStyle
+        ctx.lineWidth = this.stiffness * 1000
+        ctx.stroke()
+    },
+    kill() {
+        this.bodyA?.constraints.delete(this)
+        this.bodyB?.constraints.delete(this)
+        this.remove()
+    }
+}
 function body({
     x = 0,
     y = 0,
@@ -261,6 +321,8 @@ function body({
         // Body.setPosition(body, { x, y })
     }
     else out = Bodies.circle(x, y, radius, startingOptions)
+    implement(obj, out)
+    implement(body, out)
     Object.assign(out.render, {
         opacity,
         name,
@@ -270,7 +332,6 @@ function body({
     out.shape = shape
     out.showName = out.isEnteringGoal = false
     out.animation = null
-    copyTo(body.prototype, out)
     //  Everything goes after this
     out.setSleeping(game.isPaused)
     Object.defineProperty(out, 'spawn', {
@@ -289,16 +350,21 @@ function body({
     out.reset()
     return out//Object.seal(out)
 }
-class AbstractPrototype {
-    constructor() { throw TypeError(`Illegal constructor`) }
+let BODY_SYMBOL = Symbol("body")
+Object.defineProperty(body, Symbol.hasInstance, {
+    value: instance => instance[BODY_SYMBOL] === true
+})
+body.prototype = {
+    [BODY_SYMBOL]: true,
+    constructor: body,
     setSleeping(val) {
         Sleeping.set(this, val)
-    }
+    },
     enterGoal({ position: { x, y } }) {
         this.setStatic(this.isSensor = true)
         this.isEnteringGoal = true
         this.animation = vect(x, y)
-    }
+    },
     *animateEnteredGoal() {
         //  The suck into portal animation thing
         this.showName = false
@@ -313,7 +379,7 @@ class AbstractPrototype {
         }
         this.animation = null
         this.kill(true)
-    }
+    },
     restore() {
         this.setSleeping(false)
         const { saved } = this
@@ -322,13 +388,13 @@ class AbstractPrototype {
         this.setRotation(saved.angle)
         this.setVelocity(saved.velocity.x, saved.velocity.y)
         this.setPos(saved.position.x, saved.position.y)
-    }
+    },
     setInertia(inertia) {
         Body.setInertia(this, inertia)
-    }
+    },
     outOfBounds() {
         this.reset()
-    }
+    },
     outline() {
         if (mouse.selectedBody === this) {
             ctx.setLineDash([this.radius / 10, 2])
@@ -338,7 +404,7 @@ class AbstractPrototype {
             return true
         }
         return false
-    }
+    },
     save() {
         this.saved = {
             __proto__: null,
@@ -349,7 +415,7 @@ class AbstractPrototype {
             position: { ...this.position }
         }
         this.setSleeping(true)
-    }
+    },
     clone() {
         let n = new this.constructor({
             ...this.spawn,
@@ -360,7 +426,7 @@ class AbstractPrototype {
         mouse.selectedBody =
             mouse.clickedBody = n
         game.send(n)
-    }
+    },
     setImage(src) {
         if (src && typeof src !== 'string') {
             this.render.image = src
@@ -393,7 +459,7 @@ class AbstractPrototype {
                 }
             })
         }
-    }
+    },
     setName(name) {
         this.label = name
         if (this.dontShow.has('name')) return
@@ -417,13 +483,8 @@ class AbstractPrototype {
         cx.stroke()
         // createImageBitmap(c).then(data => this.nameImage = data)
         this.render.nameImage = c//.transferToImageBitmap()
-    }
-    add() {
-        Composite.add(world, this)
-    }
-    remove() {
-        Composite.remove(world, this)
-    }
+    },
+
     reset() {
         this.setStatic(this.spawn.isStatic)
         this.setPos(this.spawn.x, this.spawn.y)
@@ -435,8 +496,9 @@ class AbstractPrototype {
         this.setScale(this.spawn.radius)
         this.render.opacity = this.spawn.opacity
         this.av = this.as = 0
-    }
+    },
     update() {
+        if(game.isPaused)this.setSleeping(true)
         let { x, y } = this.position
         if (game.isPaused) {
             this.setPos(math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y))
@@ -461,7 +523,7 @@ class AbstractPrototype {
         }
         // if (mouse.selectedBody === this) return
         this.draw(x, y)
-    }
+    },
     draw(x = this.position.x, y = this.position.y, scale) {
         ctx.save()
         ctx.translate(x, y)
@@ -541,7 +603,7 @@ class AbstractPrototype {
             ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.getScale()) - 40)
         }
         ctx.restore()
-    }
+    },
     inCurrentPath(x, y) {
         x ??= mouse.click.x * cam.zoom
         y ??= mouse.click.y * cam.zoom
@@ -562,79 +624,62 @@ class AbstractPrototype {
                 mouse.clickedThisFrame = true
             }
         }
-    }
+    },
     get av() {
         return Body.getAngularVelocity(this)
-    }
+    },
     get as() {
         return Body.getAngularSpeed(this)
-    }
+    },
     set av(val) {
         Body.setAngularVelocity(this, val)
-    }
+    },
     set as(val) {
         Body.setAngularSpeed(this, val)
-    }
+    },
     setDensity(val) {
         Body.setDensity(this, val)
-    }
+    },
     setSpeed(val) {
-        Body.setSpeed(this.body, val)
-    }
+        Body.setSpeed(this, val)
+    },
     setRotation(angle, updateVelocity) {
         Body.setAngle(this, angle, updateVelocity)
-    }
+    },
     rotate(rotation, updateVelocity) {
         Body.rotate(this, rotation, updateVelocity)
-    }
+    },
     scaleBy(scale) {
         Body.scale(this, scale, scale)
-    }
+    },
     setScale(scale) {
         Body.scale(this, 1 / this.radius, 1 / this.radius)
         Body.scale(this, scale, scale)
         this.radius = scale
-    }
+    },
     setStatic(val) {
         Body.setStatic(this, val)
-    }
+    },
     setPos(x = this.position.x, y = this.position.y, updateVelocity) {
         Body.setPosition(this, { x, y }, updateVelocity)
-    }
+    },
     translate(x = 0, y = 0, updateVelocity) {
         Body.translate(this, { x, y }, updateVelocity)
-    }
+    },
     setVelocity(x = 0, y = 0) {
         Body.setVelocity(this, { x, y })
-    }
+    },
     applyForce(x = 0, y = 0, position = this.position) {
         Body.applyForce(this, position, { x, y })
-    }
+    },
     getScale() {
         return this.spawn.radius
-    }
+    },
     set(prop, value) {
         Body.set(this, prop, value)
-    }
-    setColor(val) {
-        this.render.fillStyle = val
-        this.render.strokeStyle = color.dhk(val)
-    }
-    getColor() {
-        return {
-            __proto__: null,
-            dark: this.render.strokeStyle,
-            light: this.render.fillStyle
-        }
-    }
+    },
+    dontShow: new Set
 }
-delete AbstractPrototype.prototype.constructor
-Object.defineProperties(body.prototype, Object.getOwnPropertyDescriptors(AbstractPrototype.prototype))
-body.prototype.dontShow = new Set
-Object.defineProperty(body.prototype, 'saved', {
-    value: { __proto__: null },
-    writable: 1
-})
 function goal(args) {
     args.shape = 0
     args.radius = 30
@@ -642,10 +687,15 @@ function goal(args) {
     args.isSensor = true
     args.name = 'Goal'
     let out = new body(args)
-    copyTo(new.target.prototype, out)
+    implement(new.target, out)
     return out
 }
+const GOAL_SYMBOL = Symbol('goal')
+Object.defineProperty(goal, Symbol.hasInstance, {
+    value: instance => instance[GOAL_SYMBOL] === true
+})
 goal.prototype = {
+    [GOAL_SYMBOL]: true,
     __proto__: body.prototype,
     constructor: goal,
     dontShow: new Set(`name restitution density image static angle scale opacity`.split(' ')),
@@ -714,10 +764,15 @@ function spawn(args) {
     let out = new goal(args)
     out.deck = null
     out.spawnRate = out.spawn.spawnRate = args.spawnRate ?? 40
-    copyTo(new.target.prototype, out)
+    implement(new.target, out)
     return out
 }
+const SPAWN_SYMBOL = Symbol('spawn')
+Object.defineProperty(spawn, Symbol.hasInstance, {
+    value: instance => instance[SPAWN_SYMBOL] === true
+})
 spawn.prototype = {
+    [SPAWN_SYMBOL]: true,
     __proto__: goal.prototype,
     constructor: spawn,
     update() {
@@ -758,6 +813,7 @@ spawn.prototype = {
         ctx.restore()
     },
     ontoggle(state) {
+        super.ontoggle(state)
         switch (state) {
             case 'play': this.deck = ran.shuffle(...marbles.values())
         }
@@ -774,10 +830,15 @@ function marble(args) {
     Object.assign(args, marbleStats)
     let out = new body(args)
     out.showName = true
-    copyTo(marble.prototype, out)
+    implement(marble, out)
     return out
 }
+const MARBLE_SYMBOL = Symbol('marble')
+Object.defineProperty(marble, Symbol.hasInstance, {
+    value: instance => instance[MARBLE_SYMBOL] === true
+})
 marble.prototype = {
+    [MARBLE_SYMBOL]: true,
     __proto__: body.prototype,
     constructor: marble,
     draw(...o) {
@@ -796,6 +857,7 @@ marble.prototype = {
         }
     },
     ontoggle(state) {
+        super.ontoggle(state)
         state === 'pause' && this.remove()
     }
 }
@@ -808,6 +870,12 @@ function afterUpdate() {
         //; length--;
     )
         all[i].update()
+    let allConstraints = getAllConstraints()
+    for (let { length } = allConstraints
+        , i = 0; i < length; ++i
+        //; length--;
+    )
+        allConstraints[i].update()
     if (mouse.selectedBody) {
         let { globalCompositeOperation } = ctx
         ctx.globalCompositeOperation = 'source-over'
@@ -1000,3 +1068,6 @@ if (levelName) {
     var blob = new Blob([ab], { type: mimeString });
     return blob;
 } */
+let me = body({ x: 200, y: 200, radius: 30, isStatic: true })
+let other = body({ x: 300, y: 200, radius: 25, shape: 0 })
+joint({ bodyB: me, bodyA: other, stiffness: 0.001, length: 50 })

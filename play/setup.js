@@ -318,4 +318,12 @@ function init() {
     import('./define.js')
 }
 // Audio stuff later
-export const inEditor = top !== window
+
+try {
+    top.a
+    var inEditor = top !== window
+}
+catch {
+    inEditor = false
+}
+export {inEditor}

@@ -964,7 +964,6 @@ function collisionActive({ pairs }) {
 let overlay = $.gid('overlay')
 window.getLevelFromJSON =
     function getLevelFromJSON(json) {
-        console.log(json)
         if (inEditor) {
             marbleDensity.value = json.settings.density
             marbleFriction.value = json.settings.friction

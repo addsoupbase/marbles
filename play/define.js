@@ -87,12 +87,14 @@ const placements = {
     }
 }
 const { vect, lerp } = math
-let doc = inEditor && top.document
-let marbleSize = doc.getElementById("marble-size"),
+if (inEditor) {
+    var doc = top.document
+    var marbleSize = doc.getElementById("marble-size"),
     marbleRestitution = doc.getElementById('marble-rest'),
     marbleDensity = doc.getElementById('marble-density'),
     marbleFriction = doc.getElementById('marble-friction'),
     marbleFrictionair = doc.getElementById('marble-frictionair')
+}
 const marbleStats = inEditor ? {
     radius: marbleSize?.value ?? null,
     density: marbleDensity?.value ?? null,

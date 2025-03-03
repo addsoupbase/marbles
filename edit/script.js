@@ -1,7 +1,8 @@
-import $ from 'https://addsoupbase.github.io/yay.js'
-import color from 'https://addsoupbase.github.io/color.js'
-import { on, getObjUrl as cou, until, download, } from 'https://addsoupbase.github.io/handle.js'
-import * as math from 'https://addsoupbase.github.io/num.js'
+import $ from '../../yay.js'
+import color from '../../color.js'
+import { on, getObjUrl as cou, until, download, reqFile, getObjUrl, } from '../../handle.js'
+import * as math from '../../num.js'
+import { getJson } from '../../arrays.js'
 let leftControls = $.gid('left-controls')
 leftControls.createState(0, $('div'))
 $.gid('reset-cam').on({
@@ -9,6 +10,30 @@ $.gid('reset-cam').on({
         game.postMessage('resetcam')
     }
 })
+function clearMarbles() {
+    marbles.clear()
+    count = 0
+    // imageCache.clear()
+    racers.destroyChildren()
+    racers.push($(`<h3>No marbles added :(</h3>`))
+}
+let mport = $.gid('import-button')
+    .on({
+        async click() {
+            let f = await reqFile('.json')
+            let url = getObjUrl(f)
+            let data = await getJson(url)
+            clearMarbles()
+            game.getLevelFromJSON(data)
+            for (let [, marble] of marbles) {
+                addMarble({
+                    color: marble.color,
+                    image: marble.image,
+                    name: marble.name
+                }, true)
+            }
+        }
+    })
 let xport = $.gid('export-button')
     .on({
         async click() {
@@ -18,49 +43,89 @@ let xport = $.gid('export-button')
                 height: 256
             })
             let obj = {
-                __proto__: null, settings,
+                __proto__: null, settings: Object.fromEntries(Object.entries(settings).map(([p, v]) => [p, +v])),
                 racers: [...marbles.values()], map: Array.from(entities.values(), o => {
-                    let { spawn } = o
+                    let spawn = { ...o.spawn }
                     if (o.constructor.name !== 'obj')
                         spawn.type = o.constructor.name
                     return spawn
                 }
                 )
             }
-            let allImages = new Set
-            let seen = new Set
+            let allImages = []
+            let outShapes = []
+            let seenImages = new Map
+            let allShapes = []
+            let seenShapes = new Map
+
             for (let n of obj.racers.concat(obj.map)) {
                 let { image } = n
-                console.log(image)
-                let count = 0
                 if (image !== null && image !== 'none') {
-                    if (seen.has(image)) {
-                        n.image = count
-                        continue
+                    if (seenImages.has(image)) {
+                        n.image = seenImages.get(image)
+                    } else {
+                        let img = new Image()
+                        img.src = imageCache.get(image).src
+                        await until(img, 'load')
+                        await img.decode()
+                        ctx.drawImage(img, 0, 0, 256, 256)
+                        let data = ctx.canvas.toDataURL('image/png', 0.5)
+                        allImages.push(data)
+                        seenImages.set(image, allImages.length - 1)
+                        n.image = allImages.length - 1
                     }
-                    let img = new Image
-                    img.src = image
-                    await until(img, 'load')
-                    await img.decode()
-                    ctx.drawImage(img, 0, 0, 256, 256)
-                    n.image = count++
-                    allImages.add(ctx.canvas.toDataURL('image/png', .5))
-                    seen.add(image)
-                } else delete n.image
-            }
-            for (let n of obj.map) {
-                delete n.isSensor
+                } else {
+                    delete n.image
+                }
+
+                let { shape } = n
+                if (Array.isArray(shape)) {
+                    if (typeof shape[0]?.[0] === 'number') {
+                        shape = JSON.stringify(shape)
+                        if (seenShapes.has(shape)) {
+                            n.shape = seenShapes.get(shape)
+                        } else {
+                            allShapes.push(shape)
+                            seenShapes.set(shape, -(allShapes.length))
+                            n.shape = -(allShapes.length)
+                        }
+                    } else {
+                        let data = n.shape.map(o => o.getAttribute('d').toString()).join('|')
+                        if (seenShapes.has(data)) {
+                            n.shape = seenShapes.get(data)
+                        } else {
+                            seenShapes.set(data, -(allShapes.length + 1))
+                            allShapes.push(data)
+                            outShapes.push(data)
+                            n.shape = -(allShapes.length)
+                        }
+                    }
+                }
+
                 for (let i in n) {
                     let val = n[i]
-                    if (val === base[i]) delete n[i]
-                    else switch (i) {
-                        case 'opacity': if (val === 1) delete n[i]; break
-                        case 'angle': if (val === 0) delete n[i]; break
-                        case 'isStatic': if (val === false) delete n[i]; break
+                    if (val === base[i]) {
+                        delete n[i]
+                    } else {
+                        switch (i) {
+                            case 'opacity':
+                                if (val === 1) delete n[i]
+                                break
+                            case 'angle':
+                                if (val === 0) delete n[i]
+                                break
+                            case 'isStatic':
+                                if (val === false) delete n[i]
+                                break
+                            case 'type':
+                                if (val === 'body') delete n[i]
+                                break
+                        }
                     }
                 }
             }
-            obj.images = [...allImages]
+            obj.shapes = allShapes
+            obj.images = allImages
             download(new Blob([JSON.stringify(obj)]), 'data.json')
         }
     })
@@ -91,31 +156,37 @@ let uploadButton = $.gid('upload-images').on({
         files.click()
     }
 })
+function updateImages(file) {
+    if (file instanceof Image) {
+        var url = file.src
+    }
+    else {
+        var url = cou(file)
+    }
+    cached.add(file)
+    game.postMessage({
+        title: file.name,
+        url
+    })
+    for (let el of document.getElementsByName('marbleimageselect')) {
+        el = $(el)
+        // el.destroyChildren()
+        // el.$(`<option value="none">None</option>`)
+        el.last.after = $(`<option value="${url}">${file.name || file.title}</option>`)
+        // el.push(...Array.from(imageCache.entries(),
+        // function ([title, src]) {
+        // console.log(src, title)
+        // return $(`<option value="${src}">${title}</option>`)
+
+    }
+}
 let files = uploadButton.after.on({
     change() {
         for (let file of this.files) {
             if (cached.has(file)) {
                 //  Do something...
             }
-            else {
-                let url = cou(file)
-                cached.add(file)
-                game.postMessage({
-                    title: file.name,
-                    url
-                })
-                for (let el of document.getElementsByName('marbleimageselect')) {
-                    el = $(el)
-                    // el.destroyChildren()
-                    // el.$(`<option value="none">None</option>`)
-                    el.last.after = $(`<option value="${url}">${file.name}</option>`)
-                    // el.push(...Array.from(imageCache.entries(),
-                    // function ([title, src]) {
-                    // console.log(src, title)
-                    // return $(`<option value="${src}">${title}</option>`)
-
-                }
-            }
+            else updateImages(file)
         }
         message({ data: 'hideData' })
     }
@@ -124,9 +195,9 @@ function message(e) {
     let { data } = e
     if (typeof data === 'string') switch (data) {
         case 'hideData': return leftControls.destroyChildren(), window.selected = null, leftControls.setState(0), game.postMessage("resetMouse")
-        case 'showData': if (selected != null && leftControls.currentState !== selected.body.id) {
+        case 'showData': if (selected != null && leftControls.currentState !== selected.id) {
             if (!isPaused) return
-            if (!leftControls.getState(selected.body.id)) {
+            if (!leftControls.getState(selected.id)) {
                 let { dontShow } = selected
                 let theState =
                     $('<div style="display:grid;"></div>', {},
@@ -134,15 +205,15 @@ function message(e) {
                             attributes: {
                                 name: "title"
                             },
-                            textContent: selected.body.label
+                            textContent: selected.label
                         }),
-                        $(`<label title="Color" class="stat" for="c-${selected.body.id}">Color</label>`, {
+                        $(`<label title="Color" class="stat" for="c-${selected.id}">Color</label>`, {
                             start() {
                                 dontShow.has('color') && this.hide3()
                             }
                         }, $('input%color', {
                             attributes: {
-                                id: `c-${selected.body.id}`,
+                                id: `c-${selected.id}`,
                                 name: 'color',
                                 title: 'Color',
                                 value: selected.spawn.color,
@@ -155,12 +226,12 @@ function message(e) {
                                 },
                             }
                         })),
-                        $(`<label title="Bounciness" class="stat" for="r-${selected.body.id}">Bounciness</label>`, {
+                        $(`<label title="Bounciness" class="stat" for="r-${selected.id}">Bounciness</label>`, {
                             start() {
                                 dontShow.has('restitution') && this.hide3()
                             }
                         },
-                            $(`<input type="number" min="0" placeholder="Bounciness" value="${selected.spawn.restitution}" id="r-${selected.body.id}">`, {
+                            $(`<input type="number" min="0" placeholder="Bounciness" value="${selected.spawn.restitution}" id="r-${selected.id}">`, {
                                 events: {
                                     input() {
                                         selected.spawn.restitution = +this.value
@@ -168,25 +239,25 @@ function message(e) {
                                     }
                                 }
                             })),
-                        $(`<label title="Mass" class="stat" for="d-${selected.body.id}">Mass</label>`, {
+                        $(`<label title="Density" class="stat" for="d-${selected.id}">Density</label>`, {
                             start() {
-                                dontShow.has('mass') && this.hide3()
+                                dontShow.has('density') && this.hide3()
                             }
                         },
-                            $(`<input type="number" min="0" placeholder="Mass" value="${selected.spawn.mass}" id="d-${selected.body.id}">`, {
+                            $(`<input type="number" min="0" placeholder="Density" value="${selected.spawn.density}" id="d-${selected.id}">`, {
                                 events: {
                                     input() {
-                                        selected.spawn.mass = +this.value || 1
+                                        selected.spawn.density = +this.value || 1
                                         selected.reset()
                                     }
                                 }
                             })),
-                        $(`<label title="Scale" class="stat" for="S-${selected.body.id}">Scale</label>`, {
+                        $(`<label title="Scale" class="stat" for="S-${selected.id}">Scale</label>`, {
                             start() {
                                 dontShow.has('scale') && this.hide3()
                             }
                         },
-                            $(`<input type="number" max="9007199254740991" min="-9007199254740991" placeholder="Negative = Mirrored" value="${selected.spawn.radius}" id="S-${selected.body.id}">`, {
+                            $(`<input type="number" max="9007199254740991" min="-9007199254740991" placeholder="Negative = Mirrored" value="${selected.spawn.radius}" id="S-${selected.id}">`, {
                                 events: {
                                     input() {
                                         selected.spawn.radius = +this.value || 1
@@ -194,15 +265,16 @@ function message(e) {
                                     }
                                 }
                             })),
-                        $(`<label title="opacity" class="stat" for="o-${selected.body.id}">Opacity</label>`, {
+                        $(`<label title="opacity" class="stat" for="o-${selected.id}">Opacity</label>`, {
                             start() {
                                 dontShow.has('opacity') && this.hide3()
                             }
                         },
-                            $(`<input class="uhh" min="0" max="1" step="0.05" type="range" placeholder="opacity" id="o-${selected.body.id}" value="${selected.opacity}">`, {
+                            $(`<input class="uhh" min="0" max="1" step="0.05" type="range" placeholder="opacity" id="o-${selected.id}" value="${selected.render.opacity}">`, {
                                 events: {
                                     input() {
-                                        selected.opacity = math.clamp(this.value, 0, 1)
+                                        selected.spawn.opacity = math.clamp(this.value, 0, 1)
+                                        selected.reset()
                                     }
                                 }
                             })
@@ -251,20 +323,20 @@ function message(e) {
                             $('<select title="select image" id="select-image"></select>', {
                                 events: {
                                     change() {
-                                        if (this.value === 'none') selected.image = null
-                                        else selected.image = this.value
+                                        if (this.value === 'none') selected.setImage(null)
+                                        else selected.setImage(this.value)
                                     }
                                 }
                             }),
-                            //                                $(`<div class="preview" id="img-${selected.body.id}"></div>`),
+                            //                                $(`<div class="preview" id="img-${selected.id}"></div>`),
                             // $('<label></label>') $("<select>Smoothing Quality</select>")
                         ),
-                        $(`<label class="stat" style="display:inline;" for="s-${selected.body.id}">Static<label>`, {
+                        $(`<label class="stat" style="display:inline;" for="s-${selected.id}">Static<label>`, {
                             start() {
                                 dontShow.has('static') && this.hide3()
                             }
                         },
-                            $(`<input type="checkbox" id="s-${selected.body.id}">`, {
+                            $(`<input type="checkbox" id="s-${selected.id}">`, {
                                 events: {
                                     change() {
                                         selected.spawn.isStatic = !!this.checked
@@ -277,8 +349,8 @@ function message(e) {
                             })
                         ),
                     )
-                if (selected.constructor.name === 'spawn') $(`<label class="stat" for="sp-${selected.body.id}">Spawn Rate</label>`, null,
-                    $(`<input value="${selected.spawnRate}" type="number" id="sp-${selected.body.id}">`, {
+                if (selected.constructor.name === 'spawn') $(`<label class="stat" for="sp-${selected.id}">Spawn Rate</label>`, null,
+                    $(`<input value="${selected.spawnRate}" type="number" id="sp-${selected.id}">`, {
                         events: {
                             change() {
                                 selected.spawn.spawnRate = +this.value
@@ -296,40 +368,43 @@ function message(e) {
                     $(`<button class="red cute-green-button">Delete</button>`, {
                         events: {
                             click() {
-                                leftControls.deleteState(selected.body.id)
+                                leftControls.deleteState(selected.id)
                                 selected.remove()
                                 message({ data: 'hideData' })
 
                             }
                         }
                     }))
-                leftControls.createState(selected.body.id, theState)
+                leftControls.createState(selected.id, theState)
             }
-            let state = leftControls.getState(selected.body.id)
+            let state = leftControls.getState(selected.id)
             let col = $(state.querySelector('[name=color]'))
-            let isStatic = $(state.getElementById(`s-${selected.body.id}`))
-            isStatic.checked = selected.static
+            let isStatic = $(state.getElementById(`s-${selected.id}`))
+            isStatic.checked = selected.isStatic
             let angleInput = $(state.getElementById('angle-alt'))
             let angleMain = $(state.getElementById('angle'))
-            let opacity = $(state.getElementById(`o-${selected.body.id}`))
-            opacity.value = selected.opacity
+            let opacity = $(state.getElementById(`o-${selected.id}`))
+            opacity.value = selected.render.opacity
             angleMain.value = angleInput.value = math.toDeg(selected.angle)
             let select = $(state.querySelector('select'))
-            let mass = $(state.getElementById(`d-${selected.body.id}`))
-            mass.value = selected.mass
-            let scale = $(state.getElementById(`S-${selected.body.id}`))
-            scale.value = selected.scale
-            let restitution = $(state.getElementById(`r-${selected.body.id}`))
-            restitution.value = selected.spawn.restitution
+            let density = $(state.getElementById(`d-${selected.id}`))
+            density.value = selected.density
+            let img = $(state.getElementById('select-image'))
+            let scale = $(state.getElementById(`S-${selected.id}`))
+            scale.value = selected.getScale()
+            let restitution = $(state.getElementById(`r-${selected.id}`))
+            restitution.value = selected.restitution
             select.destroyChildren()
-            if (selected.constructor.name === 'spawn') $(state.getElementById(`sp-${selected.body.id}`)).value = selected.spawnRate
+            if (selected.constructor.name === 'spawn') $(state.getElementById(`sp-${selected.id}`)).value = selected.spawnRate
             select.push($(`<option value="none">None</option>`), ...Array.from(imageCache.entries(),
                 function ([title, src]) {
-                    console.log(src, title)
-                    return $(`<option value="${src}">${title}</option>`)
+                    let s = ''
+                    if (src.src) src = src.src
+                    if (imageCache.get(title).src === selected.spawn.image) s = 'selected'
+                    return $(`<option value="${src}" ${s}>${title}</option>`)
                 }))
             col.value = selected.spawn.color
-            leftControls.setState(selected.body.id)
+            leftControls.setState(selected.id)
         } else if (selected == null) leftControls.setState(0)
             break
     }
@@ -361,7 +436,17 @@ let chosen = $.gid('place-entity')
             game.postMessage({ select: this.value })
         }
     })
-let uploadSvgs = $(`<input type="file" accept=".svg,.txt" multiple></input>`, {
+window.addSVG = addSVG
+function addSVG(data, name) {
+    chosen.last.before = ($(`<option value="${name}">${name}</option>`))
+    chosen.value = name
+    game.postMessage({ select: name })
+    game.postMessage({
+        title: name,
+        svg: data
+    })
+}
+let uploadSvgs = $(`<input type="file" accept=".svg,.json" multiple></input>`, {
     events: {
         async change() {
             for (let file of this.files) {
@@ -369,79 +454,105 @@ let uploadSvgs = $(`<input type="file" accept=".svg,.txt" multiple></input>`, {
                     //  Do something...
                 }
                 else {
-                    cachedVertices.add(file)
-                    file.text().then(data => {
-                        chosen.last.before = ($(`<option value="${file.name}">${file.name}</option>`))
-                        chosen.value = file.name
-                        game.postMessage({ select: file.name })
-                        game.postMessage({
-                            title: file.name,
-                            svg: data
+                    if (file.type === 'application/json') {
+                        file.text().then(data => {
+                            data = JSON.parse(data)
+                            if (!Array.isArray(data) || !data.length) {
+                                throw TypeError('Bad data :(')
+                            }
+                            game.postMessage({ select: file.name })
+                            game.postMessage({
+                                title: file.name,
+                                vertices: data
+                            })
+                            chosen.last.before = ($(`<option value="${file.name}">${file.name}</option>`))
+                            chosen.value = file.name
+                            cachedVertices.add(file)
                         })
-                    })
+                    }
+                    else {
+                        cachedVertices.add(file)
+                        file.text().then(data => {
+                            chosen.last.before = ($(`<option value="${file.name}">${file.name}</option>`))
+                            chosen.value = file.name
+                            game.postMessage({ select: file.name })
+                            game.postMessage({
+                                title: file.name,
+                                svg: data
+                            })
+                        })
+                    }
                 }
             }
         }
     }
 })
+window.addMarble = addMarble
+function addMarble({ name, image, color: col }, noadd) {
+    if (!this) return addMarble.call(addMarbleButton, { name, image, color: col }, noadd)
+    name ??= `Marble ${count}`
+    col ??= color.choose()
+    noadd ?? marbles.set(count, {
+        __proto__: null,
+        name: name,
+        image: null,
+        color: col
+    })
+    let me = marbles.get(count)
+    racers.first.hide()
+    let n = racers.$(`div.racer #marble-${count}`, null,
+        $('div', null,
+            $(`<input type="color" value="${col}">`, {
+                events: {
+                    input() {
+                        me.color = this.value
+                    }
+                }
+            }),
+            $(`<input class="cute-green" placeholder="Marble name" value="${name}">`, {
+                events: {
+                    change() {
+                        me.name = this.value
+                    }
+                }
+            })
+        ),
+        $(`<label>Image: </label>`, null,
+            $(`<select name="marbleimageselect"><option value="none">None</option></select>`, {
+                events: {
+                    change() {
+                        me.image = this.value
+                    }
+                }
+            },
+                ...Array.from(imageCache.entries(),
+                    function ([title, src]) {
+                        let checked = ''
+                        if (src.src) src = src.src
+                        if (title === image) {
+                            checked = 'selected'
+                        }
+                        return $(`<option value="${title}" ${checked}>${title}</option>`)
+                    })
+            )
+        ),
+        $(`<button class="cute-green-button red">Delete</button>`, {
+            events: {
+                click() {
+                    marbles.delete(this.parent.flags)
+                    this.parent.destroy()
+                }
+            }
+        })
+    )
+    n.flags = count
+    ++count
+}
 let racers = $.gid('racer-holder')
 let count = 0
 let addMarbleButton = $.gid('add-marble-button')
     .on({
-        click() {
-            ++count
-            let c = color.choose()
-            marbles.set(count, {
-                __proto__: null,
-                name: `Marble ${count}`,
-                image: 'none',
-                color: c
-            })
-            let me = marbles.get(count)
-            racers.first.hide()
-            let n = racers.$(`div.racer #marble-${count}`, null,
-                $('div', null,
-                    $(`<input type="color" value="${c}">`, {
-                        events: {
-                            input() {
-                                me.color = this.value
-                            }
-                        }
-                    }),
-                    $(`<input class="cute-green" placeholder="Marble name" value="Marble ${count}">`, {
-                        events: {
-                            change() {
-                                me.name = this.value
-                            }
-                        }
-                    })
-                ),
-                $(`<label>Image: </label>`, null,
-                    $(`<select name="marbleimageselect"><option value="none">None</option></select>`, {
-                        events: {
-                            change() {
-                                me.image = this.value
-                            }
-                        }
-                    },
-                        ...Array.from(imageCache.entries(),
-                            function ([title, src]) {
-                                console.log(src, title)
-                                return $(`<option value="${src}">${title}</option>`)
-                            })
-                    )
-                ),
-                $(`<button class="cute-green-button red">Delete</button>`, {
-                    events: {
-                        click() {
-                            marbles.delete(this.parent.flags)
-                            this.parent.destroy()
-                        }
-                    }
-                })
-            )
-            n.flags = count
-        }
+        click: addMarble
     })
 /*
     <div class="racer">

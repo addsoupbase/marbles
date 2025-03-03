@@ -33,6 +33,7 @@
     <link rel="canonical" href="your url.com">
     <link rel="stylesheet" href="../styles.css" fetchpriority="high" blocking>
     <link rel="icon" type="image/x-icon" href="favicon.ico" defer>
+    <script src="../../silence.js" defer></script>
     <script src="./script.js" type="module" fetchpriority="high" blocking></script>
     <style>
         .standout {
@@ -126,7 +127,6 @@
             padding: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             color: #000000;
-            font-family: 'Choco cooky', monospace;
             text-align: center;
         }
 
@@ -136,7 +136,7 @@
 
         body,
         html {
-            font-family: monospace;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
 
         #racer-holder {
@@ -188,8 +188,8 @@
                     <section>
                         <h2>Marble settings</h2>
                         <label for="marble-size" class="stat">
-                            Size
-                            <input id="marble-size" type="number" value="30" step="1">
+                            Radius
+                            <input id="marble-size" type="number" value="25" step="1">
                         </label>
                         <label for="marble-rest" class="stat">
                             Bounciness
@@ -199,9 +199,9 @@
                             Friction
                             <input id="marble-friction" type="number" value="0.02" step="0.01">
                         </label>
-                        <label for="marble-mass" class="stat">
-                            Mass
-                            <input id="marble-mass" type="number" value="5">
+                        <label for="marble-density" class="stat">
+                            Density
+                            <input id="marble-density" type="number" value="1">
                         </label>
                         <label for="marble-frictionair" class="stat">
                             Friction Air
@@ -228,11 +228,12 @@
                         <option value="pentagon">Pentagon</option>
                         <option value="hexagon">Hexagon</option>
                         <option value="circle">Circle</option>
-                        <option value="svg">Upload SVG</option>
+                        <option value="svg">Custom Shape</option>
                     </select>
                 </span>
                 <button class="cute-green-button" id="reset-cam">Reset Camera</button>
                 <button class="cute-green-button" id="export-button">Export</button>
+                <button class="cute-green-button" id="import-button">Import</button>
             </div>
         </div>
 

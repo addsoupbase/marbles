@@ -1,16 +1,17 @@
 import $ from 'https://addsoupbase.github.io/yay.js'
 import { on, wait } from 'https://addsoupbase.github.io/handle.js'
-import { getJson } from 'https://addsoupbase.github.io/arrays.js'
+// import { getJson } from 'https://addsoupbase.github.io/arrays.js'
 import * as math from 'https://addsoupbase.github.io/num.js'
 const { vect } = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
-const images = new Map
-export const svgs = new Map
+export const images = new Map
+export const customVertices = new Map
 export const marbles = new Map
 export const game = {
     isPaused: true,
     frame: 0,
+    realFrame: 0,
     frozen: false,
     end() {
 
@@ -29,37 +30,35 @@ export const game = {
     werentSleeping: [],
     thaw() {
         this.frozen = false
-        for (let [body, save] of this.werentSleeping) {
-            body.sleeping = false
-            for(let i in save) {
-                body[i] = save[i]
-            }
+        for (let body of this.werentSleeping) {
+            body.restore()
         }
     },
     freeze() {
         this.frozen = true
-        for (let body of entities.values())
-            if (!body.sleeping)
-                this.werentSleeping.push([body, { velocity: [body.body.velocity.x, body.body.velocity.y], angularVelocity: body.angularVelocity, angularSpeed: body.angularSpeed, }]),
-                    body.sleeping = true
+        for (let body of this.all)
+            if (!body.isSleeping)
+                this.werentSleeping.push(body),
+                    body.save()
     },
     pause() {
         this.frame = 0
         mouse.reset()
-        for (let body of entities.values()) {
-            body.sleeping = true
+        this.isPaused = true
+        for (let body of this.all) {
+            body.setSleeping(true)
             body.reset()
             body.ontoggle?.('pause')
         }
-        this.isPaused = true
         this.toggleDOM(false)
     },
     async play() {
         if (!inEditor) {
             let delay = 1500
-            let spawn = [...entities.values()].find(o => o.constructor.name === 'spawn'),
-                goal = [...entities.values()].find(o => o.constructor.name === 'goal')
+            let spawn = this.all.find(o => o.constructor.name === 'spawn'),
+                goal = this.all.find(o => o.constructor.name === 'goal')
             if (goal) {
+                //  Intro cutscene thingy
                 cam.following = goal
                 await wait(delay)
                 if (spawn) {
@@ -74,15 +73,14 @@ export const game = {
         else top.postMessage('hideData')
         this.frame = 0
         mouse.reset()
-        for (let body of entities.values()) {
-            body.sleeping = false
+        for (let body of this.all) {
+            body.setSleeping(false)
             body.ontoggle?.('play')
         }
         this.isPaused = false
         this.toggleDOM(true)
     }
 }
-export const entities = new Map
 export const mouse = {
     click: vect(NaN, NaN),
     leftClick: vect(NaN, NaN),
@@ -112,10 +110,13 @@ export const cam = {
     alreadyDidTheWinnerCutsceneThingy: false,
     targetZoom: 1,
     id: 0,
+    showOutlinesForImage: true,
     following: null,
     speed: 9,
     waiting: new Map,
     async waitForFrames(frames, id = cam.id++) {
+        //  i haven't used this yet i don't think,
+        //  but it's useful
         frames = Math.abs(+frames | 0)
         return new Promise((resolve, reject) => {
             if (cam.waiting.has(id)) return reject()
@@ -180,14 +181,15 @@ canvas.on({
     pointermove({ offsetX: x, offsetY: y, clientX, clientY }) {
         let pos = vect(x, y).scale(1 / cam.zoom)
         mouse.cursor.set(pos)
+        //  'movementX' and 'movementY' are, like, 
+        //  really unreliable so: 
         mouse.movement.set(vect(clientX, clientY).subtract(mouse.lastmovement))
         mouse.lastmovement.set(clientX, clientY)
         if (mouse.leftClicking)
             cam.position.add(mouse.movement)
     },
-    $contextmenu() { }    //  Prevent it from coming up
+    $contextmenu() { }    //  Prevent the menu from showing up ($ = preventDefault)
 })
-
 function resize() {
     canvas.setAttributes({
         width: innerWidth,
@@ -198,41 +200,56 @@ on(window, resize)
 resize()
 let url = new URL(location)
 export let levelName = url.searchParams.get('level')
+export function msg(e) {
+    let { data } = e
+    if (typeof data === 'string') switch (data) {
+        case 'resetMouse': return mouse.reset()
+        case 'Toggle': return game.toggle(game.isPaused)
+        case 'Moving': return mouse.isPlacing = false
+        case 'resetcam': {
+            cam.position.set(0, 0)
+            cam.targetZoom = 1
+            cam.zoom ||= 1
+            return
+        }
+        case 'Placing': {
+            mouse.reset()
+            return mouse.isPlacing = true
+        }
+        default: return console.warn('Unknown message event: ', e)
+    } else {
+        if ('select' in data) {
+            // Select that!
+            mouse.willPlace = data.select
+        }
+        else if ('title' in data && 'url' in data) {
+            // It's an image!
+            let n = new Image
+            n.src = data.url
+            images.set(data.title, n)
+        }
+        else if ('title' in data && 'svg' in data) {
+            // It's an SVG!
+            let doc = new DOMParser().parseFromString(data.svg, 'image/svg+xml')
+            customVertices.set(data.title, [...doc.getElementsByTagName('path')])
+        }
+        else if ('vertices' in data && 'title' in data) {
+            //  It's a vertices array thing!
+            customVertices.set(data.title, data.vertices)
+        }
+    }
+}
 if (top !== window) {
     init()
     top.marbles = marbles
     top.imageCache = images
-    top.entities = entities
-    on(window, {
-        message(e) {
-            let { data } = e
-            if (typeof data === 'string') switch (data) {
-                case 'resetMouse': return mouse.reset()
-                case 'Toggle': return game.toggle(game.isPaused)
-                case 'Moving': return mouse.isPlacing = false
-                case 'resetcam': {
-                    cam.position.set(0, 0)
-                    cam.zoom = 1
-                    return
-                }
-                case 'Placing': {
-                    mouse.reset()
-                    return mouse.isPlacing = true
-                }
-                default: return console.warn('Unknown message event: ', e)
-            } else {
-                if ('select' in data) {
-                    mouse.willPlace = data.select
-                }
-                else if ('title' in data && 'url' in data) {
-                    images.set(data.title, data.url)
-                }
-                else if ('title' in data && 'svg' in data) {
-                    let doc = new DOMParser().parseFromString(data.svg, 'image/svg+xml')
-                    svgs.set(data.title, [...doc.querySelectorAll('path')])
-                }
-            }
+    Object.defineProperty(top, 'entities', {
+        get() {
+            return game.all
         }
+    })
+    on(window, {
+        message: msg
     })
 }
 else if (!levelName) {
@@ -291,7 +308,7 @@ else {
     init()
 }
 function init() {
-    import('https://addsoupbase.github.io/marbles/play/game/define.js')
+    import('./define.js')
 }
 // Audio stuff later
 export const inEditor = top !== window

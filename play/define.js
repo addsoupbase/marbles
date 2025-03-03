@@ -87,7 +87,7 @@ const placements = {
     }
 }
 const { vect, lerp } = math
-let doc = top.document
+let doc = inEditor && top.document
 let marbleSize = doc.getElementById("marble-size"),
     marbleRestitution = doc.getElementById('marble-rest'),
     marbleDensity = doc.getElementById('marble-density'),

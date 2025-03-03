@@ -238,7 +238,7 @@ export function msg(e) {
             customVertices.set(data.title, data.vertices)
         }
     }
-}
+} 
 void function start(ignore) {
     if (!ignore && top !== window) {
         try {

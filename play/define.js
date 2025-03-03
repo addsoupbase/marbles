@@ -815,7 +815,6 @@ spawn.prototype = {
         ctx.restore()
     },
     ontoggle(state) {
-        super.ontoggle(state)
         switch (state) {
             case 'play': this.deck = ran.shuffle(...marbles.values())
         }
@@ -1070,6 +1069,3 @@ if (levelName) {
     var blob = new Blob([ab], { type: mimeString });
     return blob;
 } */
-let me = body({ x: 200, y: 200, radius: 30, isStatic: true })
-let other = body({ x: 300, y: 200, radius: 25, shape: 0 })
-joint({ bodyB: me, bodyA: other, stiffness: 0.001, length: 50 })

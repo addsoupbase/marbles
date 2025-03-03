@@ -318,7 +318,6 @@ function init() {
     import('./define.js')
 }
 // Audio stuff later
-
 try {
     top.a
     var inEditor = top !== window

@@ -240,7 +240,7 @@ export function msg(e) {
     }
 }
 void function start(ignore) {
-    if (ignore || top !== window) {
+    if (!ignore && top !== window) {
         try {
             init()
             top.marbles = marbles
@@ -254,8 +254,7 @@ void function start(ignore) {
                 message: msg
             })
         }
-        catch(e) {
-            alert(e)
+        catch {
             return start(true)
         }
     }

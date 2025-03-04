@@ -9,6 +9,8 @@ canvas {
     z-index: 2;
 }
 
+
+
 .mainmenu {
     background-color: #28a745;
     color: white;
@@ -36,13 +38,16 @@ canvas {
     border-color: black;
     overflow: hidden;
 }
+
 .loser {
     opacity: .45;
     transition: opacity 0.25s linear;
 }
+
 .loser:hover {
-opacity:1
+    opacity: 1
 }
+
 .prev {
     width: inherit;
     height: inherit;
@@ -97,15 +102,6 @@ input[type=color] {
     width: 30px;
     height: 30px;
     margin: 10px
-}
-
-input[type=color]::-webkit-color-swatch {
-    border-radius: 100%;
-}
-
-input[type=color]::-moz-color-swatch {
-    border-radius: 100%;
-
 }
 
 input[type=checkbox],
@@ -197,17 +193,18 @@ input[type=file]::file-selector-button:active,
     scale: .97 .97
         /* Slight scale effect */
 }
+
 .cute-green-button:hover {
     background-color: #96c15d;
-  }
-  
-  .cute-green-button:active {
+}
+
+.cute-green-button:active {
     background-color: #a8db67;
     /* Darker green on hover */
     scale: .9 .9
-      /* Slight scale effect */
-  }
-  
+        /* Slight scale effect */
+}
+
 .cute-blue-button {
     filter: hue-rotate(300deg) brightness(80%);
     width: 100px
@@ -290,9 +287,9 @@ input.cute-green {
 }
 
 /* @font-face { */
-    /* font-family: 'Choco'; */
-    /* src: url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff2'), */
-        /* url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff'); */
-    /* font-weight: normal; */
-    /* font-style: normal; */
+/* font-family: 'Choco'; */
+/* src: url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff2'), */
+/* url('https://addsoupbase.github.io/media/Chococooky.woff2') format('woff'); */
+/* font-weight: normal; */
+/* font-style: normal; */
 /* } */

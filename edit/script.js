@@ -2,7 +2,11 @@ import $ from '../../yay.js'
 import color from '../../color.js'
 import { on, getObjUrl as cou, until, download, reqFile, getObjUrl, } from '../../handle.js'
 import * as math from '../../num.js'
+import { registerCSS } from '../../csshelper.js'
 import { getJson } from '../../arrays.js'
+registerCSS('input[type="color"]::color-swatch', {
+    'border-radius':'100%'
+})
 let leftControls = $.gid('left-controls')
 leftControls.createState(0, $('div'))
 $.gid('reset-cam').on({

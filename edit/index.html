@@ -35,14 +35,21 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" defer>
     <script src="../../silence.js" defer></script>
     <script src="./script.js" type="module" fetchpriority="high" blocking></script>
-  
+
     <style>
+        #exportmenu {
+            z-index: 2;
+            width: 500px;
+            height: 350px;
+        }
+
+
         .standout {
             border-radius: 2px;
             border-style: solid;
             border-color: teal;
             border-width: 3px;
-            padding:3px
+            padding: 3px
         }
 
         main {
@@ -62,7 +69,7 @@
         #controls {
             margin: 30px;
             z-index: 2;
-            --user-select:none;
+            --user-select: none;
             text-align: center;
             justify-content: center;
             display: ruby;
@@ -194,7 +201,7 @@
                         </label>
                         <label for="marble-rest" class="stat">
                             Bounciness
-                            <input id="marble-rest" type="number" value="2.5" step="0.25">
+                            <input id="marble-rest" type="number" value="1.5" step="0.25">
                         </label>
                         <label for="marble-friction" class="stat">
                             Friction
@@ -202,7 +209,7 @@
                         </label>
                         <label for="marble-density" class="stat">
                             Density
-                            <input id="marble-density" type="number" value="1">
+                            <input id="marble-density" type="number" value="5">
                         </label>
                         <label for="marble-frictionair" class="stat">
                             Friction Air
@@ -215,7 +222,7 @@
                     </section>
                 </div>
             </div>
-            <iframe src="../play/index.html" title="content" name="content" id="content" ></iframe>
+            <iframe src="../play/index.html" title="content" name="content" id="content"></iframe>
             <div id="controls">
 
                 <button class="cute-green-button" id="play-button">Play</button>
@@ -240,6 +247,16 @@
 
         <!-- <script src="matter.min.js"></script> -->
     </main>
-</body hidden>
+    <form class="center menu" id="exportmenu" style="display: none;">
+        <section style="display: grid;">
+
+            <h2>Export</h2>
+            <input maxlength="32" class="cute-green" placeholder="Title" name="title" required>
+            <input maxlength="16" class="cute-green" placeholder="Author" name="author" required>
+        </section>
+        <button class="cute-green-button">Export</button>
+        <input type="button" id="cancel-export" class="red cute-green-button" value="Cancel"></button>
+    </form>
+</body>
 
 </html>

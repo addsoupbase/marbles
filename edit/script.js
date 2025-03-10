@@ -1,11 +1,12 @@
 import $ from '../../yay.js'
+import str from '../../strings.js'
 import color from '../../color.js'
 import { on, getObjUrl as cou, until, download, reqFile, getObjUrl, } from '../../handle.js'
 import * as math from '../../num.js'
 import { registerCSS } from '../../csshelper.js'
 import { getJson } from '../../arrays.js'
 registerCSS('input[type="color"]::color-swatch', {
-    'border-radius':'100%'
+    'border-radius': '100%'
 })
 let leftControls = $.gid('left-controls')
 leftControls.createState(0, $('div'))
@@ -38,101 +39,118 @@ let mport = $.gid('import-button')
             }
         }
     })
-let xport = $.gid('export-button')
-    .on({
-        async click() {
-            let ctx = document.createElement('canvas').getContext('2d')
-            Object.assign(ctx.canvas, {
-                width: 256,
-                height: 256
-            })
-            let obj = {
-                __proto__: null, settings: Object.fromEntries(Object.entries(settings).map(([p, v]) => [p, +v])),
-                racers: [...marbles.values()], map: Array.from(entities.values(), o => {
-                    let spawn = { ...o.spawn }
-                    if (o.constructor.name !== 'obj')
-                        spawn.type = o.constructor.name
-                    return spawn
-                }
-                )
-            }
-            let allImages = []
-            let outShapes = []
-            let seenImages = new Map
-            let allShapes = []
-            let seenShapes = new Map
 
-            for (let n of obj.racers.concat(obj.map)) {
-                let { image } = n
-                if (image !== null && image !== 'none') {
-                    if (seenImages.has(image)) {
-                        n.image = seenImages.get(image)
+// let exportDownloadButton = $.gid('export') 
+$.gid('cancel-export').on({
+    click() {
+        exportMenu.fadeOut()
+    }
+})
+let exportMenu = $.gid('exportmenu')
+.on({
+    async $submit() {
+        let {title, author} = this.form
+        let ctx = document.createElement('canvas').getContext('2d')
+        Object.assign(ctx.canvas, {
+            width: 256,
+            height: 256
+        })
+        let obj = {
+            title: str.shorten(title, 32),
+            author: str.shorten(author, 16),
+            __proto__: null, settings: Object.fromEntries(Object.entries(settings).map(([p, v]) => [p, +v])),
+            racers: [...marbles.values()], map: Array.from(entities.values(), o => {
+                let spawn = { ...o.spawn }
+                if (o.constructor.name !== 'obj')
+                    spawn.type = o.constructor.name
+                return spawn
+            }
+            )
+        }
+        let allImages = []
+        let outShapes = []
+        let seenImages = new Map
+        let allShapes = []
+        let seenShapes = new Map
+
+        for (let n of obj.racers.concat(obj.map)) {
+            let { image } = n
+            if (image !== null && image !== 'none') {
+                if (seenImages.has(image)) {
+                    n.image = seenImages.get(image)
+                } else {
+                    let img = new Image()
+                    img.src = imageCache.get(image).src
+                    await until(img, 'load')
+                    await img.decode()
+                    ctx.drawImage(img, 0, 0, 256, 256)
+                    let data = ctx.canvas.toDataURL('image/png', 0.5)
+                    allImages.push(data)
+                    seenImages.set(image, allImages.length - 1)
+                    n.image = allImages.length - 1
+                }
+            } else {
+                delete n.image
+            }
+
+            let { shape } = n
+            if (Array.isArray(shape)) {
+                if (typeof shape[0]?.[0] === 'number') {
+                    shape = JSON.stringify(shape)
+                    if (seenShapes.has(shape)) {
+                        n.shape = seenShapes.get(shape)
                     } else {
-                        let img = new Image()
-                        img.src = imageCache.get(image).src
-                        await until(img, 'load')
-                        await img.decode()
-                        ctx.drawImage(img, 0, 0, 256, 256)
-                        let data = ctx.canvas.toDataURL('image/png', 0.5)
-                        allImages.push(data)
-                        seenImages.set(image, allImages.length - 1)
-                        n.image = allImages.length - 1
+                        allShapes.push(shape)
+                        seenShapes.set(shape, -(allShapes.length))
+                        n.shape = -(allShapes.length)
                     }
                 } else {
-                    delete n.image
-                }
-
-                let { shape } = n
-                if (Array.isArray(shape)) {
-                    if (typeof shape[0]?.[0] === 'number') {
-                        shape = JSON.stringify(shape)
-                        if (seenShapes.has(shape)) {
-                            n.shape = seenShapes.get(shape)
-                        } else {
-                            allShapes.push(shape)
-                            seenShapes.set(shape, -(allShapes.length))
-                            n.shape = -(allShapes.length)
-                        }
+                    let data = n.shape.map(o => o.getAttribute('d').toString()).join('|')
+                    if (seenShapes.has(data)) {
+                        n.shape = seenShapes.get(data)
                     } else {
-                        let data = n.shape.map(o => o.getAttribute('d').toString()).join('|')
-                        if (seenShapes.has(data)) {
-                            n.shape = seenShapes.get(data)
-                        } else {
-                            seenShapes.set(data, -(allShapes.length + 1))
-                            allShapes.push(data)
-                            outShapes.push(data)
-                            n.shape = -(allShapes.length)
-                        }
-                    }
-                }
-
-                for (let i in n) {
-                    let val = n[i]
-                    if (val === base[i]) {
-                        delete n[i]
-                    } else {
-                        switch (i) {
-                            case 'opacity':
-                                if (val === 1) delete n[i]
-                                break
-                            case 'angle':
-                                if (val === 0) delete n[i]
-                                break
-                            case 'isStatic':
-                                if (val === false) delete n[i]
-                                break
-                            case 'type':
-                                if (val === 'body') delete n[i]
-                                break
-                        }
+                        seenShapes.set(data, -(allShapes.length + 1))
+                        allShapes.push(data)
+                        outShapes.push(data)
+                        n.shape = -(allShapes.length)
                     }
                 }
             }
-            obj.shapes = allShapes
-            obj.images = allImages
-            download(new Blob([JSON.stringify(obj)]), 'data.json')
+
+            for (let i in n) {
+                let val = n[i]
+                if (val === base[i]) {
+                    delete n[i]
+                } else {
+                    switch (i) {
+                        case 'opacity':
+                            if (val === 1) delete n[i]
+                            break
+                        case 'angle':
+                            if (val === 0) delete n[i]
+                            break
+                        case 'isStatic':
+                            if (val === false) delete n[i]
+                            break
+                        case 'type':
+                            if (val === 'body') delete n[i]
+                            break
+                    }
+                }
+            }
         }
-    })
+        obj.shapes = allShapes
+        obj.images = allImages
+        download(new Blob([JSON.stringify(obj)]), 'data.json')
+    }
+})
+let exportToggleMenuButton = $.gid('export-button')
+.on({
+    click() {
+        exportMenu.fadeIn()
+    }
+})
+   
 let cached = new WeakSet
 let cachedVertices = new WeakSet
 on(window, {

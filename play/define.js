@@ -8,6 +8,7 @@ import {
     msg
 } from './setup.js'
 import ran from '../../random.js'
+import str from '../../strings.js'
 import * as math from '../../num.js'
 import { on, until, wait } from '../../handle.js'
 import $ from '../../yay.js'
@@ -90,10 +91,10 @@ const { vect, lerp } = math
 if (inEditor) {
     var doc = top.document
     var marbleSize = doc.getElementById("marble-size"),
-    marbleRestitution = doc.getElementById('marble-rest'),
-    marbleDensity = doc.getElementById('marble-density'),
-    marbleFriction = doc.getElementById('marble-friction'),
-    marbleFrictionair = doc.getElementById('marble-frictionair')
+        marbleRestitution = doc.getElementById('marble-rest'),
+        marbleDensity = doc.getElementById('marble-density'),
+        marbleFriction = doc.getElementById('marble-friction'),
+        marbleFrictionair = doc.getElementById('marble-frictionair')
 }
 const marbleStats = inEditor ? {
     radius: marbleSize?.value ?? null,
@@ -500,7 +501,7 @@ body.prototype = {
         this.av = this.as = 0
     },
     update() {
-        if(game.isPaused)this.setSleeping(true)
+        if (game.isPaused) this.setSleeping(true)
         let { x, y } = this.position
         if (game.isPaused) {
             this.setPos(math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y))
@@ -858,7 +859,6 @@ marble.prototype = {
         }
     },
     ontoggle(state) {
-        super.ontoggle(state)
         state === 'pause' && this.remove()
     }
 }
@@ -971,6 +971,10 @@ window.getLevelFromJSON =
             marbleRestitution.value = json.settings.restitution
             marbleSize.value = json.settings.radius
         }
+        else {
+            document.title = `${$.gid('title').textContent = str.shorten(json.title || 'Level', 32)} - Marbles`
+            $.gid('author').textContent = str.shorten(json.author || 'Unknown', 16)
+        }
         marbles.clear()
         Composite.clear(world, false, true)
         let { images: imgs, map, racers, settings, shapes } = json
@@ -986,7 +990,8 @@ window.getLevelFromJSON =
                 context.drawImage(n, 0, 0, 256, 256)
                 context.canvas.convertToBlob().then(o => context.canvas.src = URL.createObjectURL(o))
                 images.set(o.image, context.canvas)
-                inEditor && top.addMarble({ name: o.name, color: o.color, image: o.image })
+                let { name, color, image } = o
+                inEditor && top.addMarble({ name, color, image })
             }
             marbles.set(i, o)
         })
@@ -1023,22 +1028,21 @@ window.getLevelFromJSON =
 if (levelName) {
     overlay.style.display = ''
     $.body.on({
-        keydown({ key }) {
-            if (key === 'Enter') {
-                this.off('keydown')
+        keydown2({ key }) {
+            if (key === 'Enter')
                 play.click()
-            }
         }
     })
     overlay.classList.add('slide-in-blurred-top')
     let play
     overlay.push(
-        $('<h1>Title</h1>'),
-        $('<cite>By author</cite>'),
+        $('<h1 id="title">Level</h1>'),
+        $('<cite id="author">Unknown</cite>'),
         $("<div></div>", null,
             play = $('<button class="cute-green-button" autofocus>Play</button>', {
                 events: {
-                    async _click() {
+                    async _click2(o, abort) {
+                        abort()
                         overlay.classList.add('slide-out-blurred-top')
                         await until(overlay.anims[0], 'finish')
                         await wait(500)

@@ -1,7 +1,9 @@
-import $ from 'https://addsoupbase.github.io/yay.js'
-import { on, wait } from 'https://addsoupbase.github.io/handle.js'
+import $ from '../../yay.js'
+import { on, wait } from '../../handle.js'
 // import { getJson } from 'https://addsoupbase.github.io/arrays.js'
-import * as math from 'https://addsoupbase.github.io/num.js'
+import * as math from '../../num.js'
+import { getJson } from '../../arrays.js'
+import str from '../../strings.js'
 const { vect } = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
@@ -129,10 +131,8 @@ export const cam = {
         })
     },
     iterate() {
-        for (let [key, val] of this.waiting) {
-            let { done } = val.next()
-            done && this.waiting.delete(key)
-        }
+        for (let [key, val] of this.waiting)
+            val.next().done && this.waiting.delete(key)
     }
 }
 canvas.on({
@@ -188,7 +188,7 @@ canvas.on({
         if (mouse.leftClicking)
             cam.position.add(mouse.movement)
     },
-    $contextmenu() { }    //  Prevent the menu from showing up ($ = preventDefault)
+    $contextmenu() { }    //  Prevent the menu from showing up ($ calls preventDefault())
 })
 function resize() {
     canvas.setAttributes({
@@ -218,6 +218,7 @@ export function msg(e) {
         }
         default: return console.warn('Unknown message event: ', e)
     } else {
+        // This is really bad i know.
         if ('select' in data) {
             // Select that!
             mouse.willPlace = data.select
@@ -238,7 +239,7 @@ export function msg(e) {
             customVertices.set(data.title, data.vertices)
         }
     }
-} 
+}
 void function start(ignore) {
     if (!ignore && top !== window) {
         try {
@@ -268,22 +269,26 @@ void function start(ignore) {
             parent: pick,
             events: {
                 async $submit() {
-                    id = this.first.value
-                    message.hide3()
-                    author.hide3()
-                    anchor.hide3()
-                    delete message.styles.color
-                    await loader.fadeIn()
-                    message.fadeIn()
+
                     try {
-                        // let json = await getJson(`./${id}`)
-                        //doSomethingWithJSON(json)
+
+                        id = this.first.value
+                        message.hide3()
+                        author.hide3()
+                        anchor.hide3()
+                        delete message.styles.color
+                        loader.fadeIn()
+                        let { title, author: authorName } = await getJson(`levels/${this.form.levelid.match(/\w+/)}.json`)
+                        message.textContent = str.shorten(title || 'Level', 32),
+                            author.textContent = str.shorten(authorName || 'Unknown', 16),
+                            message.fadeIn()
                         author.fadeIn()
                         anchor.fadeIn()
                         anchor.setAttributes({ href: `?level=${id}` })
                     }
                     catch (e) {
-                        message.textContent = 'Error'
+                        reportError(e)
+                        message.textContent = 'Level invalid or not found!'
                         message.setStyles({ color: 'darkred' })
                         message.fadeIn()
                     }
@@ -293,7 +298,7 @@ void function start(ignore) {
                 }
             }
         })
-        $('<input placeholder="Enter Level Id..." class="cute-green" required>', {
+        $('<input placeholder="Enter Level Id..." class="cute-green" name="levelid" required>', {
             parent: firstdiv
         })
         $('<button class="cute-green-button">Enter</button>', {
@@ -303,6 +308,8 @@ void function start(ignore) {
             parent: pick
         }).hide3()
         let message = $('<h2>Level Title</h2>', {
+
+
             parent: pick
         }).hide3()
         let author = $('<cite>By Author</cite>', {
@@ -325,4 +332,4 @@ try {
 catch {
     inEditor = false
 }
-export {inEditor}
+export { inEditor }

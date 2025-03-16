@@ -1,15 +1,9 @@
-import {
-    Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, Constraint,
-    getAllBodies, getAllConstraints
-} from './game.js'
-import {
-    canvas as can, mouse, cam, marbles, levelName, images,
-    game, inEditor, customVertices,
-    msg
-} from './setup.js'
+import { Events, engine, Runner, runner, world, Bodies, base, Body, Svg, Composite, Sleeping, Vector, bounds, Constraint, getAllBodies, getAllConstraints } from './game.js'
+import { canvas as can, mouse, cam, marbles, levelName, images, game, inEditor, customVertices, msg } from './setup.js'
+import { lstorage } from '../../proxies.js'
 import ran from '../../random.js'
 import str from '../../strings.js'
-import * as math from '../../num.js'
+import *as math from '../../num.js'
 import { on, until, wait } from '../../handle.js'
 import $ from '../../yay.js'
 import { getJson } from '../../arrays.js'
@@ -21,8 +15,9 @@ function implement({ prototype }, paste) {
     //  lazy
     return Object.defineProperties(paste, Object.getOwnPropertyDescriptors(prototype))
 }
+game.playEngine = () => runner.enabled = true
+game.pauseEngine = () => runner.enabled = false
 let ctx = can.getContext('2d')
-// let joints = new Set
 game.end = async () => {
     overlay.destroyChildren()
     await can.animate([{ filter: '', }, { filter: 'blur(5px)' }], { duration: 500, fill: 'forwards', endDelay: 300 })
@@ -97,17 +92,17 @@ if (inEditor) {
         marbleFrictionair = doc.getElementById('marble-frictionair')
 }
 const marbleStats = inEditor ? {
-    radius: marbleSize?.value ?? null,
-    density: marbleDensity?.value ?? null,
-    restitution: marbleRestitution?.value ?? null,
-    friction: marbleFriction?.value ?? null,
-    frictionAir: marbleFrictionair?.value ?? null
+    radius: +(marbleSize?.value),
+    density: +(marbleDensity?.value),
+    restitution: +(marbleRestitution?.value),
+    friction: +(marbleFriction?.value),
+    frictionAir: +(marbleFrictionair?.value)
 } : {
     radius: 25,
-    density: +base.density,
-    restitution: +base.restitution,
-    friction: +base.friction,
-    frictionAir: +base.frictionAir
+    density: 1,
+    restitution: 6.25,
+    friction: base.friction,
+    frictionAir: 0.02
 }
 Object.defineProperty(game, 'all', {
     get: getAllBodies
@@ -120,27 +115,27 @@ if (inEditor) {
     top.settings = marbleStats
     on(marbleSize, {
         change() {
-            marbleStats.radius = marbleSize.value
+            marbleStats.radius = +this.value
         }
     })
     on(marbleRestitution, {
         change() {
-            marbleStats.restitution = marbleRestitution.value
+            marbleStats.restitution = +this.value
         }
     })
     on(marbleDensity, {
         change() {
-            marbleStats.density = marbleDensity.value
+            marbleStats.density = +this.value
         }
     })
     on(marbleFriction, {
         change() {
-            marbleStats.friction = marbleFriction.value
+            marbleStats.friction = +this.value
         }
     })
     on(marbleFrictionair, {
         change() {
-            marbleStats.frictionAir = marbleFrictionair.value
+            marbleStats.frictionAir = +this.value
         }
     })
     game.toggleDOM = function (state) {
@@ -150,29 +145,30 @@ if (inEditor) {
     }
 
     game.send = function (data) {
-        if (top.selected !== data) {
+        if (data && top.selected !== data) {
             top.selected = data
             top.postMessage('showData')
         } else if (!top.selected && !data) top.postMessage(null)
     }
     mouse.place = function (xx, yy) {
+        if (!game.isPaused) return
         let { x, y } = vect(xx, yy).subtract(...cam.position.clone.scale(1 / cam.zoom))
         switch (this.willPlace) {
-            case 'circle': var out = body({ x, y, shape: 0, radius: 30, restitution: 1.5, density: 1 }); break
-            case 'triangle': var out = body({ x, y, shape: 3, radius: 30, restitution: 1.5, density: 1 }); break
-            case 'square': var out = body({ x, y, shape: 4, radius: 30, restitution: 1.5, density: 1 }); break
-            case 'pentagon': var out = body({ x, y, shape: 5, radius: 30, restitution: 1.5, density: 1 }); break
-            case 'hexagon': var out = body({ x, y, shape: 6, radius: 30, restitution: 1.5, density: 1 }); break
+            case 'circle': var out = body({ x, y, shape: 0, radius: 30, scaleX: 30, scaleY: 30, }); break
+            case 'triangle': var out = body({ x, y, shape: 3, scaleX: 30, scaleY: 30, }); break
+            case 'square': var out = body({ x, y, shape: 4, scaleX: 30, scaleY: 30, }); break
+            case 'pentagon': var out = body({ x, y, shape: 5, scaleX: 30, scaleY: 30, }); break
+            case 'hexagon': var out = body({ x, y, shape: 6, scaleX: 30, scaleY: 30, }); break
             case 'goal': {
                 //  Only 1 allowed
                 for (let n of getAllBodies()) n.constructor === goal && n.remove()
-                var out = new goal({ x, y, radius: 30 })
+                var out = new goal({ x, y, scaleX: 30, scaleY: 30 })
                 break
             }
             case 'spawn': {
                 //  Only 1 allowed
                 for (let n of getAllBodies()) n.constructor === spawn && n.remove()
-                var out = new spawn({ x, y, })
+                var out = new spawn({ x, y, scaleX: 30, scaleY: 30, name: 'Spawner' })
                 break
             }
             default: {
@@ -219,6 +215,11 @@ function obj() {
 }
 obj.prototype = {
     constraints: new Set,
+    get radius() {
+        return Math.max(this.scaleX, this.scaleY, this.circleRadius)
+    },
+    scaleX: 1,
+    scaleY: 1,
     ontoggle(state) {
         if (state === 'play') this.constraints.forEach(o => o.add())
         else this.constraints.forEach(o => o.remove())
@@ -241,12 +242,13 @@ obj.prototype = {
         }
     },
 }
-function joint({ bodyA, bodyB, stiffness = 1, damping = 0.05, length = 50 }) {
-    let out = Constraint.create({ bodyA, bodyB, stiffness, damping, length })
+function joint({ bodyA, bodyB, pointA, pointB, stiffness = 1, damping = 0.05, length }) {
+    let out = Constraint.create({ bodyA, bodyB, pointA, pointB, stiffness, damping, length })
     implement(obj, out)
     implement(joint, out)
-    bodyA?.constraints.add(out)
-    bodyB?.constraints.add(out)
+    out.add()
+    // bodyA?.constraints.add(out)
+    // bodyB?.constraints.add(out)
     return out
 }
 let JOINT_SYMBOL = Symbol('joint')
@@ -255,15 +257,20 @@ joint.prototype = {
     [JOINT_SYMBOL]: true,
     constructor: joint,
     update() {
-        this.draw()
+        // this.draw()
     },
     draw() {
+        let firstX = this.bodyA?.x ?? this.pointA.x
+        let firstY = this.bodyA?.y || this.pointA.y
+        let secondX = this.bodyB?.x ?? this.pointB.x
+        let secondY = this.bodyB?.y || this.pointB.y
+        ctx.save()
         ctx.beginPath()
-        ctx.moveTo(this.bodyA.position.x, this.bodyA.position.y)
-        ctx.lineTo(this.bodyB.position.x, this.bodyB.position.y)
-        ctx.strokeStyle = this.render.strokeStyle
-        ctx.lineWidth = this.stiffness * 1000
+        ctx.translate(secondX, secondY)
+        ctx.arc(0, 0, 10, 0, Math.PI * 2)
+        ctx.fill()
         ctx.stroke()
+        ctx.restore()
     },
     kill() {
         this.bodyA?.constraints.delete(this)
@@ -274,13 +281,15 @@ joint.prototype = {
 function body({
     x = 0,
     y = 0,
+    radius,
     angle = 0,
     shape = 0,
     opacity = 1,
     name = null,
     isSensor = false,
     color: col = color.choose(),
-    radius = 1,
+    scaleX = 1,
+    scaleY = 1,
     isStatic = false,
     friction = base.friction,
     image = null,
@@ -290,40 +299,42 @@ function body({
     frictionAir = base.frictionAir
 }) {
     if (!new.target) return new body(...arguments)
+    if (radius) scaleX = scaleY = radius
     const startingOptions = {
-        radius,
+        scaleX,
+        scaleY,
         isStatic,
         isSensor,
         friction,
         restitution,
-        inertia,
+        // inertia,
         density,
         frictionAir,
         angle
     }
     let out
     if (typeof shape === 'number') {
-        out = Bodies.polygon(x, y, shape, radius, startingOptions)
+        if (shape === 0) {
+            out = Bodies.circle(x, y, radius || scaleX || scaleY, startingOptions)
+            console.log(startingOptions)
+        } else {
+            out = Bodies.polygon(x, y, shape, 1, startingOptions)
+        }
     }
     else if (Array.isArray(shape)) {
         let vertices = shape.map(map)
         out = Bodies.fromVertices(x, y, vertices, { ...startingOptions, radius: 1 })
         if (!out) {
             inEditor && prompt(`Bad Vertices!🙁\n(try not to make them cave in too much)`, JSON.stringify(shape))
-            //  keep it simple
             throw TypeError("Vertices are probably broken")
         }
         function map(o, index) {
             let correct = Array.isArray(o)
-            if (!correct) return Svg.pathToVertices(o,
-                //Idk what this param does
-            )
+            if (!correct) return Svg.pathToVertices(o)
             console.assert(correct, `Vertices should be an array or .svg: `, o)
             return correct ? { x: o[0], y: o[1], index, isInternal: false, body: undefined } : o
         }
-        // Body.setPosition(body, { x, y })
     }
-    else out = Bodies.circle(x, y, radius, startingOptions)
     implement(obj, out)
     implement(body, out)
     Object.assign(out.render, {
@@ -335,8 +346,6 @@ function body({
     out.shape = shape
     out.showName = out.isEnteringGoal = false
     out.animation = null
-    //  Everything goes after this
-    out.setSleeping(game.isPaused)
     Object.defineProperty(out, 'spawn', {
         value: {
             ...startingOptions,
@@ -351,7 +360,7 @@ function body({
     out.setColor(col)
     out.add()
     out.reset()
-    return out//Object.seal(out)
+    return out
 }
 let BODY_SYMBOL = Symbol("body")
 Object.defineProperty(body, Symbol.hasInstance, {
@@ -372,7 +381,7 @@ body.prototype = {
         //  The suck into portal animation thing
         this.showName = false
         let s = this.radius / 100
-        for (let i = 0; i < 100; ++i) {
+        for (let i = 0; i < 99; ++i) {
             this.setPos(...vect(this.position.x, this.position.y).lerp(this.animation, .1))
             //  this.filter = `invert(${i / 100})`
             //    filter causes big lag :(
@@ -399,7 +408,7 @@ body.prototype = {
         this.reset()
     },
     outline() {
-        if (mouse.selectedBody === this) {
+        if (inEditor && top.selected === this) {
             ctx.setLineDash([this.radius / 10, 2])
             ctx.lineDashOffset = outlineOffsetThingy
             ctx.lineWidth = 3 / cam.zoom
@@ -496,13 +505,20 @@ body.prototype = {
         this.setRotation(this.spawn.angle)
         this.setColor(this.spawn.color)
         this.restitution = this.spawn.restitution
-        this.setScale(this.spawn.radius)
+        this.setScaleX(this.spawn.scaleX)
+        this.setScaleY(this.spawn.scaleY)
         this.render.opacity = this.spawn.opacity
         this.av = this.as = 0
     },
     update() {
         if (game.isPaused) this.setSleeping(true)
-        let { x, y } = this.position
+    },
+    draw(x = this.position.x, y = this.position.y, scale) {
+        if (typeof this.render.image === 'string') {
+            let n = this.render.image
+            this.setImage(n)
+            this.render.image = null
+        }
         if (game.isPaused) {
             this.setPos(math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y))
             if (mouse.draggingBody === this && mouse.clickedBody === this && !mouse.clickedThisFrame) {
@@ -525,9 +541,6 @@ body.prototype = {
             }
         }
         // if (mouse.selectedBody === this) return
-        this.draw(x, y)
-    },
-    draw(x = this.position.x, y = this.position.y, scale) {
         ctx.save()
         ctx.translate(x, y)
         scale && ctx.scale(scale)
@@ -539,7 +552,7 @@ body.prototype = {
         let isSelected = this.outline()
         if (this.circleRadius) {
             ctx.beginPath()
-            ctx.arc(0, 0, Math.abs(this.circleRadius), 0, Math.PI * 2)
+            ctx.arc(0, 0, Math.abs(this.radius), 0, Math.PI * 2)
         }
         else if (this.shape !== 0) {
             //  Totally didnt use ai for this part
@@ -603,7 +616,7 @@ body.prototype = {
             ctx.globalAlpha = 1
             ctx.imageSmoothingQuality = 'high'
             height = -height * (this.shape === 0 ? 1.5 : 1)
-            ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.getScale()) - 40)
+            ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.radius) - 40)
         }
         ctx.restore()
     },
@@ -656,9 +669,31 @@ body.prototype = {
         Body.scale(this, scale, scale)
     },
     setScale(scale) {
-        Body.scale(this, 1 / this.radius, 1 / this.radius)
+        if (this.shape === 0) return this.circleRadius = this.scaleX = this.scaleY = scale
+        let { angle } = this
+        this.setRotation(0)
+        Body.scale(this, 1 / this.scaleX, 1 / this.scaleY)
         Body.scale(this, scale, scale)
-        this.radius = scale
+        this.scaleX = this.scaleY = scale
+        this.setRotation(angle)
+    },
+    setScaleX(scale) {
+        if (this.shape === 0) return this.circleRadius = this.scaleX = this.scaleY = scale
+        let { angle } = this
+        this.setRotation(0)
+        Body.scale(this, 1 / this.scaleX, 1)
+        Body.scale(this, scale, 1)
+        this.scaleX = scale
+        this.setRotation(angle)
+    },
+    setScaleY(scale) {
+        if (this.shape === 0) return this.circleRadius = this.scaleX = this.scaleY = scale
+        let { angle } = this
+        this.setRotation(0)
+        Body.scale(this, 1, 1 / this.scaleY)
+        Body.scale(this, 1, scale)
+        this.scaleY = scale
+        this.setRotation(angle)
     },
     setStatic(val) {
         Body.setStatic(this, val)
@@ -686,9 +721,8 @@ body.prototype = {
 function goal(args) {
     args.shape = 0
     args.radius = 30
-    args.isStatic = true
-    args.isSensor = true
-    args.name = 'Goal'
+    args.isStatic =
+        args.isSensor = true
     let out = new body(args)
     implement(new.target, out)
     return out
@@ -707,7 +741,7 @@ goal.prototype = {
         this.remove()
     },
     async collisionenter(body) {
-        if (body.constructor !== marble) return
+        if (!(MARBLE_SYMBOL in body)) return
         if (!inEditor && !placements.winners.length && !cam.alreadyDidTheWinnerCutsceneThingy) {
             cam.alreadyDidTheWinnerCutsceneThingy = true
             game.freeze()
@@ -733,6 +767,19 @@ goal.prototype = {
     draw(x = this.position.x, y = this.position.y) {
         let f = game.realFrame
         ctx.save()
+        if (game.isPaused) {
+            this.setPos(math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y))
+            if (mouse.draggingBody === this && mouse.clickedBody === this && !mouse.clickedThisFrame) {
+                mouse.clickedThisFrame = true
+                let { x, y } = mouse.cursor.clone.subtract(cam.position.clone.iScale(cam.zoom))
+                this.spawn.pos = { x, y }
+                this.reset()
+                Object.assign(this.spawn, { x, y })
+            }
+        }
+        else if (x > bounds.x || x < 0 || y > bounds.y || y < 0)
+            this.outOfBounds?.()
+        if (isNaN(x) || isNaN(y)) this.setPos(this.spawn.x, this.spawn.y)
         // ctx.globalCompositeOperation = "source-out"
         ctx.strokeStyle = this.render.strokeStyle
         ctx.fillStyle = this.render.fillStyle
@@ -751,20 +798,20 @@ goal.prototype = {
         }
         ctx.beginPath()
         ctx.lineWidth = 3
-        ctx.arc(0, 0, (this.getScale() / 4) + (c * 30), 0, Math.PI * 2)
+        ctx.arc(0, 0, (this.radius / 4) + (c * 30), 0, Math.PI * 2)
         this.outline()
         ctx.stroke()
         ctx.globalAlpha = this.render.opacity / 4
         ctx.fill()
-        ctx.beginPath()
-        ctx.arc(0, 0, 60, 0, Math.PI * 2)
-        this.inCurrentPath()
+        game.isPaused&&ctx.beginPath(),
+        ctx.arc(0, 0, 60, 0, Math.PI * 2),
+        this.inCurrentPath(),
         ctx.restore()
     }
 }
 function spawn(args) {
-    args.name = 'Spawner'
     let out = new goal(args)
+    out.name = 'Spawner'
     out.deck = null
     out.spawnRate = out.spawn.spawnRate = args.spawnRate ?? 40
     implement(new.target, out)
@@ -782,12 +829,38 @@ spawn.prototype = {
         super.update()
         if (!game.isPaused && !game.frozen && this.deck?.length && !(game.frame % this.spawnRate)) {
             let m = this.deck.pop()
-            new marble({ ...m, x: this.position.x + ran.range(-this.radius, this.radius) / 2, y: this.position.y + ran.range(-this.radius, this.radius) / 2 })
+            let mm = new marble({
+
+                ...m, x: this.position.x + ran.range(-this.radius, this.radius) / 2, y: this.position.y + ran.range(-this.radius, this.radius) / 2
+            })
+
         }
     },
     collisionenter() { },
     draw(x = this.position.x, y = this.position.y) {
         let f = game.realFrame
+
+        if (game.isPaused) {
+            this.setPos(math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y))
+            if (mouse.draggingBody === this && mouse.clickedBody === this && !mouse.clickedThisFrame) {
+                mouse.clickedThisFrame = true
+                let { x, y } = mouse.cursor.clone.subtract(cam.position.clone.iScale(cam.zoom))
+                this.spawn.pos = { x, y }
+                this.reset()
+                Object.assign(this.spawn, { x, y })
+            }
+        }
+        else if (x > bounds.x || x < 0 || y > bounds.y || y < 0)
+            this.outOfBounds?.()
+        if (isNaN(x) || isNaN(y)) this.setPos(this.spawn.x, this.spawn.y)
+        if (this.isEnteringGoal) {
+            if (!this.__animation__) this.__animation__ = this.animateEnteredGoal()
+            else {
+                let { value } = this.__animation__.next()
+                x += Math.cos(game.frame / 10) * (value / 4)
+                y += Math.sin(game.frame / 10) * (value / 4)
+            }
+        }
         ctx.save()
         // ctx.globalCompositeOperation = "source-out"
         ctx.strokeStyle = this.render.strokeStyle
@@ -808,10 +881,10 @@ spawn.prototype = {
         ctx.beginPath()
         ctx.lineWidth = 3
         ctx.arc(0, 0, (this.radius / 4) + (c * 30), 0, Math.PI * 2)
-        this.inCurrentPath()
         this.outline()
+        this.inCurrentPath()
         ctx.stroke()
-        ctx.globalAlpha = this.render.opacity / 4
+        // ctx.globalAlpha = this.render.opacity / 4
         ctx.fill()
         ctx.restore()
     },
@@ -827,6 +900,7 @@ spawn.prototype = {
 }
 function marble(args) {
     args.shape = 0
+    args.radius = marbleStats.radius
     args.isStatic =
         args.isSensor = false
     Object.assign(args, marbleStats)
@@ -863,20 +937,18 @@ marble.prototype = {
     }
 }
 function afterUpdate() {
-    mouse.clickedThisFrame = false
-    if ((outlineOffsetThingy += .2) === 5) outlineOffsetThingy = 0
     let all = getAllBodies()
     for (let { length } = all
         , i = 0; i < length; ++i
         //; length--;
     )
         all[i].update()
-    let allConstraints = getAllConstraints()
+    /*let allConstraints = getAllConstraints()
     for (let { length } = allConstraints
         , i = 0; i < length; ++i
         //; length--;
     )
-        allConstraints[i].update()
+        allConstraints[i].update()*/
     if (mouse.selectedBody) {
         let { globalCompositeOperation } = ctx
         ctx.globalCompositeOperation = 'source-over'
@@ -885,18 +957,12 @@ function afterUpdate() {
     }
     cam.iterate()
 }
-function beforeUpdate() {
+function nextFrame() {
+    requestAnimationFrame(nextFrame)
+    mouse.clickedThisFrame = false
 
-}
-function afterRemove() {
-}
-function beforeRemove() {
-}
-Runner.run(runner, engine)
-Events.on(world, 'afterRemove', afterRemove)
-Events.on(world, 'beforeRemove', beforeRemove)
-
-Events.on(engine, 'afterUpdate', () => {
+    ++game.realFrame
+    if ((outlineOffsetThingy += .2) === 5) outlineOffsetThingy = 0
     ctx.clearRect(0, 0, can.width, can.height)
     ctx.fillStyle = '#7998a3'
     //ctx.drawImage(background, 0, 0, can.width, can.height)
@@ -905,17 +971,42 @@ Events.on(engine, 'afterUpdate', () => {
     ctx.translate(cam.position.x, cam.position.y)
     cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.07)
     ctx.scale(cam.zoom, cam.zoom)
-
     ctx.clearRect(0, 0, bounds.x, bounds.y)
     //if (game.isPaused)
     ctx.globalCompositeOperation = "destination-over"
-    afterUpdate(++game.frame)
-    game.realFrame += !game.frozen
-    // ctx.beginPath()
-    // let r = 20
-    // mouse.clicking && (r = 15)
-    // ctx.arc(...mouse.cursor.clone.subtract(...cam.position.clone.scale(1 / cam.zoom)), r, 0, Math.PI * 2)
-    // ctx.stroke()
+
+    if (cam.following && !mouse.leftClicking) {
+        let { x, y } = cam.following.position
+        cam.position.lerp(vect(-x, -y).scale(cam.zoom).add(can.width / 2, can.height / 2), (cam.speed / 100) / cam.zoom)
+    }
+    let closestToGoal
+    let furthestFromGoal
+    let all = getAllBodies()
+    let avgPosX = []
+    let avgPosY = []
+    for (let { length } = all
+        , i = 0; i < length; ++i
+        //; length--;
+    ) {
+        all[i].draw()
+        if (all[i] instanceof marble) {
+            avgPosX.push(all[i].position.x)
+            avgPosY.push(all[i].position.y)
+            closestToGoal ??= furthestFromGoal ??= all[i]
+            if (cam.goal && vect.distance(closestToGoal.position, cam.goal?.position) > vect.distance(all[i].position, cam.goal?.position)) {
+                closestToGoal = all[i]
+            }
+            if (cam.goal && vect.distance(furthestFromGoal.position, cam.goal?.position) < vect.distance(all[i].position, cam.goal?.position)) {
+                furthestFromGoal = all[i]
+            }
+        }
+    }
+    let allC = getAllConstraints()
+    for (let { length } = allC
+        , i = 0; i < length; ++i
+        //; length--;
+    )
+        allC[i].draw()
     ctx.restore()
     if (game.isPaused) {
         //  Pause icon
@@ -927,19 +1018,50 @@ Events.on(engine, 'afterUpdate', () => {
         ctx.strokeRect(10, 10, 7, 20)
         ctx.strokeRect(21, 10, 7, 20)
     }
-    if (cam.following && !mouse.leftClicking) {
-        let { x, y } = cam.following.position
-        cam.position.lerp(vect(-x, -y).scale(cam.zoom).add(can.width / 2, can.height / 2), (cam.speed / 100) / cam.zoom)
+    if (!game.isPaused && !game.frozen) 
+    switch (cam.behaviour) {
+        case 'first': cam.following = closestToGoal; break
+        case 'last': cam.following = furthestFromGoal; break
+        case 'avg': if (closestToGoal && furthestFromGoal){
+            let avgX = math.average(...avgPosX)
+            let avgY = math.average(...avgPosY)
+            cam.following = {
+                position: {
+                    x: avgX,
+                    y: avgY
+                }
+            }
+        }
+        break
     }
+}
+nextFrame()
+function beforeUpdate() {
+}
+function afterRemove() {
+}
+function beforeRemove() {
+}
+Runner.run(runner, engine)
+game.pauseEngine()
+Events.on(world, 'afterRemove', afterRemove)
+Events.on(world, 'beforeRemove', beforeRemove)
+Events.on(engine, 'afterUpdate', () => {
+    afterUpdate(++game.frame)
+    // ctx.beginPath()
+    // let r = 20
+    // mouse.clicking && (r = 15)
+    // ctx.arc(...mouse.cursor.clone.subtract(...cam.position.clone.scale(1 / cam.zoom)), r, 0, Math.PI * 2)
+    // ctx.stroke()
 })
 Events.on(engine, 'beforeUpdate', beforeUpdate)
 Events.on(engine, 'collisionStart', collisionStart)
 Events.on(engine, 'collisionActive', collisionActive)
 Events.on(engine, 'collisionEnd', collisionEnd)
 function collisionStart({ pairs }) {
+
     pairs.forEach(pair => {
         let { bodyA: a, bodyB: b } = pair
-
         if (a && b)
             b.collisionenter?.(a),
                 a.collisionenter?.(b)
@@ -962,6 +1084,7 @@ function collisionActive({ pairs }) {
     })
 }
 let overlay = $.gid('overlay')
+top.m = marbleStats
 window.getLevelFromJSON =
     function getLevelFromJSON(json) {
         if (inEditor) {
@@ -979,23 +1102,41 @@ window.getLevelFromJSON =
         Composite.clear(world, false, true)
         let { images: imgs, map, racers, settings, shapes } = json
         Object.assign(marbleStats, settings)
+        console.log(marbleStats)
         racers.forEach(async (o, i) => {
-            if ('image' in o) {
+            if ('image' in o && o.image != null) {
                 let url = imgs[o.image]
                 o.image = `${o.image}`
+                if (images.has(o.image)) {
+                    return o.image = images.get(o.image)
+                }
                 let n = new Image
                 n.src = url
                 await until(n, 'load')
                 let context = new OffscreenCanvas(256, 256).getContext('2d')
                 context.drawImage(n, 0, 0, 256, 256)
-                context.canvas.convertToBlob().then(o => context.canvas.src = URL.createObjectURL(o))
                 images.set(o.image, context.canvas)
+                context.canvas.convertToBlob().then(data => o.image = context.canvas.src = URL.createObjectURL(data))
                 let { name, color, image } = o
                 inEditor && top.addMarble({ name, color, image })
             }
             marbles.set(i, o)
         })
-        map.forEach(o => {
+        map.forEach(async o => {
+            if ('image' in o && o.image != null) {
+                let url = imgs[o.image]
+                o.image = `${o.image}`
+                if (images.has(o.image)) {
+                    return o.image = images.get(o.image)
+                }
+                let n = new Image
+                n.src = url
+                await until(n, 'load')
+                let context = new OffscreenCanvas(256, 256).getContext('2d')
+                context.drawImage(n, 0, 0, 256, 256)
+                images.set(o.image, context.canvas)
+                context.canvas.convertToBlob().then(data => o.image = context.canvas.src = URL.createObjectURL(data))
+            }
             let digit = Math.abs(o.shape + 1)
             if (o.shape < 0) {
                 try {
@@ -1019,7 +1160,7 @@ window.getLevelFromJSON =
                 o.shape = customVertices.get(Math.abs(o.shape + 1))
             }
             switch (o.type) {
-                default: return body({ ...o, })
+                default: return body(o)
                 case 'spawn': return new spawn(o)
                 case 'goal': return new goal(o)
             }
@@ -1052,6 +1193,40 @@ if (levelName) {
             })
         )
     )
+    let settings = $(`<div><button class="cute-green-button settingsbutton">Settings</button></div>`)
+    let settingsmenu = $(`<div>
+        <label for="camb">Cam Behaviour
+        <select id="camb">
+        <option value="default">None</option>
+        <option value="first">Follow First</option>
+        <option value="last">Follow Last</option>
+        <option value="middle">Follow Middle</option>
+        <option value="avg">Average Position</option>
+        <option value="avgnooutliers">Average Position (no outliers)</option>
+        </select>
+        </label>
+        </div>`)
+    settingsmenu.hide()
+    for (let n of settingsmenu.first) {
+        if (n.value === lstorage.cam) {
+            n.setAttributes({ selected: true })
+            break
+        }
+    }
+    overlay.push(settingsmenu)
+    settings.on({
+        _click() {
+            let camb = $.gid('camb')
+                .on({
+                    change() {
+                        lstorage.cam = cam.behaviour = this.value || 'default'
+                    }
+                })
+            settingsmenu.show()
+            this.destroy()
+        }
+    })
+    overlay.push(settings)
     getLevelFromJSON(await getJson(`./levels/${levelName}.json`))
 }
 /* function dataURItoBlob(dataURI) {
@@ -1063,7 +1238,7 @@ if (levelName) {
     // write the bytes of the string to an ArrayBuffer
     var ab = new ArrayBuffer(byteString.length);
     // create a view into the buffer
-    var ia = new Uint8Array(ab);    
+    var ia = new Uint8Array(ab);
     // set the bytes of the buffer to the correct values
     for (var i = 0; i < byteString.length; i++) {
         ia[i] = byteString.charCodeAt(i);
@@ -1072,3 +1247,5 @@ if (levelName) {
     var blob = new Blob([ab], { type: mimeString });
     return blob;
 } */
+// let a = body({ x: 400, y: 300, scaleX: 30, scaleY: 30, shape: 4 })
+// joint({ bodyA: a, pointB: { ...a.position } })

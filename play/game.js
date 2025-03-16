@@ -12,10 +12,10 @@ export const engine = Engine.create({
     sleepThreshold: 60,
 })
 export const base = {
-    frictionAir: 0.01,
-    friction: .02,
-    inertia: 2000,
-    restitution: 2.5,     // Bounciness
+    frictionAir: 0.005,
+    friction: .1,
+    // inertia: 2000,
+    restitution: 1,     // Bounciness
     // mass: 5,
     density: 1,
 }

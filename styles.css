@@ -9,7 +9,9 @@ canvas {
     z-index: 2;
 }
 
-
+.settingsbutton {
+    filter:  grayscale(0.9) brightness(0.8);
+}
 cite::before {
     content: 'By ';
 }
@@ -65,7 +67,6 @@ cite::before {
     display: -webkit-inline-box;
     overflow-x: scroll;
 }
-
 iframe {
     width: 50vw;
     height: 500px;
@@ -224,7 +225,7 @@ input.cute-green {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     transition: transform 0.3sease, background-color 0.3sease;
     /* max-width: 80%; */
-    margin: auto;
+    margin: 3px;
 }
 
 .preview {

@@ -8,8 +8,102 @@ import { getJson } from '../../arrays.js'
 registerCSS('input[type="color"]::color-swatch', {
     'border-radius': '100%'
 })
+function setSelected(prop, val) {
+    selected.spawn[prop] = val
+    selected.reset()
+}
 let leftControls = $.gid('left-controls')
-leftControls.createState(0, $('div'))
+// Body name
+const bodyname = $.gid('bodyname')
+
+// Color picker thingy
+const colorpicker = $.gid('color-input')
+    .on({
+        input() {
+            setSelected('color', this.value)
+        }
+    })
+// Bounciness
+const bounciness = $.gid('bouncy')
+    .on({
+        input() {
+            setSelected('restitution', this.value)
+        }
+    })
+// Density
+const density = $.gid('density')
+    .on({
+        input() {
+            setSelected('density', this.value)
+        }
+    })
+// Scales
+const scaleX = $.gid('scalex').on({
+    input() {
+        setSelected('scaleX', this.value)
+    }
+}),
+    scaleY = $.gid('scaley').on({
+        input() {
+            setSelected('scaleY', this.value)
+        }
+    })
+
+// Spawn interval
+const spawnInterval = $.gid('spawninterval')
+    .on({
+        input() {
+            setSelected('spawnInterval', this.value)
+        }
+    })
+// Opacity
+const opacity = $.gid('opacity')
+    .on({
+        input() {
+            setSelected('opacity', this.value)
+        }
+    })
+// Angle
+let setAngleThingy = function () {
+    setSelected('angle', math.toRad(angleSlider.value = angle.value = this.value))
+}
+const angle = $.gid('angle').on({ input: setAngleThingy }),
+    angleSlider = $.gid('angle-alt').on({ input: setAngleThingy })
+
+// Image Picker
+const imagePicker = $.gid('select-image')
+    .on({
+        input() {
+            debugger
+            selected.setImage(this.value)
+        }
+    })
+// Static Checkbox
+const isStatic = $.gid('isStatic')
+    .on({
+        input() {
+            setSelected('isStatic', this.checked)
+        }
+    })
+isStatic.indeterminate = true
+
+// Clone Button
+const cloneButton = $.gid('clone')
+    .on({
+        click() {
+            selected.clone()
+        }
+    })
+// Delete Button
+const deleteButton = $.gid("delete")
+.on({
+    click() {
+        selected.remove()
+        hide()
+    }
+})
+
+
 $.gid('reset-cam').on({
     click() {
         game.postMessage('resetcam')
@@ -22,13 +116,17 @@ function clearMarbles() {
     racers.destroyChildren()
     racers.push($(`<h3>No marbles added :(</h3>`))
 }
+let levelTitle =$.gid('leveltitle'),
+levelAuthor = $.gid('levelauthor')
 let mport = $.gid('import-button')
     .on({
         async click() {
             let f = await reqFile('.json')
-            let url = getObjUrl(f)
+            let url = URL.createObjectURL(f)
             let data = await getJson(url)
             clearMarbles()
+            levelAuthor.value = data.author || 'Unknown'
+            levelTitle.value = data.title || 'Level'
             game.getLevelFromJSON(data)
             for (let [, marble] of marbles) {
                 addMarble({
@@ -43,114 +141,127 @@ let mport = $.gid('import-button')
 // let exportDownloadButton = $.gid('export') 
 $.gid('cancel-export').on({
     click() {
-        exportMenu.fadeOut()
+        exportmenuholder.fadeOut()
     }
 })
+let exportmenuholder = $.gid('exportmenuholder')
 let exportMenu = $.gid('exportmenu')
-.on({
-    async $submit() {
-        let {title, author} = this.form
-        let ctx = document.createElement('canvas').getContext('2d')
-        Object.assign(ctx.canvas, {
-            width: 256,
-            height: 256
-        })
-        let obj = {
-            title: str.shorten(title, 32),
-            author: str.shorten(author, 16),
-            __proto__: null, settings: Object.fromEntries(Object.entries(settings).map(([p, v]) => [p, +v])),
-            racers: [...marbles.values()], map: Array.from(entities.values(), o => {
-                let spawn = { ...o.spawn }
-                if (o.constructor.name !== 'obj')
-                    spawn.type = o.constructor.name
-                return spawn
-            }
-            )
-        }
-        let allImages = []
-        let outShapes = []
-        let seenImages = new Map
-        let allShapes = []
-        let seenShapes = new Map
-
-        for (let n of obj.racers.concat(obj.map)) {
-            let { image } = n
-            if (image !== null && image !== 'none') {
-                if (seenImages.has(image)) {
-                    n.image = seenImages.get(image)
-                } else {
-                    let img = new Image()
-                    img.src = imageCache.get(image).src
-                    await until(img, 'load')
-                    await img.decode()
-                    ctx.drawImage(img, 0, 0, 256, 256)
-                    let data = ctx.canvas.toDataURL('image/png', 0.5)
-                    allImages.push(data)
-                    seenImages.set(image, allImages.length - 1)
-                    n.image = allImages.length - 1
+    .on({
+        async $submit() {
+            let { title, author } = this.initForm()
+            author = `${author || 'Unknown'}`
+            title = `${title || 'Level'}`
+            let ctx = document.createElement('canvas').getContext('2d')
+            Object.assign(ctx.canvas, {
+                width: 256,
+                height: 256
+            })
+            let obj = {
+                title: str.shorten(title, 32),
+                author: str.shorten(author, 16),
+                __proto__: null, settings: Object.fromEntries(Object.entries(settings).map(([p, v]) => [p, +v])),
+                racers: [...marbles.values()], map: Array.from(entities.values(), o => {
+                    let spawn = { ...o.spawn }
+                    spawn.scaleX &&= +spawn.scaleX
+                    spawn.scaleY &&= +spawn.scaleY
+                    delete spawn.isSensor
+                    if (spawn.shape === 0 || spawn.scaleX === spawn.scaleY) {
+                        let old = Math.max(spawn.scaleX, spawn.scaleY)
+                        delete spawn.scaleX
+                        delete spawn.scaleY
+                        spawn.radius = old
+                    }
+                    if (o.constructor.name !== 'obj')
+                        spawn.type = o.constructor.name
+                    return spawn
                 }
-            } else {
-                delete n.image
+                )
             }
-
-            let { shape } = n
-            if (Array.isArray(shape)) {
-                if (typeof shape[0]?.[0] === 'number') {
-                    shape = JSON.stringify(shape)
-                    if (seenShapes.has(shape)) {
-                        n.shape = seenShapes.get(shape)
+            let allImages = []
+            let outShapes = []
+            let seenImages = new Map
+            let allShapes = []
+            let seenShapes = new Map
+            for (let n of obj.racers.concat(obj.map)) {
+                console.log(n)
+                let { image } = n
+                if (image != null && image !== 'none') {
+                    debugger
+                    if (seenImages.has(image)) {
+                        n.image = seenImages.get(image)
                     } else {
-                        allShapes.push(shape)
-                        seenShapes.set(shape, -(allShapes.length))
-                        n.shape = -(allShapes.length)
+                        let img = new Image()
+                        img.src = imageCache.get(image)?.src ?? image
+                        await until(img, 'load')
+                        await img.decode()
+                        ctx.drawImage(img, 0, 0, 256, 256)
+                        let data = ctx.canvas.toDataURL('image/png', 0.5)
+                        allImages.push(data)
+                        seenImages.set(image, allImages.length - 1)
+                        n.image = allImages.length - 1
                     }
                 } else {
-                    let data = n.shape.map(o => o.getAttribute('d').toString()).join('|')
-                    if (seenShapes.has(data)) {
-                        n.shape = seenShapes.get(data)
-                    } else {
-                        seenShapes.set(data, -(allShapes.length + 1))
-                        allShapes.push(data)
-                        outShapes.push(data)
-                        n.shape = -(allShapes.length)
-                    }
+                    delete n.image
                 }
-            }
 
-            for (let i in n) {
-                let val = n[i]
-                if (val === base[i]) {
-                    delete n[i]
-                } else {
-                    switch (i) {
-                        case 'opacity':
-                            if (val === 1) delete n[i]
-                            break
-                        case 'angle':
-                            if (val === 0) delete n[i]
-                            break
-                        case 'isStatic':
-                            if (val === false) delete n[i]
-                            break
-                        case 'type':
-                            if (val === 'body') delete n[i]
-                            break
+                let { shape } = n
+                if (Array.isArray(shape)) {
+                    if (typeof shape[0]?.[0] === 'number') {
+                        shape = JSON.stringify(shape)
+                        if (seenShapes.has(shape)) {
+                            n.shape = seenShapes.get(shape)
+                        } else {
+                            allShapes.push(shape)
+                            seenShapes.set(shape, -(allShapes.length))
+                            n.shape = -(allShapes.length)
+                        }
+                    } else {
+                        let data = n.shape.map(o => o.getAttribute('d').toString()).join('|')
+                        if (seenShapes.has(data)) {
+                            n.shape = seenShapes.get(data)
+                        } else {
+                            seenShapes.set(data, -(allShapes.length + 1))
+                            allShapes.push(data)
+                            outShapes.push(data)
+                            n.shape = -(allShapes.length)
+                        }
+                    }
+                }
+
+                for (let i in n) {
+                    let val = n[i]
+                    if (val === base[i]) {
+                        delete n[i]
+                    } else {
+                        switch (i) {
+                            case 'opacity':
+                                if (val === 1) delete n[i]
+                                break
+                            case 'angle':
+                                if (val === 0) delete n[i]
+                                break
+                            case 'isStatic':
+                                if (val === false) delete n[i]
+                                break
+                            case 'type':
+                                if (val === 'body') delete n[i]
+                                break
+                        }
                     }
                 }
             }
+            obj.shapes = allShapes
+            obj.images = allImages
+            download(new Blob([JSON.stringify(obj)]), 'data.json')
         }
-        obj.shapes = allShapes
-        obj.images = allImages
-        download(new Blob([JSON.stringify(obj)]), 'data.json')
-    }
-})
+    })
 let exportToggleMenuButton = $.gid('export-button')
-.on({
-    click() {
-        exportMenu.fadeIn()
-    }
-})
-   
+    .on({
+        click() {
+            exportmenuholder.fadeIn()
+        }
+    })
+
 let cached = new WeakSet
 let cachedVertices = new WeakSet
 on(window, {
@@ -183,24 +294,23 @@ function updateImages(file) {
         var url = file.src
     }
     else {
-        var url = cou(file)
+        var url = URL.createObjectURL(file)
     }
     cached.add(file)
     game.postMessage({
         title: file.name,
         url
     })
-    for (let el of document.getElementsByName('marbleimageselect')) {
-        el = $(el)
-        // el.destroyChildren()
-        // el.$(`<option value="none">None</option>`)
-        el.last.after = $(`<option value="${url}">${file.name || file.title}</option>`)
-        // el.push(...Array.from(imageCache.entries(),
-        // function ([title, src]) {
-        // console.log(src, title)
-        // return $(`<option value="${src}">${title}</option>`)
 
-    }
+    // el.destroyChildren()
+    // el.$(`<option value="none">None</option>`)
+    imagePicker.push($(`<option value="${file.name || file.title}">${file.name || file.title}</option>`))
+    // el.push(...Array.from(imageCache.entries(),
+    // function ([title, src]) {
+    // console.log(src, title)
+    // return $(`<option value="${src}">${title}</option>`)
+
+
 }
 let files = uploadButton.after.on({
     change() {
@@ -210,226 +320,55 @@ let files = uploadButton.after.on({
             }
             else updateImages(file)
         }
-        message({ data: 'hideData' })
+        hide()
     }
 })
+function hide() {
+    leftControls.first.hide()
+}
+function show() {
+    leftControls.first.show()
+}
 function message(e) {
     let { data } = e
-    if (typeof data === 'string') switch (data) {
-        case 'hideData': return leftControls.destroyChildren(), window.selected = null, leftControls.setState(0), game.postMessage("resetMouse")
-        case 'showData': if (selected != null && leftControls.currentState !== selected.id) {
-            if (!isPaused) return
-            if (!leftControls.getState(selected.id)) {
-                let { dontShow } = selected
-                let theState =
-                    $('<div style="display:grid;"></div>', {},
-                        $(`h2`, {
-                            attributes: {
-                                name: "title"
-                            },
-                            textContent: selected.label
-                        }),
-                        $(`<label title="Color" class="stat" for="c-${selected.id}">Color</label>`, {
-                            start() {
-                                dontShow.has('color') && this.hide3()
-                            }
-                        }, $('input%color', {
-                            attributes: {
-                                id: `c-${selected.id}`,
-                                name: 'color',
-                                title: 'Color',
-                                value: selected.spawn.color,
-                                placeholder: selected.spawn.color
-                            },
-                            events: {
-                                input() {
-                                    selected.spawn.color = this.value
-                                    selected.reset()
-                                },
-                            }
-                        })),
-                        $(`<label title="Bounciness" class="stat" for="r-${selected.id}">Bounciness</label>`, {
-                            start() {
-                                dontShow.has('restitution') && this.hide3()
-                            }
-                        },
-                            $(`<input type="number" min="0" placeholder="Bounciness" value="${selected.spawn.restitution}" id="r-${selected.id}">`, {
-                                events: {
-                                    input() {
-                                        selected.spawn.restitution = +this.value
-                                        selected.reset()
-                                    }
-                                }
-                            })),
-                        $(`<label title="Density" class="stat" for="d-${selected.id}">Density</label>`, {
-                            start() {
-                                dontShow.has('density') && this.hide3()
-                            }
-                        },
-                            $(`<input type="number" min="0" placeholder="Density" value="${selected.spawn.density}" id="d-${selected.id}">`, {
-                                events: {
-                                    input() {
-                                        selected.spawn.density = +this.value || 1
-                                        selected.reset()
-                                    }
-                                }
-                            })),
-                        $(`<label title="Scale" class="stat" for="S-${selected.id}">Scale</label>`, {
-                            start() {
-                                dontShow.has('scale') && this.hide3()
-                            }
-                        },
-                            $(`<input type="number" max="9007199254740991" min="-9007199254740991" placeholder="Negative = Mirrored" value="${selected.spawn.radius}" id="S-${selected.id}">`, {
-                                events: {
-                                    input() {
-                                        selected.spawn.radius = +this.value || 1
-                                        selected.reset()
-                                    }
-                                }
-                            })),
-                        $(`<label title="opacity" class="stat" for="o-${selected.id}">Opacity</label>`, {
-                            start() {
-                                dontShow.has('opacity') && this.hide3()
-                            }
-                        },
-                            $(`<input class="uhh" min="0" max="1" step="0.05" type="range" placeholder="opacity" id="o-${selected.id}" value="${selected.render.opacity}">`, {
-                                events: {
-                                    input() {
-                                        selected.spawn.opacity = math.clamp(this.value, 0, 1)
-                                        selected.reset()
-                                    }
-                                }
-                            })
-                        ),
-                        $('<label class="stat uhh standout" title="angle in degrees" for="angle">Angle°</label>', {
-                            start() {
-                                dontShow.has('angle') && this.hide3()
-                            }
-                        },
-                            $(`<input type="range" id="angle">`, {
-                                events: {
-                                    input() {
-                                        selected.spawn.angle = math.toRad(+this.value)
-                                        this.after.value = (+this.value)
-                                        selected.reset()
-                                    }
-                                },
-                                attributes: {
-                                    min: -180,
-                                    step: 1,
-                                    max: 180,
-                                    value: math.toDeg(selected.angle)
-                                }
-                            }), $('<input type="number" id="angle-alt" placeholder="deg">', {
-                                events: {
-                                    input() {
-                                        let val = math.clamp(+this.value, -180, 180)
-                                        selected.spawn.angle = math.toRad(val)
-                                        this.before.value = val
-                                        selected.reset()
-                                    }
-                                },
-                                attributes: {
-                                    min: -180,
-                                    step: 1,
-                                    max: 180,
-                                    value: math.toDeg(selected.angle)
-                                }
-                            })),
-                        $(`<label for="select-image" title="Image" class="stat">Image</label>`, {
-                            start() {
-                                dontShow.has('image') && this.hide3()
-                            }
-                        },
-                            $('(will not animate in game)'.small().italics().small()),
-                            $('<select title="select image" id="select-image"></select>', {
-                                events: {
-                                    change() {
-                                        if (this.value === 'none') selected.setImage(null)
-                                        else selected.setImage(this.value)
-                                    }
-                                }
-                            }),
-                            //                                $(`<div class="preview" id="img-${selected.id}"></div>`),
-                            // $('<label></label>') $("<select>Smoothing Quality</select>")
-                        ),
-                        $(`<label class="stat" style="display:inline;" for="s-${selected.id}">Static<label>`, {
-                            start() {
-                                dontShow.has('static') && this.hide3()
-                            }
-                        },
-                            $(`<input type="checkbox" id="s-${selected.id}">`, {
-                                events: {
-                                    change() {
-                                        selected.spawn.isStatic = !!this.checked
-                                        selected.reset()
-                                    }
-                                },
-                                attributes: {
-                                    checked: selected.static
-                                }
-                            })
-                        ),
-                    )
-                if (selected.constructor.name === 'spawn') $(`<label class="stat" for="sp-${selected.id}">Spawn Rate</label>`, null,
-                    $(`<input value="${selected.spawnRate}" type="number" id="sp-${selected.id}">`, {
-                        events: {
-                            change() {
-                                selected.spawn.spawnRate = +this.value
-                                selected.reset()
-                            }
-                        }
-                    })).parent = theState
-                theState.push($(`<button class="cute-green-button">Clone</button>`, {
-                    events: {
-                        click() {
-                            selected.clone()
-                        }
-                    }
-                }),
-                    $(`<button class="red cute-green-button">Delete</button>`, {
-                        events: {
-                            click() {
-                                leftControls.deleteState(selected.id)
-                                selected.remove()
-                                message({ data: 'hideData' })
-
-                            }
-                        }
-                    }))
-                leftControls.createState(selected.id, theState)
-            }
-            let state = leftControls.getState(selected.id)
-            let col = $(state.querySelector('[name=color]'))
-            let isStatic = $(state.getElementById(`s-${selected.id}`))
-            isStatic.checked = selected.isStatic
-            let angleInput = $(state.getElementById('angle-alt'))
-            let angleMain = $(state.getElementById('angle'))
-            let opacity = $(state.getElementById(`o-${selected.id}`))
-            opacity.value = selected.render.opacity
-            angleMain.value = angleInput.value = math.toDeg(selected.angle)
-            let select = $(state.querySelector('select'))
-            let density = $(state.getElementById(`d-${selected.id}`))
-            density.value = selected.density
-            let img = $(state.getElementById('select-image'))
-            let scale = $(state.getElementById(`S-${selected.id}`))
-            scale.value = selected.getScale()
-            let restitution = $(state.getElementById(`r-${selected.id}`))
-            restitution.value = selected.restitution
-            select.destroyChildren()
-            if (selected.constructor.name === 'spawn') $(state.getElementById(`sp-${selected.id}`)).value = selected.spawnRate
-            select.push($(`<option value="none">None</option>`), ...Array.from(imageCache.entries(),
-                function ([title, src]) {
-                    let s = ''
-                    if (src.src) src = src.src
-                    if (imageCache.get(title).src === selected.spawn.image) s = 'selected'
-                    return $(`<option value="${src}" ${s}>${title}</option>`)
-                }))
-            col.value = selected.spawn.color
-            leftControls.setState(selected.id)
-        } else if (selected == null) leftControls.setState(0)
+    switch (data) {
+        // case null: hide(),alert(12)
+        // break
+        case 'hideData': {
+            window.selected = null, game.postMessage("resetMouse")
+        }
+            break
+        case 'showData': {
+            showStatPicker(selected)
+        }
             break
     }
+}
+function showStatPicker(my) {
+    show()
+    bodyname.textContent = my.label
+    bounciness.value = my.spawn.restitution
+    density.value = my.spawn.density
+    opacity.value = my.spawn.opacity
+    scaleX.value = my.spawn.scaleX
+    scaleY.value = my.spawn.scaleY
+    colorpicker.value = my.spawn.color
+    angle.value = angleSlider.value = math.toDeg(my.spawn.angle)
+    isStatic.indeterminate = false
+    isStatic.checked = my.spawn.isStatic
+    console.log(my.spawn)
+    if (my.dontShow.has('name')) {
+
+    }
+    my.dontShow.has('angle') ? angle.parent.hide3() : angle.parent.show3()
+    my.dontShow.has('opacity') ? opacity.parent.hide3() : opacity.parent.show3()
+    my.dontShow.has('scale') ? (scaleY.parent.hide3(), scaleX.parent.hide3()) : (scaleY.parent.show3(), scaleX.parent.show3())
+    my.dontShow.has('static') ? isStatic.parent.hide3() : isStatic.parent.show3()
+    my.dontShow.has('density') ? density.parent.hide3() : density.parent.show3()
+    my.dontShow.has('restitution') ? bounciness.parent.hide3() : bounciness.parent.show3()
+    my.dontShow.has('image') ? imagePicker.parent.hide3() : imagePicker.parent.show3()
+    my.constructor.name === 'spawn' ? (spawnInterval.value = my.spawn.spawnRate
+        , spawnInterval.parent.show3()) : spawnInterval.parent.hide3()
 }
 on(window, {
     message
@@ -440,15 +379,17 @@ let isPlacing = true
 let toggle = $.gid('play-button').on({
     click() {
         isPaused = !isPaused
-        this.textContent = isPaused ? (leftControls.show(), 'Play') : (leftControls.hide(), 'Pause')
+        this.textContent = isPaused ? ((selected && show()), 'Play') : (hide(), 'Pause')
         game.postMessage('Toggle')
     }
 })
 let placingOrMoving = $.gid('place-toggle').on({
     click() {
         isPlacing = !isPlacing
+        window.selected = null
+        hide()
         this.styles.filter = `hue-rotate(${isPlacing ? '300' : '70'}deg) brightness(80%)`
-        game.postMessage(this.textContent = isPlacing ? 'Placing' : 'Moving')
+        game.postMessage(this.textContent = isPlacing ? ('Placing') : ('Moving'))
     }
 })
 let chosen = $.gid('place-entity')
@@ -591,3 +532,4 @@ let addMarbleButton = $.gid('add-marble-button')
                             <button class="cute-green-button red">Delete</button>
                         </div>
 */
+hide()

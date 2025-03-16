@@ -3,6 +3,7 @@ import { on, wait } from '../../handle.js'
 // import { getJson } from 'https://addsoupbase.github.io/arrays.js'
 import * as math from '../../num.js'
 import { getJson } from '../../arrays.js'
+import { lstorage } from '../../proxies.js'
 import str from '../../strings.js'
 const { vect } = math
 export const canvas = $.gid('can-vas')
@@ -15,6 +16,7 @@ export const game = {
     frame: 0,
     realFrame: 0,
     frozen: false,
+    joints: new Set,
     end() {
 
     },
@@ -28,6 +30,7 @@ export const game = {
             default: throw TypeError(`Bad state: ${state}`)
         }
     },
+    goal: null,
     toggleDOM() { },
     werentSleeping: [],
     thaw() {
@@ -46,10 +49,11 @@ export const game = {
     pause() {
         this.frame = 0
         mouse.reset()
+        this.pauseEngine()
         this.isPaused = true
         for (let body of this.all) {
             body.ontoggle?.('pause')
-            body.setSleeping(true)
+            // body.setStatic(true)
             body.reset()
         }
         this.toggleDOM(false)
@@ -58,7 +62,7 @@ export const game = {
         if (!inEditor) {
             let delay = 1500
             let spawn = this.all.find(o => o.constructor.name === 'spawn'),
-                goal = this.all.find(o => o.constructor.name === 'goal')
+                goal = cam.goal = this.all.find(o => o.constructor.name === 'goal')
             if (goal) {
                 //  Intro cutscene thingy
                 cam.following = goal
@@ -75,8 +79,10 @@ export const game = {
         else top.postMessage('hideData')
         this.frame = 0
         mouse.reset()
+        this.playEngine()
         this.isPaused = false
         for (let body of this.all) {
+            // if (this.werentStatic.has(body)) body.setStatic(false)
             body.ontoggle?.('play')
             body.setSleeping(false)
         }
@@ -107,8 +113,9 @@ export const mouse = {
     }
 }
 export const cam = {
-    position: vect(0, 0),
+    position: vect(-2000, -2000),
     zoom: 1,
+    behaviour: lstorage.cam ??= 'default',
     alreadyDidTheWinnerCutsceneThingy: false,
     targetZoom: 1,
     id: 0,
@@ -207,7 +214,7 @@ export function msg(e) {
         case 'Toggle': return game.toggle(game.isPaused)
         case 'Moving': return mouse.isPlacing = false
         case 'resetcam': {
-            cam.position.set(0, 0)
+            cam.position.set(-2000, -2000)
             cam.targetZoom = 1
             cam.zoom ||= 1
             return
@@ -278,7 +285,7 @@ void function start(ignore) {
                         anchor.hide3()
                         delete message.styles.color
                         loader.fadeIn()
-                        let { title, author: authorName } = await getJson(`levels/${this.form.levelid.match(/\w+/)}.json`)
+                        let { title, author: authorName } = await getJson(`levels/${this.initForm().levelid.match(/\w+/)}.json`)
                         message.textContent = str.shorten(title || 'Level', 32),
                             author.textContent = str.shorten(authorName || 'Unknown', 16),
                             message.fadeIn()

@@ -1012,6 +1012,7 @@ function nextFrame() {
         //  Pause icon
         ctx.lineWidth = 1
         ctx.fillStyle = color.gray
+        debugger
         ctx.strokeStyle = color.black
         ctx.fillRect(10, 10, 7, 20)
         ctx.fillRect(21, 10, 7, 20)

@@ -1,7 +1,7 @@
 import $ from '../../yay.js'
-import str from '../../strings.js'
+import *as str from '../../str.js'
 import color from '../../color.js'
-import { on, getObjUrl as cou, until, download, reqFile, getObjUrl, } from '../../handle.js'
+import { on, until, download, reqFile,  } from '../../handle.js'
 import * as math from '../../num.js'
 import { registerCSS } from '../../csshelper.js'
 import { getJson } from '../../arrays.js'
@@ -183,7 +183,6 @@ let exportMenu = $.gid('exportmenu')
             let allShapes = []
             let seenShapes = new Map
             for (let n of obj.racers.concat(obj.map)) {
-                console.log(n)
                 let { image } = n
                 if (image != null && image !== 'none') {
                     debugger
@@ -195,7 +194,7 @@ let exportMenu = $.gid('exportmenu')
                         await until(img, 'load')
                         await img.decode()
                         ctx.drawImage(img, 0, 0, 256, 256)
-                        let data = ctx.canvas.toDataURL('image/png', 0.5)
+                        let data = ctx.canvas.toDataURL('image/png', 0.9)
                         allImages.push(data)
                         seenImages.set(image, allImages.length - 1)
                         n.image = allImages.length - 1
@@ -265,8 +264,8 @@ let exportToggleMenuButton = $.gid('export-button')
 let cached = new WeakSet
 let cachedVertices = new WeakSet
 on(window, {
-    load() {
-        $.body.show3()
+    _load() {
+        $.body.show(3)
     }
 })
 $.gid('right-button')?.on({
@@ -290,11 +289,12 @@ let uploadButton = $.gid('upload-images').on({
     }
 })
 function updateImages(file) {
+    let url
     if (file instanceof Image) {
-        var url = file.src
+        url = file.src
     }
     else {
-        var url = URL.createObjectURL(file)
+        url = URL.createObjectURL(file)
     }
     cached.add(file)
     game.postMessage({
@@ -309,8 +309,6 @@ function updateImages(file) {
     // function ([title, src]) {
     // console.log(src, title)
     // return $(`<option value="${src}">${title}</option>`)
-
-
 }
 let files = uploadButton.after.on({
     change() {
@@ -356,19 +354,18 @@ function showStatPicker(my) {
     angle.value = angleSlider.value = math.toDeg(my.spawn.angle)
     isStatic.indeterminate = false
     isStatic.checked = my.spawn.isStatic
-    console.log(my.spawn)
     if (my.dontShow.has('name')) {
 
     }
-    my.dontShow.has('angle') ? angle.parent.hide3() : angle.parent.show3()
-    my.dontShow.has('opacity') ? opacity.parent.hide3() : opacity.parent.show3()
-    my.dontShow.has('scale') ? (scaleY.parent.hide3(), scaleX.parent.hide3()) : (scaleY.parent.show3(), scaleX.parent.show3())
-    my.dontShow.has('static') ? isStatic.parent.hide3() : isStatic.parent.show3()
-    my.dontShow.has('density') ? density.parent.hide3() : density.parent.show3()
-    my.dontShow.has('restitution') ? bounciness.parent.hide3() : bounciness.parent.show3()
-    my.dontShow.has('image') ? imagePicker.parent.hide3() : imagePicker.parent.show3()
+    my.dontShow.has('angle') ? angle.parent.hide(3) : angle.parent.show(3)
+    my.dontShow.has('opacity') ? opacity.parent.hide(3) : opacity.parent.show(3)
+    my.dontShow.has('scale') ? (scaleY.parent.hide(3), scaleX.parent.hide(3)) : (scaleY.parent.show(3), scaleX.parent.show(3))
+    my.dontShow.has('static') ? isStatic.parent.hide(3) : isStatic.parent.show(3)
+    my.dontShow.has('density') ? density.parent.hide(3) : density.parent.show(3)
+    my.dontShow.has('restitution') ? bounciness.parent.hide(3) : bounciness.parent.show(3)
+    my.dontShow.has('image') ? imagePicker.parent.hide(3) : imagePicker.parent.show(3)
     my.constructor.name === 'spawn' ? (spawnInterval.value = my.spawn.spawnRate
-        , spawnInterval.parent.show3()) : spawnInterval.parent.hide3()
+        , spawnInterval.parent.show(3)) : spawnInterval.parent.hide(3)
 }
 on(window, {
     message
@@ -409,7 +406,7 @@ function addSVG(data, name) {
         svg: data
     })
 }
-let uploadSvgs = $(`<input type="file" accept=".svg,.json" multiple></input>`, {
+let uploadSvgs = $(`<input type="file" accept=".svg,.json" multiple>`, {
     events: {
         async change() {
             for (let file of this.files) {

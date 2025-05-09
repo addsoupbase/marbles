@@ -52,6 +52,7 @@ main {
 
 #right-controls,
 #left-controls {
+    max-width: 20vw;
     width: 290px
 }
 
@@ -97,8 +98,6 @@ select {
     justify-content: center;
     zoom: 0.8;
     inset: 0;
-    text-align: center;
-    padding: 10px;
     scrollbar-width: none;
     background-color: #4dcd71;
     border: 2px solid #4ac350;

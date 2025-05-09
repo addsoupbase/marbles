@@ -4,7 +4,7 @@ import { on, wait } from '../../handle.js'
 import * as math from '../../num.js'
 import { getJson } from '../../arrays.js'
 import { lstorage } from '../../proxies.js'
-import str from '../../strings.js'
+import * as str from '../../str.js'
 const { vect } = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
@@ -280,12 +280,13 @@ void function start(ignore) {
                     try {
 
                         id = this.first.value
-                        message.hide3()
-                        author.hide3()
-                        anchor.hide3()
+                        message.hide(3)
+                        author.hide(3)
+                        anchor.hide(3)
                         delete message.styles.color
                         loader.fadeIn()
-                        let { title, author: authorName } = await getJson(`levels/${this.initForm().levelid.match(/\w+/)}.json`)
+                        debugger
+                        let { title, author: authorName } = await getJson(`levels/${this.levelid.value.match(/\w+/)}.json`)
                         message.textContent = str.shorten(title || 'Level', 32),
                             author.textContent = str.shorten(authorName || 'Unknown', 16),
                             message.fadeIn()
@@ -300,7 +301,7 @@ void function start(ignore) {
                         message.fadeIn()
                     }
                     finally {
-                        loader.hide3()
+                        loader.hide(3)
                     }
                 }
             }
@@ -313,16 +314,14 @@ void function start(ignore) {
         })
         let loader = $('<div class="loader"></div>', {
             parent: pick
-        }).hide3()
+        }).hide(3)
         let message = $('<h2>Level Title</h2>', {
-
-
             parent: pick
-        }).hide3()
+        }).hide(3)
         let author = $('<cite>By Author</cite>', {
             parent: pick
-        }).hide3()
-        let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, { parent: pick }).hide3()
+        }).hide(3)
+        let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, { parent: pick }).hide(3)
     }
     else {
         init()
@@ -332,9 +331,11 @@ function init() {
     import('./define.js')
 }
 // Audio stuff later
+let inEditor
 try {
-    top.a
-    var inEditor = top !== window
+    if (RegExp(/\/marbles\/edit/).test(top.location+''))
+     inEditor = top !== window
+    else inEditor = false
 }
 catch {
     inEditor = false

@@ -148,7 +148,7 @@ let exportmenuholder = $.gid('exportmenuholder')
 let exportMenu = $.gid('exportmenu')
     .on({
         async $submit() {
-            let { title, author } = this.initForm()
+            let { title, author } = this
             author = `${author || 'Unknown'}`
             title = `${title || 'Level'}`
             let ctx = document.createElement('canvas').getContext('2d')
@@ -196,6 +196,7 @@ let exportMenu = $.gid('exportmenu')
                         ctx.drawImage(img, 0, 0, 256, 256)
                         let data = ctx.canvas.toDataURL('image/png', 0.9)
                         allImages.push(data)
+                        ctx.clearRect(0,0,256,256)
                         seenImages.set(image, allImages.length - 1)
                         n.image = allImages.length - 1
                     }

@@ -1,16 +1,105 @@
 import $ from '../../yay.js'
-import { on, wait } from '../../handle.js'
-// import { getJson } from 'https://addsoupbase.github.io/arrays.js'
+import * as h from '../../handle.js'
 import * as math from '../../num.js'
-import { getJson } from '../../arrays.js'
-import { lstorage } from '../../proxies.js'
+import * as arr from '../../arrays.js'
+import {lstorage} from '../../proxies.js'
 import * as str from '../../str.js'
-const { vect } = math
+import ran from '../../random.js'
+
+lstorage.music ??= 1
+lstorage.sound ??= 1
+const {vect} = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
 export const images = new Map
 export const customVertices = new Map
 export const marbles = new Map
+
+class AudioThing {
+    #map = null
+
+    get all() {
+        return new Set(this.#map.values())
+    }
+
+    constructor(map) {
+        this.#map = map
+    }
+
+    set volume(val) {
+        for (let n of this.all) {
+            n.volume = val
+        }
+    }
+
+    add(music) {
+        this.#map.set(music.attr.$name, music)
+    }
+
+    play(id) {
+        this.#map.get(id)?.play()
+    }
+
+    pause(id) {
+        this.#map.get(id)?.pause()
+    }
+
+    reset(id) {
+        let a = this.#map.get(id)
+        a && (a.currentTime = 0)
+    }
+}
+
+const sounds = new AudioThing(new Map)
+const music = new AudioThing(new Map)
+
+function error() {
+    this.destroy()
+}
+
+function playRandomMusic() {
+    let {all} = music
+    let pick = ran.choose(...all)
+    if (this && all.size > 1) while (pick === this) pick = ran.choose(...all)
+    pick.currentTime = 0
+    pick.play()
+    console.log(`🎵 Currently playing: %c${pick.attr.$name}.mp3 %cby %cSakuraGirl`, "color:lightblue;", '', "color:pink;")
+}
+
+console.log('%chttps://www.youtube.com/@SakuraGirl/', 'color: blue; text-decoration: underline; cursor: pointer;')
+'beach flowers freshair garden leaves love peach rainbow spring'.split(' ').map(src => {
+        let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
+        .on({
+            '#canplaythrough'() {
+                music.add(this)
+            },
+            '#error': error
+        }, false, new AbortController).on({
+            ended() {
+                setTimeout(playRandomMusic.bind(this), 3000)
+            },
+        })
+        out.volume = lstorage.music
+        return out
+    }
+)
+let doplay = setInterval(() => {
+    if (navigator.userActivation.hasBeenActive) {
+        clearInterval(doplay)
+        playRandomMusic()
+    }
+}, 2000)
+'click confirm pop'.split(' ').map(src => {
+        let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
+        .on({
+            '#canplaythrough'() {
+                sounds.add(this)
+            },
+            '#error': error
+        }, false, new AbortController)
+        out.volume = lstorage.sound
+    }
+)
 export const game = {
     isPaused: true,
     frame: 0,
@@ -18,20 +107,25 @@ export const game = {
     frozen: false,
     joints: new Set,
     end() {
-
     },
     send() {
         console.debug(`Message ignored since not in editor mode`)
     },
     toggle(state) {
         switch (state) {
-            case 'pause': case false: return this.pause()
-            case 'play': case true: return this.play()
-            default: throw TypeError(`Bad state: ${state}`)
+            case 'pause':
+            case false:
+                return this.pause()
+            case 'play':
+            case true:
+                return this.play()
+            default:
+                throw TypeError(`Bad state: ${state}`)
         }
     },
     goal: null,
-    toggleDOM() { },
+    toggleDOM() {
+    },
     werentSleeping: [],
     thaw() {
         this.frozen = false
@@ -66,17 +160,16 @@ export const game = {
             if (goal) {
                 //  Intro cutscene thingy
                 cam.following = goal
-                await wait(delay)
+                await h.wait(delay)
                 if (spawn) {
                     cam.following = spawn
-                    await wait(delay)
+                    await h.wait(delay)
                 }
             } else {
                 cam.following = spawn
-                await wait(delay)
+                await h.wait(delay)
             }
-        }
-        else top.postMessage('hideData')
+        } else top.postMessage('hideData')
         this.frame = 0
         mouse.reset()
         this.playEngine()
@@ -143,12 +236,12 @@ export const cam = {
     }
 }
 canvas.on({
-    wheel({ deltaY }) {
+    wheel({deltaY}) {
         cam.targetZoom -= Math.sign(deltaY) / 80
         cam.targetZoom = math.clamp(cam.targetZoom, 0.01, 10)
     },
     pointerdown(event) {
-        let { offsetX: x, offsetY: y, button, pointerId } = event
+        let {offsetX: x, offsetY: y, button, pointerId} = event
         let pos = vect(x, y).scale(1 / cam.zoom)
         canvas.setPointerCapture(pointerId)
         switch (button) {
@@ -156,7 +249,7 @@ canvas.on({
                 mouse.reset()
                 mouse.click.set(pos)
                 if (mouse.isPlacing) {
-                    let { x, y } = mouse.click
+                    let {x, y} = mouse.click
                     inEditor && mouse.place(x, y)
                     /* switch(mouse.willPlace) {
                          default: return reportError(Error(`Unknown placement: '${mouse.willPlace}'`))
@@ -175,17 +268,19 @@ canvas.on({
                 break
         }
     },
-    pointerup({ button }) {
+    pointerup({button}) {
         switch (button) {
             case 0: {
                 mouse.clickedBody = null
                 mouse.click.set(NaN, NaN);
             }
                 break
-            case 2: mouse.leftClick.set(NaN, NaN); break
+            case 2:
+                mouse.leftClick.set(NaN, NaN);
+                break
         }
     },
-    pointermove({ offsetX: x, offsetY: y, clientX, clientY }) {
+    pointermove({offsetX: x, offsetY: y, clientX, clientY}) {
         let pos = vect(x, y).scale(1 / cam.zoom)
         mouse.cursor.set(pos)
         //  'movementX' and 'movementY' are, like, 
@@ -195,24 +290,41 @@ canvas.on({
         if (mouse.leftClicking)
             cam.position.add(mouse.movement)
     },
-    $contextmenu() { }    //  Prevent the menu from showing up ($ calls preventDefault())
+    $contextmenu() {
+    }    //  Prevent the menu from showing up ($ calls preventDefault())
 })
+
 function resize() {
     canvas.setAttributes({
         width: innerWidth,
         height: innerHeight
     })
 }
-on(window, resize)
+
+h.on(window, resize)
+h.on(window, {
+    storage(e) {
+        switch (e.key) {
+            case 'music':
+                return music.volume = e.newValue
+            case 'sound':
+                return sounds.volume = e.newValue
+        }
+    }
+})
 resize()
 let url = new URL(location)
 export let levelName = url.searchParams.get('level')
+
 export function msg(e) {
-    let { data } = e
+    let {data} = e
     if (typeof data === 'string') switch (data) {
-        case 'resetMouse': return mouse.reset()
-        case 'Toggle': return game.toggle(game.isPaused)
-        case 'Moving': return mouse.isPlacing = false
+        case 'resetMouse':
+            return mouse.reset()
+        case 'Toggle':
+            return game.toggle(game.isPaused)
+        case 'Moving':
+            return mouse.isPlacing = false
         case 'resetcam': {
             cam.position.set(-2000, -2000)
             cam.targetZoom = 1
@@ -223,30 +335,29 @@ export function msg(e) {
             mouse.reset()
             return mouse.isPlacing = true
         }
-        default: return console.warn('Unknown message event: ', e)
+        default:
+            return console.warn('Unknown message event: ', e)
     } else {
         // This is really bad i know.
         if ('select' in data) {
             // Select that!
             mouse.willPlace = data.select
-        }
-        else if ('title' in data && 'url' in data) {
+        } else if ('title' in data && 'url' in data) {
             // It's an image!
             let n = new Image
             n.src = data.url
             images.set(data.title, n)
-        }
-        else if ('title' in data && 'svg' in data) {
+        } else if ('title' in data && 'svg' in data) {
             // It's an SVG!
             let doc = new DOMParser().parseFromString(data.svg, 'image/svg+xml')
             customVertices.set(data.title, [...doc.getElementsByTagName('path')])
-        }
-        else if ('vertices' in data && 'title' in data) {
+        } else if ('vertices' in data && 'title' in data) {
             //  It's a vertices array thing!
             customVertices.set(data.title, data.vertices)
         }
     }
 }
+
 void function start(ignore) {
     if (!ignore && top !== window) {
         try {
@@ -258,27 +369,23 @@ void function start(ignore) {
                     return game.all
                 }
             })
-            on(window, {
+            h.on(window, {
                 message: msg
             })
-        }
-        catch {
+        } catch {
             return start(true)
         }
-    }
-    else if (!levelName) {
+    } else if (!levelName) {
         document.title = 'Choose a level - Marbles'
         let pick = $(`<div id="pick-level">
             <h1>Choose your level</h1>
-            </div>`, { parent: main })
+            </div>`, {parent: main})
         let id
         let firstdiv = $('form #form', {
             parent: pick,
             events: {
                 async $submit() {
-
                     try {
-
                         id = this.first.value
                         message.hide(3)
                         author.hide(3)
@@ -286,21 +393,22 @@ void function start(ignore) {
                         delete message.styles.color
                         loader.fadeIn()
                         debugger
-                        let { title, author: authorName } = await getJson(`levels/${this.levelid.value.match(/\w+/)}.json`)
+                        let {
+                            title,
+                            author: authorName
+                        } = await arr.getJson(`levels/${this.levelid.value.match(/\w+/)}.json`)
                         message.textContent = str.shorten(title || 'Level', 32),
                             author.textContent = str.shorten(authorName || 'Unknown', 16),
                             message.fadeIn()
                         author.fadeIn()
                         anchor.fadeIn()
-                        anchor.setAttributes({ href: `?level=${id}` })
-                    }
-                    catch (e) {
+                        anchor.setAttributes({href: `?level=${id}`})
+                    } catch (e) {
                         reportError(e)
                         message.textContent = 'Level invalid or not found!'
-                        message.setStyles({ color: 'darkred' })
+                        message.setStyles({color: 'darkred'})
                         message.fadeIn()
-                    }
-                    finally {
+                    } finally {
                         loader.hide(3)
                     }
                 }
@@ -321,23 +429,23 @@ void function start(ignore) {
         let author = $('<cite>By Author</cite>', {
             parent: pick
         }).hide(3)
-        let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, { parent: pick }).hide(3)
-    }
-    else {
+        let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, {parent: pick}).hide(3)
+    } else {
         init()
     }
 }()
+
 function init() {
     import('./define.js')
 }
+
 // Audio stuff later
 let inEditor
 try {
-    if (RegExp(/\/marbles\/edit/).test(top.location+''))
-     inEditor = top !== window
+    if (RegExp(/\/marbles\/edit/).test(top.location + ''))
+        inEditor = top !== window
     else inEditor = false
-}
-catch {
+} catch {
     inEditor = false
 }
-export { inEditor }
+export {inEditor}

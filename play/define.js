@@ -992,8 +992,8 @@ function nextFrame() {
     //ctx.drawImage(background, 0, 0, can.width, can.height)
     ctx.fillRect(0, 0, can.width, can.height)
     ctx.save()
-    ctx.translate(cam.position.x, cam.position.y)
     cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.07)
+    ctx.translate(cam.position.x, cam.position.y)
     ctx.scale(cam.zoom, cam.zoom)
     ctx.clearRect(0, 0, bounds.x, bounds.y)
     //if (game.isPaused)
@@ -1064,8 +1064,8 @@ function nextFrame() {
         }
 }
 
-
 nextFrame()
+
 function beforeUpdate() {
 }
 
@@ -1157,20 +1157,8 @@ window.getLevelFromJSON =
             marbles.set(i, o)
         })
         map.forEach(async o => {
-            if ('image' in o && o.image != null) {
-                let url = imgs[o.image]
-                o.image = `${o.image}`
-                if (images.has(o.image)) {
-                    return o.image = images.get(o.image)
-                }
-                let n = new Image
-                n.src = url
-                await until(n, 'load')
-                let context = new OffscreenCanvas(256, 256).getContext('2d')
-                context.drawImage(n, 0, 0, 256, 256)
-                images.set(o.image, context.canvas)
-                context.canvas.convertToBlob().then(data => o.image = context.canvas.src = URL.createObjectURL(data))
-            }
+            if (typeof o.image === 'number')
+                o.image = imgs[o.image]
             let digit = Math.abs(o.shape + 1)
             if (o.shape < 0) {
                 try {

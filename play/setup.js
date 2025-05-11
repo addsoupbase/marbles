@@ -243,23 +243,25 @@ canvas.on({
     pointerdown(event) {
         let {offsetX: x, offsetY: y, button, pointerId} = event
         let pos = vect(x, y).scale(1 / cam.zoom)
-        canvas.setPointerCapture(pointerId)
+        let touch = event.pointerType === 'touch'
+        touch || canvas.setPointerCapture(pointerId)
         switch (button) {
-            case 0: {   // Left Click
-                mouse.reset()
-                mouse.click.set(pos)
-                if (mouse.isPlacing) {
-                    let {x, y} = mouse.click
-                    inEditor && mouse.place(x, y)
-                    /* switch(mouse.willPlace) {
-                         default: return reportError(Error(`Unknown placement: '${mouse.willPlace}'`))
-                         case 'square': {
-                             new obj({x,y,shape:4,radius:30})
-                         }
-                     }*/
+            case 0:
+                if (inEditor) {   // Left Click
+                    mouse.reset()
+                    mouse.click.set(pos)
+                    if (mouse.isPlacing) {
+                        let {x, y} = mouse.click
+                        inEditor && mouse.place(x, y)
+                        /* switch(mouse.willPlace) {
+                             default: return reportError(Error(`Unknown placement: '${mouse.willPlace}'`))
+                             case 'square': {
+                                 new obj({x,y,shape:4,radius:30})
+                             }
+                         }*/
+                    }
+                    break
                 }
-            }
-                break
             case 2: { // Right Click
                 // mouse.reset()
                 cam.following = null
@@ -270,25 +272,29 @@ canvas.on({
     },
     pointerup({button}) {
         switch (button) {
-            case 0: {
-                mouse.clickedBody = null
-                mouse.click.set(NaN, NaN);
-            }
-                break
+            case 0:
+                if (inEditor) {
+                    mouse.clickedBody = null
+                    mouse.click.set(NaN, NaN);
+                    break
+                }
             case 2:
                 mouse.leftClick.set(NaN, NaN);
                 break
         }
     },
-    pointermove({offsetX: x, offsetY: y, clientX, clientY}) {
+    pointermove(e) {
+        let {offsetX: x, offsetY: y, clientX, clientY, screenX, screenY} = e
+        let touch = e.pointerType === 'touch'
         let pos = vect(x, y).scale(1 / cam.zoom)
         mouse.cursor.set(pos)
-        //  'movementX' and 'movementY' are, like, 
-        //  really unreliable so: 
+        //  'movementX' and 'movementY' are, like,
+        //  really unreliable so:
         mouse.movement.set(vect(clientX, clientY).subtract(mouse.lastmovement))
         mouse.lastmovement.set(clientX, clientY)
         if (mouse.leftClicking)
             cam.position.add(mouse.movement)
+        if (touch) cam.position
     },
     $contextmenu() {
     }    //  Prevent the menu from showing up ($ calls preventDefault())

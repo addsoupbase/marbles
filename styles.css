@@ -3,11 +3,13 @@ canvas {
     background-color: #ADD8E6;
     position: fixed;
     pointer-events: auto;
+    touch-action: none;
 }
 
 #overlay {
     z-index: 2;
     max-width: 60vw;
+    height: fit-content;
     max-height: 50vh;
 }
 

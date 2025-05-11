@@ -6,8 +6,10 @@ import {lstorage} from '../../proxies.js'
 import * as str from '../../str.js'
 import ran from '../../random.js'
 
+export let joystick = (lstorage.joystick ??= !!(navigator.maxTouchPoints ?? false)) === 'true'
 lstorage.music ??= 1
 lstorage.sound ??= 1
+let joystickSpeed = +(lstorage.joystickspeed ??= 6)
 const {vect} = math
 export const canvas = $.gid('can-vas')
 let main = $.qs('main')
@@ -205,9 +207,44 @@ export const mouse = {
         return this.leftClick.isValid
     }
 }
+let mobileJoystick = $.id['mobile-mover']
+let pointercancel = function (e) {
+    mobileJoystick.setStyles({
+        transform: ""
+    })
+    touchInput.scale(0)
+    this.releasePointerCapture(e.pointerId)
+    mobileTouching = false
+}
+let maxPullDistance = 60
+export let mobileTouching = false
+let touchpos = vect(0, 0), touchInput = vect(0, 0)
+mobileJoystick.parent.on({
+    pointercancel,
+    pointerup: pointercancel,
+    pointermove(e) {
+        if (!mobileTouching) return
+        let {length} = touchpos.set(e.offsetX, e.offsetY).subtract(maxPullDistance)
+        if (length > maxPullDistance) {
+            touchpos.x = touchpos.x * maxPullDistance / length
+            touchpos.y = touchpos.y * maxPullDistance / length
+        }
+        mobileJoystick.setStyles({
+            transform: `translate${touchpos.toString('px')}`
+        })
+        touchInput.set(touchpos.clone.divide(maxPullDistance).scale(-joystickSpeed))
+    },
+    pointerdown(e) {
+        mobileTouching = true
+        cam.following = null
+        mouse.leftClick.set(NaN, NaN)
+        this.setPointerCapture(e.pointerId)
+    }
+})
 export const cam = {
     position: vect(-2000, -2000),
     zoom: 1,
+    touchInput,
     behaviour: lstorage.cam ??= 'default',
     alreadyDidTheWinnerCutsceneThingy: false,
     targetZoom: 1,
@@ -244,7 +281,12 @@ canvas.on({
         let {offsetX: x, offsetY: y, button, pointerId} = event
         let pos = vect(x, y).scale(1 / cam.zoom)
         let touch = event.pointerType === 'touch'
-        touch || canvas.setPointerCapture(pointerId)
+        if (touch && joystick) {
+            // cam.following = null
+            mouse.leftClick.set(pos)
+            mobileTouching = true
+            return
+        }
         switch (button) {
             case 0:
                 if (inEditor) {   // Left Click
@@ -271,30 +313,32 @@ canvas.on({
         }
     },
     pointerup({button}) {
+        if (joystick) mobileTouching = false
         switch (button) {
             case 0:
                 if (inEditor) {
                     mouse.clickedBody = null
-                    mouse.click.set(NaN, NaN);
+                    mouse.click.set(NaN, NaN)
                     break
                 }
             case 2:
-                mouse.leftClick.set(NaN, NaN);
+                mouse.leftClick.set(NaN, NaN)
                 break
         }
     },
     pointermove(e) {
-        let {offsetX: x, offsetY: y, clientX, clientY, screenX, screenY} = e
         let touch = e.pointerType === 'touch'
+        if (joystick && touch) return
+        let {offsetX: x, offsetY: y, clientX, clientY, screenX, screenY} = e
         let pos = vect(x, y).scale(1 / cam.zoom)
         mouse.cursor.set(pos)
         //  'movementX' and 'movementY' are, like,
         //  really unreliable so:
         mouse.movement.set(vect(clientX, clientY).subtract(mouse.lastmovement))
         mouse.lastmovement.set(clientX, clientY)
-        if (mouse.leftClicking)
+        if (mouse.leftClicking) {
             cam.position.add(mouse.movement)
-        if (touch) cam.position
+        }
     },
     $contextmenu() {
     }    //  Prevent the menu from showing up ($ calls preventDefault())
@@ -307,14 +351,30 @@ function resize() {
     })
 }
 
+function toggleJoystick() {
+    if (joystick) mobileJoystick.parent.show(3)
+    else mobileJoystick.parent.hide(3)
+}
+
+toggleJoystick()
 h.on(window, resize)
 h.on(window, {
     storage(e) {
         switch (e.key) {
+            case 'cam':
+                return cam.behaviour = e.key
             case 'music':
                 return music.volume = e.newValue
             case 'sound':
                 return sounds.volume = e.newValue
+            case 'joystick': {
+                joystick = e.newValue === 'true'
+                toggleJoystick()
+                return
+            }
+            case 'joystickspeed': {
+                return joystickSpeed = +e.newValue
+            }
         }
     }
 })

@@ -10,7 +10,7 @@ canvas {
     z-index: 2;
     max-width: 60vw;
     height: fit-content;
-    max-height: 50vh;
+    max-height: 60vh;
 }
 
 .settingsbutton {
@@ -85,7 +85,39 @@ iframe {
 main {
     display: contents;
 }
-
+#mobile-mover {
+    width:50px;
+    border-radius: 100%;
+    height:50px;
+    position:relative;
+    background-color: #000;
+}
+#mobile-joystick {
+    width:120px;
+    touch-action: none;
+    height:120px;
+    place-items: center;
+    place-content: center;
+    opacity: 0.5;
+    background-color: #6a7b80;
+    display: flex;
+    position:fixed;
+    border-radius: 100%;
+    z-index: 1;
+}
+@media (orientation: portrait) {
+    #mobile-joystick {
+        top: 70%;
+    justify-self: anchor-center;
+    }
+}
+@media (orientation: landscape) {
+    #mobile-joystick {
+        top: 55%;
+        left: -80%;
+        justify-self: anchor-center;
+    }
+}
 body,
 html {
     background-color: grey;

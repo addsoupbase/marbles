@@ -16,7 +16,19 @@ import {
     getAllBodies,
     getAllConstraints
 } from './game.js'
-import {canvas as can, mouse, cam, marbles, levelName, images, game, inEditor, customVertices, msg} from './setup.js'
+import {
+    canvas as can,
+    mouse,
+    cam,
+    marbles,
+    levelName,
+    images,
+    game,
+    inEditor,
+    customVertices,
+    msg,
+    mobileTouching
+} from './setup.js'
 import {lstorage} from '../../proxies.js'
 import ran from '../../random.js'
 import * as str from '../../str.js'
@@ -471,33 +483,10 @@ body.prototype = {
         game.send(n)
     },
     setImage(src) {
-        if (src && typeof src !== 'string') {
-            this.render.image = src
-            this.spawn.image = src.src
-        } else if (src == null || src === 'none') {
-            this.render.image =
-                this.spawn.image = null
-        } else if (images.has(src)) {
-            this.spawn.image = src
-            this.render.image = images.get(src)
-        } else {
-            let i = new Image
-            i.src = src
-            on(i, {
-                _load: async () => {
-                    //  i think bitmaps are slower
-                    // let bitmap = await createImageBitmap(i)
-                    // this.spawn.image = src
-                    // this.render.image = i
-                    let context = new OffscreenCanvas(256, 256).getContext('2d')
-                    context.drawImage(i, 0, 0, 256, 256)
-                    context.canvas.convertToBlob().then(o => this.spawn.image = context.canvas.src = URL.createObjectURL(o))
-                    this.render.image = context.canvas
-                    // images.set(o.image, context.canvas)
-                    // images.set(src, i)
-                }
-            })
-        }
+        let i = new Image
+        if (src.startsWith('blob:')) i.src = src
+        else i.src = images.get(src)
+        this.render.image = this.spawn.image = i
     },
     setName(name) {
         this.label = name
@@ -540,11 +529,11 @@ body.prototype = {
         if (game.isPaused) this.setSleeping(true)
     },
     draw(x = this.position.x, y = this.position.y, scale) {
-        if (typeof this.render.image === 'string') {
-            let n = this.render.image
-            this.setImage(n)
-            this.render.image = null
-        }
+        // if (typeof this.render.image === 'string') {
+        //     let n = this.render.image
+        //     this.setImage(n)
+        //     this.render.image = null
+        // }
         if (game.isPaused) {
             this.setPos(math.clamp(x, 0, bounds.x), math.clamp(y, 0, bounds.y))
             if (mouse.draggingBody === this && mouse.clickedBody === this && !mouse.clickedThisFrame) {
@@ -643,8 +632,9 @@ body.prototype = {
     inCurrentPath(x, y) {
         x ??= mouse.click.x * cam.zoom
         y ??= mouse.click.y * cam.zoom
+        let inpath = ctx.isPointInPath(x, y)
         if (game.isPaused && !mouse.isPlacing) {
-            if (ctx.isPointInPath(x, y)) {
+            if (inpath) {
                 if (mouse.clickedBody !== this && !mouse.clickedThisFrame) {
                     game.send(this)
                 }
@@ -659,6 +649,8 @@ body.prototype = {
                 }
                 mouse.clickedThisFrame = true
             }
+        } else if (this instanceof marble && mobileTouching && ctx.isPointInPath(mouse.leftClick.x * cam.zoom, mouse.leftClick.y * cam.zoom)) {
+            cam.following = this
         }
     },
     get av() {
@@ -1002,6 +994,7 @@ function nextFrame() {
         let {x, y} = cam.following.position
         cam.position.lerp(vect(-x, -y).scale(cam.zoom).add(can.width / 2, can.height / 2), (cam.speed / 100) / cam.zoom)
     }
+    cam.position.add(cam.touchInput)
     let closestToGoal
     let furthestFromGoal
     let all = getAllBodies()
@@ -1121,8 +1114,20 @@ function collisionActive({pairs}) {
 
 let overlay = $.gid('overlay')
 top.m = marbleStats
+
+async function cacheImageAndSet(url, index) {
+    let n = new Image
+    n.src = url
+    await until(n, 'load')
+    let context = new OffscreenCanvas(256, 256).getContext('2d')
+    context.drawImage(n, 0, 0, 256, 256)
+    let blob = URL.createObjectURL(await context.canvas.convertToBlob())
+    images.set(index, blob)
+    return blob
+}
+
 window.getLevelFromJSON =
-    function getLevelFromJSON(json) {
+    async function getLevelFromJSON(json) {
         if (inEditor) {
             marbleDensity.value = json.settings.density
             marbleFriction.value = json.settings.friction
@@ -1137,28 +1142,27 @@ window.getLevelFromJSON =
         Composite.clear(world, false, true)
         let {images: imgs, map, racers, settings, shapes} = json
         Object.assign(marbleStats, settings)
-        racers.forEach(async (o, i) => {
+        for (const o of racers) {
+            const i = racers.indexOf(o)
             if ('image' in o && o.image != null) {
                 let url = imgs[o.image]
                 o.image = `${o.image}`
                 if (images.has(o.image)) {
-                    return o.image = images.get(o.image)
-                }
-                let n = new Image
-                n.src = url
-                await until(n, 'load')
-                let context = new OffscreenCanvas(256, 256).getContext('2d')
-                context.drawImage(n, 0, 0, 256, 256)
-                images.set(o.image, context.canvas)
-                context.canvas.convertToBlob().then(data => o.image = context.canvas.src = URL.createObjectURL(data))
-                let {name, color, image} = o
+                    o.image = images.get(o.image);
+                } else o.image = await cacheImageAndSet(url, o.image)
                 inEditor && top.addMarble({name, color, image})
             }
             marbles.set(i, o)
-        })
-        map.forEach(async o => {
-            if (typeof o.image === 'number')
-                o.image = imgs[o.image]
+        }
+        for (const o of map) {
+            if ('image' in o && o.image != null) {
+                let url = imgs[o.image]
+                o.image = `${o.image}`
+                if (images.has(o.image)) {
+                    o.image = images.get(o.image)
+                }
+                else o.image = await cacheImageAndSet(url, o.image)
+            }
             let digit = Math.abs(o.shape + 1)
             if (o.shape < 0) {
                 try {
@@ -1182,20 +1186,24 @@ window.getLevelFromJSON =
             }
             switch (o.type) {
                 default:
-                    return body(o)
+                    body(o)
+                    break
                 case 'spawn':
-                    return new spawn(o)
+                    new spawn(o)
+                    break
                 case 'goal':
-                    return new goal(o)
+                    new goal(o)
+                    break
             }
-        })
+            $.id['yay'].setAttr({disabled:''})
+        }
     }
 if (levelName) {
     let signal = new AbortController
     overlay.style.display = ''
     $.body.on({
         keydown({key}, abort) {
-            if (key === 'Enter')
+            if (key === 'Enter' && !('disabled'in play.attr))
                 play.click(), abort()
         }
     }, false, signal)
@@ -1205,7 +1213,7 @@ if (levelName) {
         $('<h1 id="title">Level</h1>'),
         $('<cite id="author">Unknown</cite>'),
         $("div", null,
-            play = $('<button class="cute-green-button" autofocus>Play</button>',)
+            play = $('<button class="cute-green-button" style="width: 95px;height: 41px;" id="yay" disabled autofocus>Play</button>',)
         ).on({
             async '#click'(o) {
                 overlay.classList.add('slide-out-blurred-top')
@@ -1215,7 +1223,7 @@ if (levelName) {
             }
         }, false, signal)
     )
-    let settings = $(`<div><button class="cute-green-button settingsbutton">Settings</button></div>`)
+    let settings = $(`<div><button class="cute-green-button settingsbutton" id="settings-button-actual">Settings</button></div>`)
     let settingsmenu = $(`<div>
         <label for="camb">Cam Behaviour
         <select id="camb">
@@ -1227,8 +1235,27 @@ if (levelName) {
         <option value="avgnooutliers">Average Position (no outliers)</option>
         </select>
         </label>
+        <label for="mobile">Joystick Controls<input type="checkbox" id="mobile" ${lstorage.joystick === 'true' ? 'checked' : ''}></label>
+        <div id="joystick-speed-holder" >
+        <label for="joystick-speed">Joystick Speed <input id="joystick-speed" type="range" min="1" max="30" value="${lstorage.joystickspeed}" ${lstorage.joystick === 'true' ? '' : 'disabled'}></label>
+        </div>
         </div>`)
+    let joystickspeed = settingsmenu.fromQuery['#joystick-speed'].on({
+        change() {
+            // event wont fire on its own for some reason
+            lstorage.joystickspeed = this.value
+        }
+    })
     settingsmenu.hide()
+    settingsmenu.fromQuery['#mobile'].on({
+        change() {
+            let on = this.checked
+            joystickspeed.setAttr({
+                disabled: !on
+            })
+            lstorage.joystick = `${on}`
+        }
+    })
     for (let n of settingsmenu.first) {
         if (n.value === lstorage.cam) {
             n.setAttributes({selected: true})
@@ -1236,15 +1263,15 @@ if (levelName) {
         }
     }
     overlay.push(settingsmenu)
-    settings.on({
+    settings.fromQuery['#settings-button-actual'].on({
         _click() {
             let camb = $.gid('camb')
             .on({
                 change() {
-                    lstorage.cam = cam.behaviour = this.value || 'default'
+                    lstorage.cam = this.value || 'default'
                 }
             })
-            settingsmenu.show()
+            settingsmenu.style.display = 'contents'
             this.destroy()
         }
     })

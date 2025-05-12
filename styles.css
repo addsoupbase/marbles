@@ -12,7 +12,10 @@ canvas {
     height: fit-content;
     max-height: 60vh;
 }
-
+touch-joystick {
+    place-items: center;
+    place-content: center;
+}
 .settingsbutton {
     filter:  grayscale(0.9) brightness(0.8);
 }
@@ -104,6 +107,10 @@ main {
     position:fixed;
     border-radius: 100%;
     z-index: 1;
+}
+.faaa {
+    display: inline-flex;
+    justify-content: center;
 }
 @media (orientation: portrait) {
     #mobile-joystick {

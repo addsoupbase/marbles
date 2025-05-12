@@ -985,6 +985,10 @@ function nextFrame() {
     ctx.fillRect(0, 0, can.width, can.height)
     ctx.save()
     cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.07)
+    if (cam.moving & 0b1000) cam.position.add(0, 5)
+    else if (cam.moving & 0b0100) cam.position.add(0, -5)
+    if (cam.moving & 0b0010) cam.position.add(5, 0)
+    else if (cam.moving & 0b0001) cam.position.add(-5, 0)
     ctx.translate(cam.position.x, cam.position.y)
     ctx.scale(cam.zoom, cam.zoom)
     ctx.clearRect(0, 0, bounds.x, bounds.y)
@@ -1056,8 +1060,7 @@ function nextFrame() {
                 break
         }
 }
-
-nextFrame()
+cam.nextFrame = nextFrame
 
 function beforeUpdate() {
 }
@@ -1235,9 +1238,12 @@ if (levelName) {
         <option value="avgnooutliers">Average Position (no outliers)</option>
         </select>
         </label>
-        <label for="mobile">Joystick Controls<input type="checkbox" id="mobile" ${lstorage.joystick === 'true' ? 'checked' : ''}></label>
-        <div id="joystick-speed-holder" >
-        <label for="joystick-speed">Joystick Speed <input id="joystick-speed" type="range" min="1" max="30" value="${lstorage.joystickspeed}" ${lstorage.joystick === 'true' ? '' : 'disabled'}></label>
+        <label for="mobile" class="faaa">Joystick Controls<input type="checkbox" id="mobile" ${lstorage.joystick === 'true' ? 'checked' : ''}></label>
+        <div id="joystick-speed-holder" class="faaa">
+        <label for="joystick-speed" class="faaa">Joystick Speed <input id="joystick-speed" type="range" min="1" max="30" value="${lstorage.joystickspeed}" ${lstorage.joystick === 'true' ? '' : 'disabled'}></label>
+        </div>
+        <div class="faaa">
+            <label for="musicvolume" class="faaa">Music Volume<input id="musicvolume" type="range" max="1" min="0" step="0.05" value="${lstorage.music}"></label>
         </div>
         </div>`)
     let joystickspeed = settingsmenu.fromQuery['#joystick-speed'].on({
@@ -1247,6 +1253,11 @@ if (levelName) {
         }
     })
     settingsmenu.hide()
+    settingsmenu.fromQuery['#musicvolume'].on({
+        input() {
+            lstorage.music=this.value
+        }
+    })
     settingsmenu.fromQuery['#mobile'].on({
         change() {
             let on = this.checked

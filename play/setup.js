@@ -6,9 +6,9 @@ import {lstorage} from '../../proxies.js'
 import * as str from '../../str.js'
 import ran from '../../random.js'
 
-export let joystick = (lstorage.joystick ??= !!(navigator.maxTouchPoints ?? false)) === 'true'
-lstorage.music ??= 1
-lstorage.sound ??= 1
+export let joystick = (lstorage.joystick ??= `${!!navigator.maxTouchPoints}`) === 'true'
+lstorage.music ??= .5
+lstorage.sound ??= .7
 let joystickSpeed = +(lstorage.joystickspeed ??= 6)
 const {vect} = math
 export const canvas = $.gid('can-vas')
@@ -207,44 +207,30 @@ export const mouse = {
         return this.leftClick.isValid
     }
 }
-let mobileJoystick = $.id['mobile-mover']
-let pointercancel = function (e) {
-    mobileJoystick.setStyles({
-        transform: ""
-    })
-    touchInput.scale(0)
-    this.releasePointerCapture(e.pointerId)
-    mobileTouching = false
-}
+let mobileJoystick = $.id['mobile-joystick']
 let maxPullDistance = 60
 export let mobileTouching = false
 let touchpos = vect(0, 0), touchInput = vect(0, 0)
-mobileJoystick.parent.on({
-    pointercancel,
-    pointerup: pointercancel,
-    pointermove(e) {
-        if (!mobileTouching) return
-        let {length} = touchpos.set(e.offsetX, e.offsetY).subtract(maxPullDistance)
-        if (length > maxPullDistance) {
-            touchpos.x = touchpos.x * maxPullDistance / length
-            touchpos.y = touchpos.y * maxPullDistance / length
-        }
-        mobileJoystick.setStyles({
-            transform: `translate${touchpos.toString('px')}`
-        })
-        touchInput.set(touchpos.clone.divide(maxPullDistance).scale(-joystickSpeed))
+mobileJoystick.on({
+    release() {
+        touchInput.scale(0)
+        mobileTouching = false
     },
-    pointerdown(e) {
+    move() {
+        if (!mobileTouching) return
+        touchInput.set(this.x,this.y).scale(-joystickSpeed)
+    },
+    hold(e) {
         mobileTouching = true
         cam.following = null
         mouse.leftClick.set(NaN, NaN)
-        this.setPointerCapture(e.pointerId)
     }
 })
 export const cam = {
     position: vect(-2000, -2000),
     zoom: 1,
     touchInput,
+    moving: 0b0000,
     behaviour: lstorage.cam ??= 'default',
     alreadyDidTheWinnerCutsceneThingy: false,
     targetZoom: 1,
@@ -352,13 +338,38 @@ function resize() {
 }
 
 function toggleJoystick() {
-    if (joystick) mobileJoystick.parent.show(3)
-    else mobileJoystick.parent.hide(3)
+    if (joystick) mobileJoystick.show(3)
+    else mobileJoystick.hide(3)
 }
 
-toggleJoystick()
+toggleJoystick();
+
 h.on(window, resize)
 h.on(window, {
+    _load(){
+        !function n(wait){
+            try {
+            if (wait === window.requestIdleCallback) return wait(cam.nextFrame, {timeout: 2000})
+            if (wait === window.setTimeout) return wait(cam.nextFrame, 2000)
+            wait(cam.nextFrame)
+            }
+            catch {
+                setTimeout(n,1000, wait)
+            }
+        }(window.requestIdleCallback ?? window.setTimeout ?? window.queueMicrotask)
+    },
+    keyup({key}) {
+        if (/^(?:w|arrowup)$/i.test(key)) return cam.moving &= ~0b1000
+        if (/^(?:s|arrowdown)$/i.test(key)) return cam.moving &= ~0b0100
+        if (/^(?:a|arrowleft)$/i.test(key)) return cam.moving &= ~0b0010
+        if (/^(?:d|arrowright)$/i.test(key)) return cam.moving &= ~0b0001
+    },
+    keydown({key}) {
+        if (/^(?:w|arrowup)$/i.test(key)) return cam.moving |= 0b1000
+        if (/^(?:s|arrowdown)$/i.test(key)) return cam.moving |= 0b0100
+        if (/^(?:a|arrowleft)$/i.test(key)) return cam.moving |= 0b0010
+        if (/^(?:d|arrowright)$/i.test(key)) return cam.moving |= 0b0001
+    },
     storage(e) {
         switch (e.key) {
             case 'cam':

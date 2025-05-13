@@ -366,14 +366,14 @@ function body({
         let vertices = shape.map(map)
         out = Bodies.fromVertices(x, y, vertices, {...startingOptions, radius: 1})
         if (!out) {
-            inEditor && prompt(`Bad Vertices!🙁\n(try not to make them cave in too much)`, JSON.stringify(shape))
+            inEditor && prompt('Bad Vertices!🙁\n(try not to make them cave in too much)', JSON.stringify(shape))
             throw TypeError("Vertices are probably broken")
         }
 
         function map(o, index) {
             let correct = Array.isArray(o)
             if (!correct) return Svg.pathToVertices(o)
-            console.assert(correct, `Vertices should be an array or .svg: `, o)
+            console.assert(correct, 'Vertices should be an array or .svg:', o)
             return correct ? {x: o[0], y: o[1], index, isInternal: false, body: undefined} : o
         }
     }
@@ -571,7 +571,7 @@ body.prototype = {
             //  Totally didnt use ai for this part
             if (this.parts && this.parts.length > 1) {
                 for (let i = 1, {length} = this.parts; i < length; ++i) {
-                    const {[i]: part} = this.parts
+                    const part = this.parts[i]
                     ctx.beginPath()
                     const partVertices = part.vertices
                     ctx.moveTo(partVertices[0].x - x, partVertices[0].y - y)
@@ -584,7 +584,7 @@ body.prototype = {
                     if (this.render.image) {
                         ctx.save()
                         ctx.clip()
-                        ctx.drawImage(this.render.image, -width / 2, -height / 2, width, height)
+                        ctx.drawImage(this.render.image, (-width / 2)|0, (-height / 2)|0, width|0, height|0)
                         ctx.restore()
                     } else {
                         ctx.fill()
@@ -593,7 +593,8 @@ body.prototype = {
             } else {
                 const {vertices} = this
                 ctx.beginPath()
-                ctx.moveTo(vertices[0].x - x, vertices[0].y - y)
+                let {0:v} = vertices
+                ctx.moveTo(v.x - x, v.y - y)
                 for (let i = 1, {length} = vertices; i < length; ++i) {
                     let v = vertices[i]
                     ctx.lineTo(v.x - x, v.y - y)
@@ -602,11 +603,13 @@ body.prototype = {
         }
         ctx.closePath()
         this.inCurrentPath()
+        let width, height
         if (this.shape !== 0) {
-            const {vertices} = this
-            var width = Vector.magnitude(Vector.sub(vertices[0], vertices[1]))
-            var height = Vector.magnitude(Vector.sub(vertices[1], vertices[2]))
-        } else var height = this.circleRadius * 2, width = this.circleRadius * 2
+            const {vertices} = this,
+                {0:a,1:b,2:c} = vertices
+             width = Vector.magnitude(Vector.sub(a, b))
+             height = Vector.magnitude(Vector.sub(b, c))
+        } else  height = this.circleRadius * 2, width = this.circleRadius * 2
         let old = ctx.globalAlpha
         if (isSelected) ctx.globalAlpha = 1
         ctx.stroke()
@@ -615,7 +618,7 @@ body.prototype = {
             ctx.save()
             ctx.clip()
             ctx.rotate(this.angle)
-            ctx.drawImage(this.render.image, -width / 2, -height / 2, width, height)
+            ctx.drawImage(this.render.image, (-width / 2)|0, (-height / 2)|0, width|0, height|0)
             ctx.restore()
         } else {
             ctx.fill()
@@ -625,7 +628,7 @@ body.prototype = {
             ctx.globalAlpha = 1
             ctx.imageSmoothingQuality = 'high'
             height = -height * (this.shape === 0 ? 1.5 : 1)
-            ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.radius) - 40)
+            ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.radius|0) - 40)
         }
         ctx.restore()
     },
@@ -749,7 +752,7 @@ goal.prototype = {
     [GOAL_SYMBOL]: true,
     __proto__: body.prototype,
     constructor: goal,
-    dontShow: new Set(`name restitution density image static angle scale opacity`.split(' ')),
+    dontShow: new Set('name restitution density image static angle scale opacity'.split(' ')),
     clone() {
         super.clone()
         this.remove()
@@ -978,26 +981,29 @@ function nextFrame() {
     requestAnimationFrame(nextFrame)
     mouse.clickedThisFrame = false
     ++game.realFrame
+
     if ((outlineOffsetThingy += .2) === 5) outlineOffsetThingy = 0
     ctx.clearRect(0, 0, can.width, can.height)
     ctx.fillStyle = '#7998a3'
     //ctx.drawImage(background, 0, 0, can.width, can.height)
     ctx.fillRect(0, 0, can.width, can.height)
     ctx.save()
+    ctx.translate(innerWidth / 2, innerHeight / 2)
+    ctx.scale(cam.zoom, cam.zoom)
+    ctx.translate(innerWidth / -2, innerHeight / -2)
     cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.07)
     if (cam.moving & 0b1000) cam.position.add(0, 5)
     else if (cam.moving & 0b0100) cam.position.add(0, -5)
     if (cam.moving & 0b0010) cam.position.add(5, 0)
     else if (cam.moving & 0b0001) cam.position.add(-5, 0)
-    // ctx.scale(1/devicePixelRatio,1/devicePixelRatio)
+    // ctx.scale(devicePixelRatio,devicePixelRatio)
     ctx.translate(cam.position.x, cam.position.y)
-    ctx.scale(cam.zoom, cam.zoom)
     ctx.clearRect(0, 0, bounds.x, bounds.y)
     //if (game.isPaused)
     ctx.globalCompositeOperation = "destination-over"
     if (cam.following && !mouse.leftClicking) {
         let {x, y} = cam.following.position
-        cam.position.lerp(vect(-x, -y).scale(cam.zoom).add(can.width / 2, can.height / 2), (cam.speed / 100) / cam.zoom)
+        cam.position.lerp(vect(-x, -y).add(can.width / 2, can.height / 2), (cam.speed / 100) / cam.zoom)
     }
     cam.position.add(cam.touchInput)
     let closestToGoal
@@ -1029,6 +1035,7 @@ function nextFrame() {
     )
         allC[i].draw()
     ctx.restore()
+
     if (game.isPaused) {
         //  Pause icon
         ctx.lineWidth = 1
@@ -1090,30 +1097,20 @@ Events.on(engine, 'collisionActive', collisionActive)
 Events.on(engine, 'collisionEnd', collisionEnd)
 
 function collisionStart({pairs}) {
-    pairs.forEach(pair => {
-        let {bodyA: a, bodyB: b} = pair
-        if (a && b)
-            b.collisionenter?.(a),
-                a.collisionenter?.(b)
-    })
+    for(let {length: i} = pairs; i--;) doCollide(pairs[i], 'collisionenter')
 }
-
+function doCollide(pair, func) {
+    let {bodyA: a, bodyB: b} = pair
+    if (a && b)
+        b[func]?.(a),
+            a[func]?.(b)
+}
 function collisionEnd({pairs}) {
-    pairs.forEach(pair => {
-        let {bodyA: a, bodyB: b} = pair
-        if (a && b)
-            b.collisionout?.(a),
-                a.collisionout?.(b)
-    })
+    for(let {length: i} = pairs; i--;) doCollide(pairs[i], 'collisionout')
 }
 
 function collisionActive({pairs}) {
-    pairs.forEach(pair => {
-        let {bodyA: a, bodyB: b} = pair
-        if (a && b)
-            b.collision?.(a),
-                a.collision?.(b)
-    })
+    for(let {length: i} = pairs; i--;) doCollide(pairs[i], 'collision')
 }
 
 let overlay = $.gid('overlay')
@@ -1133,11 +1130,12 @@ async function cacheImageAndSet(url, index) {
 window.getLevelFromJSON =
     async function getLevelFromJSON(json) {
         if (inEditor) {
-            marbleDensity.value = json.settings.density
-            marbleFriction.value = json.settings.friction
-            marbleFrictionair.value = json.settings.frictionAir
-            marbleRestitution.value = json.settings.restitution
-            marbleSize.value = json.settings.radius
+            let {settings} = json
+            marbleDensity.value = settings.density
+            marbleFriction.value = settings.friction
+            marbleFrictionair.value = settings.frictionAir
+            marbleRestitution.value = settings.restitution
+            marbleSize.value = settings.radius
         } else {
             document.title = `${$.gid('title').textContent = str.shorten(json.title || 'Level', 32)} - Marbles`
             $.gid('author').textContent = str.shorten(json.author || 'Unknown', 16)
@@ -1204,28 +1202,33 @@ window.getLevelFromJSON =
     }
 if (levelName) {
     let signal = new AbortController
-    overlay.style.display = ''
     $.body.on({
         keydown({key}, abort) {
             if (key === 'Enter' && !('disabled'in play.attr))
                 play.click(), abort()
         }
     }, false, signal)
-    overlay.classList.add('slide-in-blurred-top')
+    h.on(window, {
+         'first-contentful-paint'(){
+             overlay.style.display = ''
+             overlay.classList.add('slide-in-blurred-top')
+        }
+    })
     let play
     overlay.push(
         $('<h1 id="title">Level</h1>'),
         $('<cite id="author">Unknown</cite>'),
         $("div", null,
             play = $('<button class="cute-green-button" style="width: 95px;height: 41px;" id="yay" disabled autofocus>Play</button>',)
-        ).on({
-            async '#click'(o) {
-                overlay.classList.add('slide-out-blurred-top')
-                await until(overlay.anims[0], 'finish')
-                await wait(500)
-                game.play()
-            }
-        }, false, signal)
+            .on({
+                async '#click'(o) {
+                    overlay.classList.add('slide-out-blurred-top')
+                    await until(overlay.anims[0], 'finish')
+                    await wait(500)
+                    game.play()
+                }
+            }, false, signal)
+        )
     )
     let settings = $(`<div><button class="cute-green-button settingsbutton" id="settings-button-actual">Settings</button></div>`)
     let settingsmenu = $(`<div>

@@ -332,8 +332,8 @@ canvas.on({
 
 function resize() {
     canvas.setAttr({
-        width: (innerWidth * devicePixelRatio)|0,
-        height: (innerHeight * devicePixelRatio)|0
+        width: (innerWidth)|0,
+        height: (innerHeight)|0
     })
 }
 

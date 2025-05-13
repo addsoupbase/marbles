@@ -27,7 +27,7 @@ import {
     inEditor,
     customVertices,
     msg,
-    mobileTouching
+    mobileTouching, doAudioThing
 } from './setup.js'
 import {lstorage} from '../../proxies.js'
 import ran from '../../random.js'
@@ -989,6 +989,7 @@ function nextFrame() {
     else if (cam.moving & 0b0100) cam.position.add(0, -5)
     if (cam.moving & 0b0010) cam.position.add(5, 0)
     else if (cam.moving & 0b0001) cam.position.add(-5, 0)
+    // ctx.scale(1/devicePixelRatio,1/devicePixelRatio)
     ctx.translate(cam.position.x, cam.position.y)
     ctx.scale(cam.zoom, cam.zoom)
     ctx.clearRect(0, 0, bounds.x, bounds.y)
@@ -1240,10 +1241,10 @@ if (levelName) {
         </label>
         <label for="mobile" class="faaa">Joystick Controls<input type="checkbox" id="mobile" ${lstorage.joystick === 'true' ? 'checked' : ''}></label>
         <div id="joystick-speed-holder" class="faaa">
-        <label for="joystick-speed" class="faaa">Joystick Speed <input id="joystick-speed" type="range" min="1" max="30" value="${lstorage.joystickspeed}" ${lstorage.joystick === 'true' ? '' : 'disabled'}></label>
+        <label for="joystick-speed" class="faaa">Joystick Speed <input id="joystick-speed" type="range" min="1" max="30" value="${+lstorage.joystickspeed}" ${lstorage.joystick === 'true' ? '' : 'disabled'}></label>
         </div>
         <div class="faaa">
-            <label for="musicvolume" class="faaa">Music Volume<input id="musicvolume" type="range" max="1" min="0" step="0.05" value="${lstorage.music}"></label>
+            <label for="musicvolume" class="faaa">Music Volume<input id="musicvolume" type="range" max="1" min="0" step="0.05" value="${+lstorage.music}"></label>
         </div>
         </div>`)
     let joystickspeed = settingsmenu.fromQuery['#joystick-speed'].on({
@@ -1253,10 +1254,16 @@ if (levelName) {
         }
     })
     settingsmenu.hide()
+    let first = false
     settingsmenu.fromQuery['#musicvolume'].on({
         input() {
+            if (!first) {
+                if (+lstorage.music === 0 && this.value > 0) doAudioThing()
+            }
+            first = true
             lstorage.music=this.value
-        }
+        },
+
     })
     settingsmenu.fromQuery['#mobile'].on({
         change() {

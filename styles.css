@@ -306,6 +306,8 @@ input.cute-green {
 #play {
     display: block;
     margin: 15px;
+    place-self: center;
+    width: 48px;
     font-size: large;
 }
 

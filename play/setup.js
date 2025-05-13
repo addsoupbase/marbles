@@ -16,18 +16,11 @@ let main = $.qs('main')
 export const images = new Map
 export const customVertices = new Map
 export const marbles = new Map
-
 class AudioThing {
-    #map = null
-
+    #map = new Map
     get all() {
         return new Set(this.#map.values())
     }
-
-    constructor(map) {
-        this.#map = map
-    }
-
     set volume(val) {
         for (let n of this.all) {
             n.volume = val
@@ -52,8 +45,8 @@ class AudioThing {
     }
 }
 
-const sounds = new AudioThing(new Map)
-const music = new AudioThing(new Map)
+const sounds = new AudioThing
+const music = new AudioThing
 
 function error() {
     this.destroy()
@@ -69,39 +62,42 @@ function playRandomMusic() {
 }
 
 console.log('%chttps://www.youtube.com/@SakuraGirl/', 'color: blue; text-decoration: underline; cursor: pointer;')
-'beach flowers freshair garden leaves love peach rainbow spring'.split(' ').map(src => {
-        let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
-        .on({
-            '#canplaythrough'() {
-                music.add(this)
-            },
-            '#error': error
-        }, false, new AbortController).on({
-            ended() {
-                setTimeout(playRandomMusic.bind(this), 3000)
-            },
-        })
-        out.volume = lstorage.music
-        return out
-    }
-)
-let doplay = setInterval(() => {
-    if (navigator.userActivation.hasBeenActive) {
-        clearInterval(doplay)
-        playRandomMusic()
-    }
-}, 2000)
-'click confirm pop'.split(' ').map(src => {
-        let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
-        .on({
-            '#canplaythrough'() {
-                sounds.add(this)
-            },
-            '#error': error
-        }, false, new AbortController)
-        out.volume = lstorage.sound
-    }
-)
+export function doAudioThing() {
+    'beach flowers freshair garden leaves love peach rainbow spring'.split(' ').map(src => {
+            let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
+            .on({
+                '#canplaythrough'() {
+                    music.add(this)
+                },
+                '#error': error
+            }, false, new AbortController).on({
+                ended() {
+                    setTimeout(playRandomMusic.bind(this), 3000)
+                },
+            })
+            out.volume = lstorage.music
+            return out
+        }
+    )
+    let doplay = setInterval(() => {
+        if (navigator.userActivation.hasBeenActive) {
+            clearInterval(doplay)
+            playRandomMusic()
+        }
+    }, 2000)
+    'click confirm pop'.split(' ').map(src => {
+            let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
+            .on({
+                '#canplaythrough'() {
+                    sounds.add(this)
+                },
+                '#error': error
+            }, false, new AbortController)
+            out.volume = lstorage.sound
+        }
+    )
+}
+if (+lstorage.music !== 0) doAudioThing()
 export const game = {
     isPaused: true,
     frame: 0,
@@ -260,8 +256,10 @@ export const cam = {
 }
 canvas.on({
     wheel({deltaY}) {
-        cam.targetZoom -= Math.sign(deltaY) / 80
+        let n = Math.sign(deltaY) / 80
+        cam.targetZoom -= n
         cam.targetZoom = math.clamp(cam.targetZoom, 0.01, 10)
+
     },
     pointerdown(event) {
         let {offsetX: x, offsetY: y, button, pointerId} = event
@@ -273,6 +271,7 @@ canvas.on({
             mobileTouching = true
             return
         }
+        this.setPointerCapture(event.pointerId)
         switch (button) {
             case 0:
                 if (inEditor) {   // Left Click
@@ -298,8 +297,9 @@ canvas.on({
                 break
         }
     },
-    pointerup({button}) {
+    pointerup({button, pointerId}) {
         if (joystick) mobileTouching = false
+        this.releasePointerCapture(pointerId)
         switch (button) {
             case 0:
                 if (inEditor) {
@@ -331,9 +331,9 @@ canvas.on({
 })
 
 function resize() {
-    canvas.setAttributes({
-        width: innerWidth,
-        height: innerHeight
+    canvas.setAttr({
+        width: (innerWidth * devicePixelRatio)|0,
+        height: (innerHeight * devicePixelRatio)|0
     })
 }
 
@@ -343,7 +343,7 @@ function toggleJoystick() {
 }
 
 toggleJoystick();
-
+let first = false
 h.on(window, resize)
 h.on(window, {
     _load(){
@@ -374,8 +374,12 @@ h.on(window, {
         switch (e.key) {
             case 'cam':
                 return cam.behaviour = e.key
-            case 'music':
+            case 'music': {
+                if (!first) {
+                    if (+lstorage.music === 0 && e.newValue > 0) doAudioThing()
+                }
                 return music.volume = e.newValue
+            }
             case 'sound':
                 return sounds.volume = e.newValue
             case 'joystick': {
@@ -453,27 +457,28 @@ void function start(ignore) {
             return start(true)
         }
     } else if (!levelName) {
+        mobileJoystick.hide(3)
         document.title = 'Choose a level - Marbles'
-        let pick = $(`<div id="pick-level">
-            <h1>Choose your level</h1>
-            </div>`, {parent: main})
+        let pick = $.id.overlay
+        pick.style.height="50vh"
+        pick.show(3)
+        pick.push($('<h1>Choose a level</h1>'))
         let id
         let firstdiv = $('form #form', {
             parent: pick,
             events: {
                 async $submit() {
                     try {
-                        id = this.first.value
+                        id = this.levelid.value.match(/\w+/)
                         message.hide(3)
                         author.hide(3)
                         anchor.hide(3)
-                        delete message.styles.color
                         loader.fadeIn()
-                        debugger
+                        message.style.color=''
                         let {
                             title,
                             author: authorName
-                        } = await arr.getJson(`levels/${this.levelid.value.match(/\w+/)}.json`)
+                        } = await arr.getJson(`levels/${id}.json`)
                         message.textContent = str.shorten(title || 'Level', 32),
                             author.textContent = str.shorten(authorName || 'Unknown', 16),
                             message.fadeIn()
@@ -491,13 +496,19 @@ void function start(ignore) {
                 }
             }
         })
-        $('<input placeholder="Enter Level Id..." class="cute-green" name="levelid" required>', {
-            parent: firstdiv
-        })
-        $('<button class="cute-green-button">Enter</button>', {
+$(`<div>
+<input placeholder="Enter Level Id..." class="cute-green" name="levelid" required>
+</div>`, {
+    parent:firstdiv
+})
+        $(`<div>
+
+<button class="cute-green-button">Enter</button>
+</div>`, {
             parent: firstdiv,
         })
-        let loader = $('<div class="loader"></div>', {
+
+        let loader = $('<div class="loader centerx"></div>', {
             parent: pick
         }).hide(3)
         let message = $('<h2>Level Title</h2>', {
@@ -516,7 +527,7 @@ function init() {
     import('./define.js')
 }
 
-// Audio stuff later
+
 let inEditor
 try {
     if (RegExp(/\/marbles\/edit/).test(top.location + ''))

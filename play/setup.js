@@ -336,7 +336,13 @@ function resize() {
         height: (innerHeight)|0
     })
 }
-
+let {overlay} = $.id
+h.on(window, {
+    '_first-contentful-paint'(){
+        overlay.style.display = ''
+        overlay.classList.add('slide-in-blurred-top')
+    }
+})
 function toggleJoystick() {
     if (joystick) mobileJoystick.show(3)
     else mobileJoystick.hide(3)
@@ -459,7 +465,7 @@ void function start(ignore) {
     } else if (!levelName) {
         mobileJoystick.hide(3)
         document.title = 'Choose a level - Marbles'
-        let pick = $.id.overlay
+        let pick = overlay
         pick.style.height="50vh"
         pick.show(3)
         pick.push($('<h1>Choose a level</h1>'))
@@ -502,7 +508,6 @@ $(`<div>
     parent:firstdiv
 })
         $(`<div>
-
 <button class="cute-green-button">Enter</button>
 </div>`, {
             parent: firstdiv,

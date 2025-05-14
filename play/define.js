@@ -33,7 +33,7 @@ import {lstorage} from '../../proxies.js'
 import ran from '../../random.js'
 import * as str from '../../str.js'
 import * as math from '../../num.js'
-import {on, until, wait} from '../../handle.js'
+import * as h from '../../handle.js'
 import $ from '../../yay.js'
 import {getJson} from '../../arrays.js'
 import color from '../../color.js'
@@ -143,27 +143,27 @@ Object.defineProperty(game, 'allConstraints', {
 if (inEditor) {
     top.base = base
     top.settings = marbleStats
-    on(marbleSize, {
+    h.on(marbleSize, {
         change() {
             marbleStats.radius = +this.value
         }
     })
-    on(marbleRestitution, {
+    h.on(marbleRestitution, {
         change() {
             marbleStats.restitution = +this.value
         }
     })
-    on(marbleDensity, {
+    h.on(marbleDensity, {
         change() {
             marbleStats.density = +this.value
         }
     })
-    on(marbleFriction, {
+    h.on(marbleFriction, {
         change() {
             marbleStats.friction = +this.value
         }
     })
-    on(marbleFrictionair, {
+   h. on(marbleFrictionair, {
         change() {
             marbleStats.frictionAir = +this.value
         }
@@ -767,9 +767,9 @@ goal.prototype = {
             cam.following = this
             let {zoom, targetZoom} = cam
             cam.targetZoom = 1.2
-            await wait(1300)
+            await h.wait(1300)
             body.enterGoal(this)
-            await wait(1000)
+            await h.wait(1000)
             game.thaw()
             cam.targetZoom = targetZoom
             cam.zoom = zoom
@@ -1119,7 +1119,7 @@ top.m = marbleStats
 async function cacheImageAndSet(url, index) {
     let n = new Image
     n.src = url
-    await until(n, 'load')
+    await h.until(n, 'load')
     let context = new OffscreenCanvas(256, 256).getContext('2d')
     context.drawImage(n, 0, 0, 256, 256)
     let blob = URL.createObjectURL(await context.canvas.convertToBlob())
@@ -1200,6 +1200,7 @@ window.getLevelFromJSON =
             $.id['yay'].setAttr({disabled:''})
         }
     }
+
 if (levelName) {
     let signal = new AbortController
     $.body.on({
@@ -1208,12 +1209,7 @@ if (levelName) {
                 play.click(), abort()
         }
     }, false, signal)
-    h.on(window, {
-         'first-contentful-paint'(){
-             overlay.style.display = ''
-             overlay.classList.add('slide-in-blurred-top')
-        }
-    })
+
     let play
     overlay.push(
         $('<h1 id="title">Level</h1>'),
@@ -1223,8 +1219,8 @@ if (levelName) {
             .on({
                 async '#click'(o) {
                     overlay.classList.add('slide-out-blurred-top')
-                    await until(overlay.anims[0], 'finish')
-                    await wait(500)
+                    await h.until(overlay.anims[0], 'finish')
+                    await h.wait(500)
                     game.play()
                 }
             }, false, signal)

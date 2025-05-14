@@ -263,7 +263,7 @@ canvas.on({
     },
     pointerdown(event) {
         let {offsetX: x, offsetY: y, button, pointerId} = event
-        let pos = vect(x, y).scale(1 / cam.zoom)
+        let pos = vect(x, y)
         let touch = event.pointerType === 'touch'
         if (touch && joystick) {
             // cam.following = null
@@ -278,8 +278,7 @@ canvas.on({
                     mouse.reset()
                     mouse.click.set(pos)
                     if (mouse.isPlacing) {
-                        let {x, y} = mouse.click
-                        inEditor && mouse.place(x, y)
+                        inEditor && mouse.place(mouse.click.x, mouse.click.y)
                         /* switch(mouse.willPlace) {
                              default: return reportError(Error(`Unknown placement: '${mouse.willPlace}'`))
                              case 'square': {
@@ -316,7 +315,7 @@ canvas.on({
         let touch = e.pointerType === 'touch'
         if (joystick && touch) return
         let {offsetX: x, offsetY: y, clientX, clientY, screenX, screenY} = e
-        let pos = vect(x, y).scale(1 / cam.zoom)
+        let pos = vect(x, y)
         mouse.cursor.set(pos)
         //  'movementX' and 'movementY' are, like,
         //  really unreliable so:
@@ -337,21 +336,21 @@ function resize() {
     })
 }
 let {overlay} = $.id
-h.on(window, {
-    '_first-contentful-paint'(){
-        overlay.style.display = ''
-        overlay.classList.add('slide-in-blurred-top')
-    }
-})
+
 function toggleJoystick() {
     if (joystick) mobileJoystick.show(3)
     else mobileJoystick.hide(3)
 }
 
-toggleJoystick();
+toggleJoystick()
 let first = false
-h.on(window, resize)
 h.on(window, {
+    '_first-contentful-paint'() {
+        if (inEditor) return
+        overlay.style.display = ''
+        overlay.classList.add('slide-in-blurred-top')
+    },
+    resize,
     _load(){
         !function n(wait){
             try {
@@ -484,13 +483,13 @@ void function start(ignore) {
                         let {
                             title,
                             author: authorName
-                        } = await arr.getJson(`levels/${id}.json`)
+                        } = await arr.jason(`levels/${id}.json`)
                         message.textContent = str.shorten(title || 'Level', 32),
                             author.textContent = str.shorten(authorName || 'Unknown', 16),
                             message.fadeIn()
                         author.fadeIn()
                         anchor.fadeIn()
-                        anchor.setAttributes({href: `?level=${id}`})
+                        anchor.setAttr({href: `?level=${id}`})
                     } catch (e) {
                         reportError(e)
                         message.textContent = 'Level invalid or not found!'

@@ -163,7 +163,7 @@ if (inEditor) {
             marbleStats.friction = +this.value
         }
     })
-   h. on(marbleFrictionair, {
+    h.on(marbleFrictionair, {
         change() {
             marbleStats.frictionAir = +this.value
         }
@@ -181,7 +181,8 @@ if (inEditor) {
     }
     mouse.place = function (xx, yy) {
         if (!game.isPaused) return
-        let {x, y} = vect(xx, yy).subtract(...cam.position.clone.scale(1 / cam.zoom)),
+        // IM GONNA KMS WHY ISNT IT WORKING
+        let {x, y} = vect(xx - cam.position.y, yy - cam.position.x),
             out
         switch (this.willPlace) {
             case 'circle':
@@ -584,7 +585,7 @@ body.prototype = {
                     if (this.render.image) {
                         ctx.save()
                         ctx.clip()
-                        ctx.drawImage(this.render.image, (-width / 2)|0, (-height / 2)|0, width|0, height|0)
+                        ctx.drawImage(this.render.image, (-width / 2) | 0, (-height / 2) | 0, width | 0, height | 0)
                         ctx.restore()
                     } else {
                         ctx.fill()
@@ -593,7 +594,7 @@ body.prototype = {
             } else {
                 const {vertices} = this
                 ctx.beginPath()
-                let {0:v} = vertices
+                let {0: v} = vertices
                 ctx.moveTo(v.x - x, v.y - y)
                 for (let i = 1, {length} = vertices; i < length; ++i) {
                     let v = vertices[i]
@@ -606,10 +607,10 @@ body.prototype = {
         let width, height
         if (this.shape !== 0) {
             const {vertices} = this,
-                {0:a,1:b,2:c} = vertices
-             width = Vector.magnitude(Vector.sub(a, b))
-             height = Vector.magnitude(Vector.sub(b, c))
-        } else  height = this.circleRadius * 2, width = this.circleRadius * 2
+                {0: a, 1: b, 2: c} = vertices
+            width = Vector.magnitude(Vector.sub(a, b))
+            height = Vector.magnitude(Vector.sub(b, c))
+        } else height = this.circleRadius * 2, width = this.circleRadius * 2
         let old = ctx.globalAlpha
         if (isSelected) ctx.globalAlpha = 1
         ctx.stroke()
@@ -618,7 +619,7 @@ body.prototype = {
             ctx.save()
             ctx.clip()
             ctx.rotate(this.angle)
-            ctx.drawImage(this.render.image, (-width / 2)|0, (-height / 2)|0, width|0, height|0)
+            ctx.drawImage(this.render.image, (-width / 2) | 0, (-height / 2) | 0, width | 0, height | 0)
             ctx.restore()
         } else {
             ctx.fill()
@@ -628,7 +629,7 @@ body.prototype = {
             ctx.globalAlpha = 1
             ctx.imageSmoothingQuality = 'high'
             height = -height * (this.shape === 0 ? 1.5 : 1)
-            ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.radius|0) - 40)
+            ctx.drawImage(this.render.nameImage, -50, -Math.abs(this.radius | 0) - 40)
         }
         ctx.restore()
     },
@@ -981,17 +982,18 @@ function nextFrame() {
     requestAnimationFrame(nextFrame)
     mouse.clickedThisFrame = false
     ++game.realFrame
-
     if ((outlineOffsetThingy += .2) === 5) outlineOffsetThingy = 0
     ctx.clearRect(0, 0, can.width, can.height)
     ctx.fillStyle = '#7998a3'
     //ctx.drawImage(background, 0, 0, can.width, can.height)
     ctx.fillRect(0, 0, can.width, can.height)
     ctx.save()
+
     ctx.translate(innerWidth / 2, innerHeight / 2)
     ctx.scale(cam.zoom, cam.zoom)
     ctx.translate(innerWidth / -2, innerHeight / -2)
     cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.07)
+
     if (cam.moving & 0b1000) cam.position.add(0, 5)
     else if (cam.moving & 0b0100) cam.position.add(0, -5)
     if (cam.moving & 0b0010) cam.position.add(5, 0)
@@ -1035,7 +1037,6 @@ function nextFrame() {
     )
         allC[i].draw()
     ctx.restore()
-
     if (game.isPaused) {
         //  Pause icon
         ctx.lineWidth = 1
@@ -1067,7 +1068,9 @@ function nextFrame() {
                 }
                 break
         }
+
 }
+
 cam.nextFrame = nextFrame
 
 function beforeUpdate() {
@@ -1097,20 +1100,22 @@ Events.on(engine, 'collisionActive', collisionActive)
 Events.on(engine, 'collisionEnd', collisionEnd)
 
 function collisionStart({pairs}) {
-    for(let {length: i} = pairs; i--;) doCollide(pairs[i], 'collisionenter')
+    for (let {length: i} = pairs; i--;) doCollide(pairs[i], 'collisionenter')
 }
+
 function doCollide(pair, func) {
     let {bodyA: a, bodyB: b} = pair
     if (a && b)
         b[func]?.(a),
             a[func]?.(b)
 }
+
 function collisionEnd({pairs}) {
-    for(let {length: i} = pairs; i--;) doCollide(pairs[i], 'collisionout')
+    for (let {length: i} = pairs; i--;) doCollide(pairs[i], 'collisionout')
 }
 
 function collisionActive({pairs}) {
-    for(let {length: i} = pairs; i--;) doCollide(pairs[i], 'collision')
+    for (let {length: i} = pairs; i--;) doCollide(pairs[i], 'collision')
 }
 
 let overlay = $.gid('overlay')
@@ -1162,8 +1167,7 @@ window.getLevelFromJSON =
                 o.image = `${o.image}`
                 if (images.has(o.image)) {
                     o.image = images.get(o.image)
-                }
-                else o.image = await cacheImageAndSet(url, o.image)
+                } else o.image = await cacheImageAndSet(url, o.image)
             }
             let digit = Math.abs(o.shape + 1)
             if (o.shape < 0) {
@@ -1197,35 +1201,33 @@ window.getLevelFromJSON =
                     new goal(o)
                     break
             }
-            $.id['yay'].setAttr({disabled:''})
+            $.id['yay'].setAttr({disabled: ''})
         }
     }
-
 if (levelName) {
     let signal = new AbortController
     $.body.on({
         keydown({key}, abort) {
-            if (key === 'Enter' && !('disabled'in play.attr))
+            if (key === 'Enter' && !('disabled' in play.attr))
                 play.click(), abort()
         }
     }, false, signal)
-
     let play
     overlay.push(
         $('<h1 id="title">Level</h1>'),
         $('<cite id="author">Unknown</cite>'),
         $("div", null,
             play = $('<button class="cute-green-button" style="width: 95px;height: 41px;" id="yay" disabled autofocus>Play</button>',)
-            .on({
-                async '#click'(o) {
-                    overlay.classList.add('slide-out-blurred-top')
-                    await h.until(overlay.anims[0], 'finish')
-                    await h.wait(500)
-                    game.play()
-                }
-            }, false, signal)
         )
     )
+    play.on({
+        async '#click'(o) {
+            overlay.classList.add('slide-out-blurred-top')
+            await h.until(overlay.valueOf(), 'animationend', 'error', 2000)
+            await h.wait(500)
+            game.play()
+        }
+    }, false, signal)
     let settings = $(`<div><button class="cute-green-button settingsbutton" id="settings-button-actual">Settings</button></div>`)
     let settingsmenu = $(`<div>
         <label for="camb">Cam Behaviour
@@ -1260,9 +1262,8 @@ if (levelName) {
                 if (+lstorage.music === 0 && this.value > 0) doAudioThing()
             }
             first = true
-            lstorage.music=this.value
+            lstorage.music = this.value
         },
-
     })
     settingsmenu.fromQuery['#mobile'].on({
         change() {

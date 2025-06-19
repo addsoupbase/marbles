@@ -1,12 +1,19 @@
 import { serve } from "https://deno.land/std@0.150.0/http/server.ts"
 import { serveDir } from "https://deno.land/std/http/file_server.ts"
 import { join } from "https://deno.land/std@0.150.0/path/mod.ts"
-import {escapeHTML} from '../str.js'
+function escapeHTML(str) {
+    return str
+    .replace(/>/g, '&gt;')
+    .replace(/</g, '&lt;')
+    .replace(/&/g,'&amp;')
+    .replace(/'/g,'&apos;')
+    .replace(/"/g,'&quot;')
+}
 // const cache = await caches.open('server')
 let port = 3001
 console.clear()
 console.log('💿 Booting...')
-let html = /(?:\.html?|\/)$/
+// let html = /(?:\.html?|\/)$/
 // i had to resort to ai because i got so lost
 // Get the directory where this server.js file is located
 const serverDir = './'
@@ -15,18 +22,12 @@ const htmlHeaders = {
     // 'Document-Policy':'js-profiling'
 }
 await serve(go, { port })
-async function response(req,...data) {
-    let out = Reflect.construct(Response, data)
-    // await cache.put(req, out)
-    return out
-}
+
 function regular(text) {
     return new Response(text
     .replace(/LEVEL_TITLE(?: by LEVEL_AUTHOR)?/g, 'Choose a level - Marbles')
         .replace(/\?level=LEVEL_ID/g,''), {
-        headers: {
-            'Content-Type':'text/html'
-        }
+        headers: htmlHeaders
     })
 }
 async function go(req) {
@@ -47,9 +48,7 @@ async function go(req) {
                       .replace(/LEVEL_ID/g, escapeHTML(level))
                       .replace(/LEVEL_AUTHOR/g, escapeHTML(author || 'Unknown'))
                       ,{
-                      headers: {
-                          'Content-Type':'text/html'
-                      }
+                      headers: htmlHeaders
                   })
               }
               catch {
@@ -68,9 +67,7 @@ async function go(req) {
             let jsContent = await getStrFromFile(url.pathname, 'js')
             if (jsContent) {
                 return  response(req, jsContent, {
-                    headers: {
-                        'content-type': 'text/javascript',
-                    }
+                    headers: htmlHeaders
                 })
             }
         }

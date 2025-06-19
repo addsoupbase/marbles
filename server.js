@@ -66,8 +66,10 @@ async function go(req) {
         if (out.headers.get('content-type')?.includes('javascript') || /\.js(?:\?.*)?$/.test(url.pathname)) {
             let jsContent = await getStrFromFile(url.pathname, 'js')
             if (jsContent) {
-                return new Response(req, jsContent, {
-                    headers: htmlHeaders
+                return new Response(jsContent, {
+                    headers: {
+                        'content-type':'text/javascript',
+                    }
                 })
             }
         }

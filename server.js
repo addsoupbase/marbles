@@ -38,11 +38,11 @@ async function go(req) {
         let url = new URL(req.url, `http://localhost:${port}`)
         // if(url.pathname.startsWith('/cute-emojis'))
         // return Response.redirect(new URL(url.pathname,'https://addsoupbase.github.io/'),301)
-          if(/^\/?play/.test(url.pathname) && url.pathname.endsWith('/')) {
-              let text = await Deno.readTextFile('play/index.html')
+          if(url.pathname.endsWith('/')) {
+              let text = await(await fetch('https://addsoupbase.github.io/marbles/play/index.html')).text()
               if (url.searchParams.has('level')) try {
                   let level = url.searchParams.get('level')
-                  let {title, author} = JSON.parse(await Deno.readTextFile(`play/levels/${level}/info.json`))
+                  let {title, author} = JSON.parse(await Deno.readTextFile(`https://addsoupbase.github.io/marbles/play/levels/${level}/info.json`))
                   return new Response(text
                       .replace(/LEVEL_TITLE/g, escapeHTML(title || 'Untitled'))
                       .replace(/LEVEL_ID/g, escapeHTML(level))
@@ -51,7 +51,7 @@ async function go(req) {
                       headers: htmlHeaders
                   })
               }
-              catch {
+              catch { 
                   return regular(text)
               }
               else return regular(text)

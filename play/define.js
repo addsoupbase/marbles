@@ -15,7 +15,7 @@ import {
     Constraint,
     getAllBodies,
     getAllConstraints
-} from './game.js'
+} from 'http://localhost:3000/marbles/play/game.js'
 import {
     canvas as can,
     mouse,
@@ -28,7 +28,7 @@ import {
     customVertices,
     msg,
     mobileTouching, doAudioThing, playRandomMusic
-} from './setup.js'
+} from 'http://localhost:3000/marbles/play/setup.js'
 import {lstorage} from 'http://localhost:3000/proxies.js'
 import ran from 'http://localhost:3000/random.js'
 import * as str from 'http://localhost:3000/str.js'

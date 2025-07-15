@@ -544,6 +544,6 @@ void function start(ignore) {
 }()
 
 function init() {
-    import('./define.js')
+    import('http://localhost:3000/define.js')
 }
 

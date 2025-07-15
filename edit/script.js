@@ -1,10 +1,10 @@
-import $ from 'https://addsoupbase.github.io/yay.js'
-import *as str from 'https://addsoupbase.github.io/str.js'
-import color from 'https://addsoupbase.github.io/color.js'
-import { on, until, download, reqFile,  } from 'https://addsoupbase.github.io/handle.js'
-import * as math from 'https://addsoupbase.github.io/num.js'
-import { registerCSS } from 'https://addsoupbase.github.io/csshelper.js'
-import { getJson } from 'https://addsoupbase.github.io/arrays.js'
+import $ from 'http://localhost:3000/yay.js'
+import *as str from 'http://localhost:3000/str.js'
+import color from 'http://localhost:3000/color.js'
+import { on, until, download, reqFile,  } from 'http://localhost:3000/handle.js'
+import * as math from 'http://localhost:3000/num.js'
+import { registerCSS } from 'http://localhost:3000/csshelper.js'
+import { getJson } from 'http://localhost:3000/arrays.js'
 registerCSS('input[type="color"]::color-swatch', {
     'border-radius': '100%'
 })

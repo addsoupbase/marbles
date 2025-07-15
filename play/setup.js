@@ -1,10 +1,10 @@
-import $ from 'http://localhost:3000/yay.js'
-import * as h from 'http://localhost:3000/handle.js'
-import * as math from 'http://localhost:3000/num.js'
-import * as arr from 'http://localhost:3000/arrays.js'
-import { lstorage } from 'http://localhost:3000/proxies.js'
-import * as str from 'http://localhost:3000/str.js'
-import ran from 'http://localhost:3000/random.js'
+import $ from '../../yay.js'
+import * as h from '../../handle.js'
+import * as math from '../../num.js'
+import * as arr from '../../arrays.js'
+import { lstorage } from '../../proxies.js'
+import * as str from '../../str.js'
+import ran from '../../random.js'
 $.importWebComponent?.('touch-joystick')
 export let inEditor
 try {
@@ -72,7 +72,7 @@ export function playRandomMusic() {
 console.log('%chttps://www.youtube.com/@SakuraGirl/', 'color: blue; text-decoration: underline; cursor: pointer;')
 export function doAudioThing() {
     'beach flowers freshair garden leaves love peach rainbow spring'.split(' ').map(src => {
-        let out = $(`<audio src="http://localhost:3000/marbles/audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
+        let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
             .on({
                 '#canplaythrough'() {
                     music.add(this)

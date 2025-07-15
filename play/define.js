@@ -15,7 +15,7 @@ import {
     Constraint,
     getAllBodies,
     getAllConstraints
-} from 'http://localhost:3000/marbles/play/game.js'
+} from './game.js'
 import {
     canvas as can,
     mouse,
@@ -28,15 +28,15 @@ import {
     customVertices,
     msg,
     mobileTouching, doAudioThing, playRandomMusic
-} from 'http://localhost:3000/marbles/play/setup.js'
-import {lstorage} from 'http://localhost:3000/proxies.js'
-import ran from 'http://localhost:3000/random.js'
-import * as str from 'http://localhost:3000/str.js'
-import * as math from 'http://localhost:3000/num.js'
-import * as h from 'http://localhost:3000/handle.js'
-import $ from 'http://localhost:3000/yay.js'
-import {getJson as jason} from 'http://localhost:3000/arrays.js'
-import color from 'http://localhost:3000/color.js'
+} from './setup.js'
+import {lstorage} from '../../proxies.js'
+import ran from '../../random.js'
+import * as str from '../../str.js'
+import * as math from '../../num.js'
+import * as h from '../../handle.js'
+import $ from '../../yay.js'
+import {getJson as jason} from '../../arrays.js'
+import color from '../../color.js'
 // function defineFuncs(obj, funcs) {
 // return Object.defineProperties(obj, Object.getOwnPropertyDescriptors(funcs))
 // }

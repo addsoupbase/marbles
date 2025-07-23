@@ -35,7 +35,7 @@ canvas:active {
     z-index: 2;
     max-width: 60vw;
     height: fit-content;
-    display: block;
+    /* display: block; */
     max-height: 60vh;
     /* place-items: center; */
 }

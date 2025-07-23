@@ -13,12 +13,31 @@ canvas:active {
 :disabled {
     filter: opacity(50%);
 }
+.results {
+    opacity:0;
+    animation-name: join;
+    /* animation-delay: 1; */
+    animation-duration: .7s;
+    animation-timing-function:  ease-in-out;
+    animation-fill-mode: forwards;
+}
+@keyframes join {
+    0% {
+        opacity: 0;
+        letter-spacing: 10px;
+    }
+    100% {
+        opacity: 1;
+        letter-spacing: 0px;
+    }
+}
 #overlay {
     z-index: 2;
     max-width: 60vw;
     height: fit-content;
+    display: block;
     max-height: 60vh;
-    place-items: center;
+    /* place-items: center; */
 }
 touch-joystick {
     place-items: center;

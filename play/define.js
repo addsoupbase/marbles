@@ -761,6 +761,7 @@ goal.prototype = {
     async collisionenter(body) {
         if (!(MARBLE_SYMBOL in body)) return
         if (!inEditor && !placements.winners.length && !cam.alreadyDidTheWinnerCutsceneThingy) {
+            cam.locked = true
             cam.alreadyDidTheWinnerCutsceneThingy = true
             game.freeze()
             let {x, y} = cam.position
@@ -776,6 +777,7 @@ goal.prototype = {
             cam.zoom = zoom
             cam.following = old
             cam.position.set(x, y)
+            cam.locked = false
         } else if (!inEditor) {
             body.enterGoal(this)
         } else body.remove()
@@ -1050,10 +1052,10 @@ function nextFrame() {
     if (!game.isPaused && !game.frozen)
         switch (cam.behaviour) {
             case 'first':
-                cam.following = closestToGoal;
+                cam.following = closestToGoal
                 break
             case 'last':
-                cam.following = furthestFromGoal;
+                cam.following = furthestFromGoal
                 break
             case 'avg':
                 if (closestToGoal && furthestFromGoal) {

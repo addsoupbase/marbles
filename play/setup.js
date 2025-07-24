@@ -509,7 +509,7 @@ void function start(ignore) {
                         anchor.hide(3)
                         loader.fadeIn()
                         message.style.color = ''
-                        overlay.busy(true)
+                        overlay.isBusy = true
                         let {
                             title,
                             author: authorName
@@ -527,7 +527,7 @@ void function start(ignore) {
                         message.setStyles({ color: 'darkred' })
                         message.fadeIn()
                     } finally {
-                        overlay.busy(false)
+                        overlay.isBusy = false
                         loader.hide(3)
                     }
                 }

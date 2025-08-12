@@ -387,7 +387,7 @@ function go() {
     }(window.requestIdleCallback ?? window.setTimeout ?? window.queueMicrotask)
 }
 if (document.readyState === 'complete') go()
-else h.on(window, { '_first-contentful-paint': go })
+else h.on(window, { '#load': go }, new AbortController)
 h.on(window, {
     resize,
     keyup({ key }) {

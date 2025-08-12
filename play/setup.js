@@ -2,7 +2,8 @@ import $ from '../../yay.js'
 import * as h from '../../handle.js'
 import * as math from '../../num.js'
 import * as arr from '../../arrays.js'
-import { lstorage } from '../../proxies.js'
+import StoragePrefixer from '../../proxies.js'
+const lstorage = new StoragePrefixer(localStorage, 'marbles:')
 import * as str from '../../str.js'
 import ran from '../../random.js'
 $.importWebComponent?.('touch-joystick')
@@ -34,7 +35,7 @@ class AudioThing {
             n.volume = val
         }
     }
-    
+
     add(music) {
         this.#map.set(music.attr.$name, music)
     }
@@ -63,7 +64,7 @@ function error() {
 export function playRandomMusic() {
     let { all } = music
     let pick = ran.choose(...all)
-    if (this && all.size > 1) while (pick === this) pick = ran.choose(...all)
+    if (this && all.size > 1) while (pick === this) pick = ran.chooseFrom(all)
     pick.currentTime = 0
     pick.play()
     console.log(`🎵 Currently playing: %c${pick.attr.$name}.mp3 %cby %cSakuraGirl`, "color:lightblue;", '', "color:pink;")
@@ -71,12 +72,13 @@ export function playRandomMusic() {
 
 console.log('%chttps://www.youtube.com/@SakuraGirl/', 'color: blue; text-decoration: underline; cursor: pointer;')
 export function doAudioThing() {
-    'beach flowers freshair garden leaves love peach rainbow spring'.split(' ').map(src => {
+    function canplaythrough() {
+        music.add(this)
+    }
+    'beach flowers freshair garden leaves love peach rainbow spring stars'.split(' ').map(src => {
         let out = $(`<audio src="../audio/${src}.mp3" data-name="${src}" preload="auto"></audio>`)
             .on({
-                '#canplaythrough'() {
-                    music.add(this)
-                },
+                '#canplaythrough': canplaythrough,
                 '#error': error
             }, false, new AbortController).on({
                 ended() {
@@ -170,7 +172,7 @@ export const game = {
             let delay = 1500
             let spawn = this.all.find(o => o.constructor.name === 'spawn'),
                 goal = cam.goal = this.all.find(o => o.constructor.name === 'goal')
-                cam.locked =true
+            cam.locked = true
             if (goal) {
                 //  Intro cutscene thingy
                 cam.following = goal
@@ -183,6 +185,7 @@ export const game = {
                 cam.following = spawn
                 await h.wait(delay)
             }
+            cam.following = null
             cam.locked = false
         } else top.postMessage('hideData')
         this.frame = 0
@@ -244,7 +247,7 @@ export const cam = {
     position: vect(-2000, -2000),
     zoom: 1,
     touchInput,
-    locked:false,
+    locked: false,
     get moving() {
         return mov
     },
@@ -373,9 +376,15 @@ toggleJoystick()
 let first = false
 function go() {
     if (inEditor) return
-    overlay.style.display = ''
-    overlay.classList.add('slide-in-blurred-top')
+
+    setTimeout(() => {
+        overlay.styles.display = ''
+        overlay.classList.add('slide-in-blurred-top')
+    }, 100)
+
+
     !function n(wait) {
+
         try {
             if (wait === window.requestIdleCallback) return wait(cam.nextFrame, { timeout: 2000 })
             if (wait === window.setTimeout) return wait(cam.nextFrame, 2000)
@@ -488,71 +497,50 @@ void function start(ignore) {
         } catch {
             return start(true)
         }
-    } else if (!levelName) {
+    }
+    else if (!levelName) {
         mobileJoystick.hide(3)
-        document.title = 'Choose a level - Marbles'
+        // document.title = 'Choose a level - Marbles'
         let pick = overlay
         pick.style.height = "50vh"
         pick.show(3)
-        $.id.title.textContent = 'Choose a level'
+        // $.id.title.textContent = 'Choose a level'
         overlay.attr._busy = 'false'
         canvas.styles.cursor = 'default'
+        let { message, loader, message: author, play: anchor } = $.id
         let id
-        let firstdiv = $('form #form', {
-            parent: pick,
-            events: {
-                async $submit() {
-                    try {
-                        id = this.levelid.value.match(/\w+/)
-                        message.hide(3)
-                        author.hide(3)
-                        anchor.hide(3)
-                        loader.fadeIn()
-                        message.style.color = ''
-                        overlay.isBusy = true
-                        let {
-                            title,
-                            author: authorName
-                        } = await arr.jason(`levels/${id}/info.json`)
-                        message.textContent = str.shorten(title || 'Level', 32),
-                            author.textContent = str.shorten(authorName || 'Unknown', 16),
-                            message.fadeIn()
-                        author.fadeIn()
-                        anchor.fadeIn()
-                        anchor.setAttr({ href: `https://marbles.deno.dev/?level=${id}` })
-
-                    } catch (e) {
-                        reportError(e)
-                        message.textContent = 'Level invalid or not found!'
-                        message.setStyles({ color: 'darkred' })
+        $.id.form.on({
+            async $submit() {
+                try {
+                    id = this.levelid.value.match(/\w+/)
+                    message.hide(3)
+                    author.hide(3)
+                    anchor.hide(3)
+                    loader.fadeIn()
+                    message.style.color = ''
+                    overlay.attr._busy = 'true'
+                    let {
+                        title,
+                        author: authorName
+                    } = await arr.jason(`levels/${id}/info.json`)
+                    message.textContent = str.shorten(title || 'Level', 32),
+                        author.textContent = str.shorten(authorName || 'Unknown', 16),
                         message.fadeIn()
-                    } finally {
-                        overlay.isBusy = false
-                        loader.hide(3)
-                    }
+                    author.fadeIn()
+                    anchor.fadeIn()
+                    anchor.setAttr({ href: `https://marbles.deno.dev/?level=${id}` })
+
+                } catch (e) {
+                    reportError(e)
+                    message.textContent = 'Level invalid or not found!'
+                    message.setStyles({ color: 'darkred' })
+                    message.fadeIn()
+                } finally {
+                    overlay.attr._busy = 'false'
+                    loader.hide(3)
                 }
             }
         })
-        $(`<div>
-<input placeholder="Enter Level Id..." class="cute-green" name="levelid" required>
-</div>`, {
-            parent: firstdiv
-        })
-        $(`<div>
-<button class="cute-green-button">Enter</button>
-</div>`, {
-            parent: firstdiv,
-        })
-        let loader = $('<div class="loader centerx"></div>', {
-            parent: pick
-        }).hide(3)
-        let message = $('<h2>Level Title</h2>', {
-            parent: pick
-        }).hide(3)
-        let author = $('<cite>By Author</cite>', {
-            parent: pick
-        }).hide(3)
-        let anchor = $(`<a id="play" class="cute-green-button">Play!</a>`, { parent: pick }).hide(3)
     } else {
         init()
     }

@@ -5,3 +5,6 @@ play/pathseg.min.js
 play/matter.js
 play/poly-decomp.js
 server.js
+play/define.js
+play/setup.js
+play/index.php

@@ -8,3 +8,11 @@ server.js
 play/define.js
 play/setup.js
 play/index.php
+esm.js
+gifuct.js
+matter.js
+pathseg.js
+schemaparser.js
+schemaparser2.js
+uint8.js
+decomp.min.js

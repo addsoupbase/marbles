@@ -1,13 +1,6 @@
 import { serve } from "https://deno.land/std@0.150.0/http/server.ts"
 import { serveDir } from "https://deno.land/std/http/file_server.ts"
 import { join } from "https://deno.land/std@0.150.0/path/mod.ts"
-const { parse: prse, stringify } = JSON,
-{toPrimitive} = Symbol
-    , proto = Object.preventExtensions(Object.create(null, { [toPrimitive]: { value() { return stringify(this) } } }))
- function parse(str) {
-    let n = prse(str)
-    return Object(n) === n ? deep(isArray(n) ? n : { __proto__: proto, ...n }) : n
-}
 function escapeHTML(str) {
     return str
     .replace(/>/g, '&gt;')
@@ -26,7 +19,6 @@ console.log('💿 Booting...')
 const serverDir = './'
 const htmlHeaders = {
     'Content-Type':'text/html',
-    'Access-Control-Allow-Origin':'*'
     // 'Document-Policy':'js-profiling'
 }
 await serve(go, { port })
@@ -46,11 +38,11 @@ async function go(req) {
         let url = new URL(req.url, `http://localhost:${port}`)
         // if(url.pathname.startsWith('/cute-emojis'))
         // return Response.redirect(new URL(url.pathname,'https://addsoupbase.github.io/'),301)
-         
-              let text = await(await fetch('http://localhost:3000/marbles/index.html')).text()
+          if(url.pathname.endsWith('/')) {
+              let text = await(await fetch('https://addsoupbase.github.io/marbles/play/index.html')).text()
               if (url.searchParams.has('level')) try {
                   let level = url.searchParams.get('level')
-                  let {title, author} = await(await fetch(`http://localhost:3000/marbles/levels${level}/info.json`)).json()
+                  let {title, author} = JSON.parse(await Deno.readTextFile(`https://addsoupbase.github.io/marbles/play/levels/${level}/info.json`))
                   return new Response(text
                       .replace(/LEVEL_TITLE/g, escapeHTML(title || 'Untitled'))
                       .replace(/LEVEL_ID/g, escapeHTML(level))
@@ -59,12 +51,11 @@ async function go(req) {
                       headers: htmlHeaders
                   })
               }
-              catch(e) { 
-                  console.error(e)
+              catch { 
                   return regular(text)
-              } 
+              }
               else return regular(text)
-          
+          }
         let out = await serveDir(req, {
             fsRoot: serverDir,
             showDirListing: true,

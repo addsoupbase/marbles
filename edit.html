@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <base href="http://localhost:3000/marbles/">
+    <meta http-equiv="content-language" content="en">
+    <meta property="og:locale" content="en_US">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+    <meta name="description" content="YOUR DESC HERE">
+    <meta property="og:image:width" content="IMAGE WIDTH HERE">
+    <meta property="og:image:height" content="IMAGE HEIGHT HERE">
+    <meta property="og:image:type" content="image/*">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="YOUR IMAGE HERE">
+    <meta property="og:url" content="ABSOLUTE URL HERE">
+    <meta property="og:description" content="YOUR DESC HERE">
+    <meta property="og:title" content="YOUR TITLE HERE">
+    <meta property="og:site_name" content="YOUR TITLE HERE">
+    <meta name="twitter:title" content="YOUR TITLE HERE">
+    <meta name="application-name" content="YOUR TITLE HERE">
+    <meta name="application-url" content="ABSOLUTE URL HERE">
+    <meta name="twitter:url" content="ABSOLUTE URL HERE">
+    <meta name="web_author" content="addsoupbase">
+    <meta name="twitter:creator" content="@addsoupbase">
+    <meta name="twitter:site" content="@addsoupbase">
+    <meta name="twitter:creator:id" content="1799269566834454528">
+    <meta name="twitter:site:id" content="1799269566834454528">
+    <meta name="creator" content="addsoupbase">
+    <meta name="designer" content="addsoupbase">
+    <meta name="twitter:image" content="YOUR IMAGE HERE">
+    <meta name="twitter:image:width" content="IMAGE WIDTH HERE">
+    <meta name="twitter:image:height" content="IMAGE HEIGHT HERE">
+    <meta name="msapplication-navbutton-color" content="YOUR COLOR HERE">
+    <meta name="msapplication-TileColor" content="YOUR COLOR HERE">
+    <meta name="msapplication-square150x150logo" content="./apple-touch-icon-152x152.png">
+    <meta name="msapplication-square310x310logo" content="./apple-touch-icon-180x180.png">
+    <meta name="msapplication-square70x70logo" content="./apple-touch-icon-72x72.png">
+    <meta name="msapplication-wide310x150logo" content="./apple-touch-icon-180x180.png">
+    <meta name="msapplication-TileImage" content="./apple-touch-icon-180x180.png">
+    <meta name="msapplication-starturl" content="ABSOLUTE URL HERE">
+    <meta name="msapplication-tooltip" content="YOUR TITLE HERE">
+    <meta name="prism:alternateTitle" content="YOUR TITLE HERE">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="thumbnail" content="YOUR IMAGE HERE">
+    <meta property="profile:username" content="addsoupbase">
+    <!--summary_large_image,summary,app,or player -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" href="favicon.ico">
+    <meta name="robots" content="index">
+    <meta name="theme-color" content="YOUR COLOR HERE">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="author" content="addsoupbase">
+    <link rel="canonical" href="ABSOLUTE URL HERE">
+    <script
+        type="application/ld+json">{"@context":"https://schema.org","@type": "WebSite","name":"addsoupbase","url":"ABSOLUTE URL HERE","description":"YOUR DESC HERE","author":{"@type": "Person","name":"addsoupbase","sameAs":["https://twitter.com/addsoupbase"]},"mainEntityOfPage":{"@type":"WebPage","@id":"ABSOLUTE URL HERE"},"image":{"@type":"ImageObject","url":"YOUR IMAGE HERE","width":IMAGE WIDTH HERE,"height":IMAGE HEIGHT HERE}}</script>
+    <link rel="apple-touch-icon" sizes="57x57" href="./apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="./apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="./apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="./apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="./apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="./apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="./apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-180x180.png">
+    <meta name="mobile-web-app-capable" content="no">
+    <meta name="apple-mobile-web-app-capable" content="no">
+    <!--^ yes if the site has stuff like back buttons-->
+    <meta name="apple-mobile-web-app-title" content="YOUR TITLE HERE">
+    <link rel="apple-touch-startup-image" href="favicon.ico">
+    <script src="../css.js" blocking="render"></script>
+    <script src="../css_bad.js" nomodule></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="animations.css">
+
+    <title>YOUR TITLE HERE</title>
+    <link rel="modulepreload" href="../webcomponents/touch-joystick.js">
+    <!--https://wiki.whatwg.org/wiki/MetaExtensions-->
+    <!--[if IE]><script>alert('Please update your browser')</script><![endif]-->
+    <!-- <script type="module" blocking="render"> import "../webcomponents/touch-joystick.js";</script> -->
+</head>
+
+<body>
+    <main class="center">
+        <dialog class="mainmenu center dialog slide-in-blurred-top" closedby="closerequest" id="dialog"
+            style="display: none;"></dialog>
+        <div id="container" class="center">
+            <div class="controls left cute-green" id="left">
+                <div id="subleft" class="sidediv">
+                    <h2 id="entityname" class="editable" contenteditable="plaintext-only">Entity Name</h2>
+                    <div style="display: grid;place-content: center;">
+                        <button class="good" style="margin:4px" id="clonebutton">Clone</button>
+                        <button class="del bad" style="margin:4px" id="deletebutton">Delete</button>
+                    </div>
+                    <label for="angleAsDegrees" class="label">
+                        Angle
+                    </label>
+                    <br>
+                    <small> (use field below or joystick)</small>
+                    <input id="angleAsDegrees" placeholder="Angle°" inputmode="decimal" class="short"
+                        style="margin-top:15px">
+                    <div style="display: block;">
+                        <touch-joystick sticky id="angleSlider" class="anglething"
+                            style="place-self:center;transform:scale(.7)" role="application"
+                            aria-roledescription="Joystick" aria-describedby="angleAsDegrees"></touch-joystick>
+                    </div>
+                    <div class="inputholder" style="display: block;">
+                        <label for="color">Color</label>
+                        <input class="short" type="color" id="color" inputmode="decimal" alpha>
+                    </div>
+                    <div class="inputholder">
+                        <label for="restitution">Bounciness</label>
+                        <input class="short" id="restitution" placeholder="Default = .75" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        <label for="density">Density</label>
+                        <input class="short" id="density" placeholder="Default = 1" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        <label for="friction">Friction</label>
+                        <input class="short" id="friction" placeholder="Default = 1" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        <label for="frictionAir">Friction Air</label>
+                        <input class="short" id="frictionAir" placeholder="Default = 1" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        Scale
+                        <div>
+                            <label for="scaleX">X: </label><input class="short" id="scaleX" placeholder="Width"
+                                inputmode="decimal" style="width:90px">
+                        </div>
+                        <div>
+                            <label for="scaleY">Y:</label>
+                            <input class="short" id="scaleY" placeholder="Height" inputmode="decimal"
+                                style="width:90px">
+                        </div>
+                    </div>
+                    <section class="inputholder">
+                        <!-- <h3>Other</h3> -->
+                        <div style="place-content: space-around;">
+                            <label for="isStatic" class="inputmenu">Static<input type="checkbox" id="isStatic"></label>
+                            <label for="isSensor" class="inputmenu">Sensor<input type="checkbox" id="isSensor"></label>
+                        </div>
+                    </section>
+                    <section class="inputholder">
+                        <h3>Joints</h3>
+                        <div id="constraintholder"></div>
+                        <!-- <button id="addconstraint">Add</button> -->
+                    </section>
+                    <section class="inputholder">
+                        <h3>Image</h3>
+                        <select id="selectimage">
+                            <option value="none">None</option>
+                        </select>
+                    </section>
+                </div>
+            </div>
+            <div class="controls right cute-green" id="right">
+                <div class="sidediv">
+                    <form id="searchform" autocomplete="off">
+                        <label for="entitysearchfield">Search Entity</label>
+                        <input writingsuggestions="false" type="search" id="entitysearchfield" class="short"
+                            placeholder="Entity Name" name="search">
+                        <button>Search</button>
+                    </form>
+                    <div id="searchresultscontainer">
+                        <output form="searchform" for="entitysearchfield" id="searchresults" role="navigation">
+                        </output>
+                    </div>
+                </div>
+                <section>
+                    <h2>Racers</h2>
+                    <!-- <div id="racerholder" class="inputholder"></div> -->
+                    <button class="cute-green-button" id="addracer">View Racers</button>
+                </section>
+                <section style="margin:5px">
+                    <h2>Images</h2>
+                    <label class="cute-green-button" style="--user-select:none">
+                        Upload Images
+                        <input id="uploadimages" type="file" style="display: none;" accept="image/*" multiple
+                            class="cute-green-button">
+                    </label>
+                    <div id="imageholder" class="inputholder"></div>
+                    <!-- <button class="cute-green-button" id="newconstraint">New Constraint</button> -->
+                </section>
+            </div>
+            <div class="centerx">
+                <iframe id="view" src="./index.html" autofocus></iframe>
+                <div>
+                    <select id="placing">
+                        <option selected value="circle">Circle</option>
+                        <option value="square">Square</option>
+                        <option value="triangle">Triangle</option>
+                        <option value="spawner">Spawner</option>
+                        <option value="goal">Goal</option>
+                        <option value="marble">Marble</option>
+                        <option value="constraint">Joint</option>
+                        <!-- <option value=""></option> -->
+                        <!-- <option value="bomb">Bomb</option> -->
+                    </select>
+                    <button class="cute-green-button" id="startgame">Play/Pause</button>
+                    <button class="cute-green-button" id="resetcamera">Reset Camera</button>
+                    <button class="cute-green-button" id="exportlevel">Export</button>
+                    <button class="cute-green-button" id="importlevel">Import</button>
+                    <a target="_blank" href="./?level=_local" class="cute-green-button" id="testlevel">Test</a>
+                    <button class="cute-green-button" id="publishlevel" style="display:none">Publish</button>
+                </div>
+            </div>
+            <script>
+                [].forEach.call(document.querySelectorAll('input[type="checkbox"]'), Reflect.set.bind(1, HTMLInputElement.prototype, 'indeterminate', true))
+                // semantics
+            </script>
+    </main>
+    <script type="module" src="edit.js"></script>
+</body>
+
+</html>

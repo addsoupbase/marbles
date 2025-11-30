@@ -1,37 +1,160 @@
-@import url('../cute-green.css'); 
-canvas {
+@import url('../cute-green.css');
+
+#canvas {
     background-color: #ADD8E6;
     position: fixed;
     pointer-events: auto;
     touch-action: none;
-    cursor:grab;
+    /* cursor: grab; */
+    transition: filter 400ms ease;
     --cursor-visibility: auto-hide;
-        --user-select: none;
+    --user-select: none;
 }
-canvas:active {
-    cursor:grabbing
+
+:root {
+    --gold: #f5d847;
+    --silver: #a2a2a2;
+    --bronze: #976d0a;
 }
+
+
+
+figure:first-child.winner {
+    filter: drop-shadow(0px 0px 5px var(--gold));
+}
+
+figure:first-child.winner figcaption {
+    text-decoration-color: var(--gold);
+    text-decoration-style: solid;
+    text-decoration-line: underline
+}
+
+figure:nth-child(2).winner figcaption {
+    text-decoration-color: var(--silver);
+    text-decoration-style: solid;
+    text-decoration-line: underline
+}
+
+figure:nth-child(3).winner figcaption {
+    text-decoration-color: var(--bronze);
+    text-decoration-style: solid;
+    text-decoration-line: underline;
+}
+
+figure:nth-child(2).winner {
+    filter: drop-shadow(0px 0px 5px var(--silver));
+}
+
+figure:nth-child(3).winner {
+    filter: drop-shadow(0px 0px 5px var(--bronze));
+}
+
+figure.loser>.avatar {
+    transition: opacity 300ms ease;
+    opacity: .9
+}
+
+figure.loser>.avatar:hover {
+    opacity: 1
+}
+
+.imagetitle {
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.winner>.avatar:hover::before {
+    content: attr(data-placing);
+    position: relative;
+    color: black;
+    /* filter: invert(1); */
+    /* mix-blend-mode: difference; */
+    top: 0%;
+    left: -50%;
+    z-index: 30;
+}
+
+.avatar {
+    border-radius: 100%;
+    width: 100px;
+    height: 100px;
+    outline-width: 1.7px;
+    outline-style: solid;
+}
+
+.loser>.avatar {
+    outline-style: dashed;
+}
+
+#levelerrormsg:empty {
+    display: none;
+}
+
+figure {
+    margin-left: 12px;
+    margin-right: 12px;
+}
+
+.grid {
+    display: grid;
+    scroll-behavior: smooth;
+    /* place-self: center; */
+    place-content: center;
+
+}
+
+.levelpreview {
+    height: 110px;
+    margin-top: 10px;
+    /* display: conten; */
+    /* overflow-y: scroll; */
+
+    width: 150%;
+    /* border: 1px dashed green */
+}
+
+.grid>button {
+    margin: 15px
+}
+
+.sidediv {
+    max-width: 100%;
+}
+
+.sidediv p {
+    overflow-wrap: anywhere;
+}
+
+
+#canvas:active {
+    cursor: grabbing
+}
+
 :disabled {
     filter: opacity(50%);
 }
+
 .results {
-    opacity:0;
+    opacity: 0;
     animation-name: join;
     /* animation-delay: 1; */
     animation-duration: .7s;
-    animation-timing-function:  ease-in-out;
+    animation-timing-function: ease-in-out;
     animation-fill-mode: forwards;
 }
+
 @keyframes join {
     0% {
         opacity: 0;
         letter-spacing: 10px;
     }
+
     100% {
         opacity: 1;
         letter-spacing: 0px;
     }
 }
+
 #overlay {
     z-index: 2;
     max-width: 60vw;
@@ -40,16 +163,35 @@ canvas:active {
     max-height: 60vh;
     /* place-items: center; */
 }
+
 touch-joystick {
     place-items: center;
     place-content: center;
 }
-.settingsbutton {
-    filter:  grayscale(0.9) brightness(0.8);
+#settingsmenu > * {
+    margin:10px
 }
+.settingsbutton {
+    filter: grayscale(0.9) brightness(0.8);
+}
+
 cite::before {
     content: 'By ';
 }
+
+.hiii>* {
+    margin: 5px;
+}
+
+.hiii {
+    border: 1px solid black;
+    margin: 5px;
+}
+
+.hiii:empty::after {
+    /* content:"No racers" */
+}
+
 .mainmenu {
     background-color: #28a745;
     color: white;
@@ -58,13 +200,45 @@ cite::before {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     max-width: 80vw;
     width: 400px;
+    ;
     max-height: 400px;
     overflow-x: hidden;
     text-align: center;
     overflow-y: scroll;
     display: flex;
+    z-index: 2;
     flex-direction: column;
+    backdrop-filter: blur(5px);
     gap: 10px;
+}
+
+.editable {
+    text-decoration: underline;
+    cursor: text;
+    overflow-wrap: anywhere;
+    transition: text-decoration-color .3s ease;
+}
+
+dialog {
+    --interactivity: auto;
+    z-index: 4;
+    width: 300px;
+}
+
+@supports (-webkit-touch-callout: none) {
+    dialog {
+        touch-action: none;
+    }
+}
+
+@supports not (-webkit-touch-callout: none) {
+    #canvas {
+        touch-action: pinch-zoom;
+    }
+}
+
+.dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.275);
 }
 
 .place {
@@ -102,9 +276,79 @@ cite::before {
     display: -webkit-inline-box;
     overflow-x: scroll;
 }
+
+.left {
+    left: 0
+}
+
+.right {
+    right: 0
+}
+
+#imageholder {
+    display: grid;
+    max-height: 300px;
+    overflow: scroll;
+}
+
+#imageholder>* {
+    margin: 5px
+}
+
+#racerholder:empty {
+    visibility: visible;
+}
+
+#racerholder {
+    width: 100%;
+    display: inline-block;
+}
+
+#racerholder:empty::after {
+    content: 'No racers';
+}
+
+.short {
+    width: 120px;
+    max-width: 100%;
+}
+
+.inputholder:empty {
+    visibility: hidden;
+}
+
+.inputholder {
+    margin: 5px;
+    border: 1px dashed black;
+    padding: 5px
+}
+
+.inputmenu {
+    display: grid;
+}
+
+.controls {
+    height: 90vh;
+    position: fixed;
+    width: 232;
+    max-width: 15vw;
+    overflow: auto;
+    place-items: center;
+    text-align: center;
+}
+
+.info {
+    width: 100px;
+    height: 100px;
+    background-color: red;
+    position: fixed;
+    z-index: 30;
+}
+
 iframe {
-    width: 50vw;
-    height: 500px;
+    width: 70vw;
+    height: 90vh;
+    min-width: 385px;
     justify-self: center;
     border-style: solid;
     --user-select: none;
@@ -113,43 +357,67 @@ iframe {
     border-width: 3px;
 }
 
-main {
-    display: contents;
+#container {
+    display: flex;
 }
+
 #mobile-mover {
-    width:50px;
+    width: 50px;
     border-radius: 100%;
-    height:50px;
-    position:relative;
+    height: 50px;
+    position: relative;
     background-color: #000;
 }
+
+#fullscreen.playing {
+    opacity: 0.2
+}
+
+#fullscreen:hover {
+    opacity: 1;
+    transform: scale(1.1, 1.1)
+}
+
+#fullscreen {
+    transition: opacity .2s ease, transform .2s ease;
+    opacity: 1;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    background-image: url(./media/fullscreen.png);
+    background-size: contain
+}
+
 #mobile-joystick {
-    width:120px;
+    width: 120px;
     touch-action: none;
-    height:120px;
+    height: 120px;
     place-items: center;
     place-content: center;
     opacity: 0.5;
     background-color: #6a7b80;
     display: flex;
-    position:fixed;
+    position: fixed;
     border-radius: 100%;
     z-index: 1;
 }
+
 .faaa {
     display: inline-flex;
     justify-content: center;
 }
+
 @media (orientation: portrait) {
-    #mobile-joystick {
+    #mobilejoystick {
         top: 70%;
-    justify-self: anchor-center;
+        justify-self: anchor-center;
     }
 }
+
 @media (orientation: landscape) {
-    #mobile-joystick {
-        top: 55%;
-        left: -80%;
+    #mobilejoystick {
+        top: 45%;
+        left: -70%;
         justify-self: anchor-center;
     }
 }
@@ -157,16 +425,95 @@ main {
 body,
 html {
     background-color: grey;
-    color:black;
+    color: black;
     margin: 0px;
     padding: 0px;
     height: 100vh;
     width: 100vw;
-     font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+#searchresultscontainer {
+    border: 1px dashed black;
+    height: 300px;
+    width: 100%;
+    overflow-y: scroll;
+}
+
+#searchresults {
+    display: grid;
+}
+
+#searchresults>samp {
+    text-decoration: underline;
+    /* text-decoration-thickness: 2px; */
+    margin: 5px;
+    cursor: pointer;
+}
+
+#searchresults>samp:hover {
+    color: rgb(87, 87, 87)
 }
 
 select:active {
     box-shadow: #1d8a7a 0px 0px 2px 0px;
+}
+
+select {
+    max-width: var(--stretch);
+}
+
+* {
+    font-family: inherit;
+}
+
+#constraintholder:empty::after {
+    content: "No joints";
+    margin: 5px;
+    display: block;
+    word-wrap: break-word;
+}
+
+.bad,
+.good {
+    transition: filter .1s linear
+}
+
+.bad {
+    background-color: red;
+    border: 1px solid darkred;
+}
+
+.good {
+    background-color: cyan;
+    border: 1px solid teal;
+}
+
+:is(.del, .good):active {
+    filter: brightness(70%)
+}
+
+.constraints input,
+.constriants .del {
+    width: 40%;
+    margin: 2px
+}
+
+.constraints label {
+    place-content: space-between;
+    display: flex;
+
+}
+
+label,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
 input[type=range] {
@@ -174,7 +521,8 @@ input[type=range] {
 }
 
 input[type=color] {
-    border-radius: 100%;
+    place-self: center;
+    display: grid;
     width: 30px;
     height: 30px;
     margin: 10px

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="content-language" content="en">
+    <meta property="og:locale" content="en_US">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+    <meta name="description" content="YOUR DESC HERE">
+    <meta property="og:image:width" content="IMAGE WIDTH HERE">
+    <meta property="og:image:height" content="IMAGE HEIGHT HERE">
+    <meta property="og:image:type" content="image/*">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="YOUR IMAGE HERE">
+    <meta property="og:url" content="ABSOLUTE URL HERE">
+    <meta property="og:description" content="YOUR DESC HERE">
+    <meta property="og:title" content="YOUR TITLE HERE">
+    <meta property="og:site_name" content="YOUR TITLE HERE">
+    <meta name="twitter:title" content="YOUR TITLE HERE">
+    <meta name="application-name" content="YOUR TITLE HERE">
+    <meta name="application-url" content="ABSOLUTE URL HERE">
+    <meta name="twitter:url" content="ABSOLUTE URL HERE">
+    <meta name="web_author" content="addsoupbase">
+    <meta name="twitter:creator" content="@addsoupbase">
+    <meta name="twitter:site" content="@addsoupbase">
+    <meta name="twitter:creator:id" content="1799269566834454528">
+    <meta name="twitter:site:id" content="1799269566834454528">
+    <meta name="creator" content="addsoupbase">
+    <meta name="designer" content="addsoupbase">
+    <meta name="twitter:image" content="YOUR IMAGE HERE">
+    <meta name="twitter:image:width" content="IMAGE WIDTH HERE">
+    <meta name="twitter:image:height" content="IMAGE HEIGHT HERE">
+    <meta name="msapplication-navbutton-color" content="YOUR COLOR HERE">
+    <meta name="msapplication-TileColor" content="YOUR COLOR HERE">
+    <meta name="msapplication-square150x150logo" content="./apple-touch-icon-152x152.png">
+    <meta name="msapplication-square310x310logo" content="./apple-touch-icon-180x180.png">
+    <meta name="msapplication-square70x70logo" content="./apple-touch-icon-72x72.png">
+    <meta name="msapplication-wide310x150logo" content="./apple-touch-icon-180x180.png">
+    <meta name="msapplication-TileImage" content="./apple-touch-icon-180x180.png">
+    <meta name="msapplication-starturl" content="ABSOLUTE URL HERE">
+    <meta name="msapplication-tooltip" content="YOUR TITLE HERE">
+    <meta name="prism:alternateTitle" content="YOUR TITLE HERE">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="thumbnail" content="YOUR IMAGE HERE">
+    <meta property="profile:username" content="addsoupbase">
+    <!--summary_large_image,summary,app,or player -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" href="favicon.ico">
+    <meta name="robots" content="index">
+    <meta name="theme-color" content="YOUR COLOR HERE">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="author" content="addsoupbase">
+    <link rel="canonical" href="ABSOLUTE URL HERE">
+    <script
+        type="application/ld+json">{"@context":"https://schema.org","@type": "WebSite","name":"addsoupbase","url":"ABSOLUTE URL HERE","description":"YOUR DESC HERE","author":{"@type": "Person","name":"addsoupbase","sameAs":["https://twitter.com/addsoupbase"]},"mainEntityOfPage":{"@type":"WebPage","@id":"ABSOLUTE URL HERE"},"image":{"@type":"ImageObject","url":"YOUR IMAGE HERE","width":IMAGE WIDTH HERE,"height":IMAGE HEIGHT HERE}}</script>
+    <link rel="apple-touch-icon" sizes="57x57" href="./apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="./apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="./apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="./apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="./apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="./apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="./apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-180x180.png">
+    <meta name="mobile-web-app-capable" content="no">
+    <meta name="apple-mobile-web-app-capable" content="no">
+    <!--^ yes if the site has stuff like back buttons-->
+    <meta name="apple-mobile-web-app-title" content="YOUR TITLE HERE">
+    <link rel="apple-touch-startup-image" href="favicon.ico">
+    <script src="../css.js" blocking="render"></script>
+    <script src="../css_bad.js" nomodule></script>
+    <link rel="stylesheet" href="styles.css">
+    <title>YOUR TITLE HERE</title>
+    <link rel="modulepreload" href="../webcomponents/touch-joystick.js">
+    <!--https://wiki.whatwg.org/wiki/MetaExtensions-->
+    <!--[if IE]><script>alert('Please update your browser')</script><![endif]-->
+    <!-- <script type="module" blocking="render"> import "../webcomponents/touch-joystick.js";</script> -->
+</head>
+
+<body>
+    <main class="center">
+        <div id="container" class="center">
+            <div class="controls left cute-green" id="left">
+                <div>
+                    <h2 id="entityname" style="text-decoration: underline;cursor: text;overflow-wrap: anywhere;"
+                        contenteditable="plaintext-only">Entity Name</h2>
+                    <label for="angleAsDegrees" class="label">
+                        Angle
+                    </label>
+                    <br>
+                    <small> (use field below or joystick)</small>
+                    <input id="angleAsDegrees" placeholder="Angle°" inputmode="decimal" class="short"
+                        style="margin-top:15px">
+                    <div style="display: inline-block;">
+                        <touch-joystick sticky id="angleSlider" class="anglething" style="transform:scale(.7)"
+                            role="application"></touch-joystick>
+                    </div>
+                    <div class="inputholder" style="display: grid;">
+                        <label for="color">Color</label>
+                        <input class="short" type="color" id="color" inputmode="decimal" alpha>
+                    </div>
+                    <div class="inputholder">
+                        <label for="restitution">Bounciness</label>
+                        <input class="short" id="restitution" placeholder="Default = .75" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        <label for="density">Density</label>
+                        <input class="short" id="density" placeholder="Default = 1" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        <label for="friction">Friction</label>
+                        <input class="short" id="friction" placeholder="Default = 1" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        <label for="frictionAir">Friction Air</label>
+                        <input class="short" id="frictionAir" placeholder="Default = 1" inputmode="decimal">
+                    </div>
+                    <div class="inputholder">
+                        Scale
+                        <div>
+                            <label for="scaleX">X: </label><input class="short" id="scaleX" placeholder="Width"
+                                inputmode="decimal" style="width:90px">
+                        </div>
+                        <div>
+                            <label for="scaleY">Y:</label>
+                            <input class="short" id="scaleY" placeholder="Height" inputmode="decimal"
+                                style="width:90px">
+                        </div>
+                    </div>
+                    <section class="inputholder">
+                        <!-- <h3>Other</h3> -->
+                        <div style="display: flex;place-content: space-around;">
+                            <label for="isStatic" class="inputmenu">Static<input type="checkbox" id="isStatic"></label>
+                            <label for="example" class="inputmenu">Example<input type="checkbox" id="example"></label>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="controls right cute-green" id="right"></div>
+            <div class="centerx">
+                <iframe id="view" src="./index.html"></iframe>
+                <div>
+                    <select id="placing">
+                        <option selected value="circle">Circle</option>
+                        <option value="square">Square</option>
+                        <option value="triangle">Triangle</option>
+                        <option value="spawner">Spawner</option>
+                        <option value="goal">Goal</option>
+                        <option value="marble">Marble</option>
+                    </select>
+                    <button class="cute-green-button" id="startgame">Play/Pause</button>
+                    <button class="cute-green-button" id="resetcamera">Reset Camera</button>
+                </div>
+            </div>
+            <script>
+                [].forEach.call(document.querySelectorAll('input[type="checkbox"]'), function (o) { o.indeterminate = true })
+                // semantics
+            </script>
+    </main>
+
+    <script type="module">
+        import $ from '../yay.js'
+        import * as h from '../handle.js'
+        import { toDeg, toRad } from '../num.js'
+        /*  h.on(window, {
+              keydown({key}) {
+                  console.log(key)
+                  if (key === 'Enter' && document.activeElement?.matches('iframe')) startgame.click()
+              }
+          })
+              */
+        let { placing, startgame, container, left, right,
+            entityname,
+            color,
+            angleAsDegrees,
+            angleSlider,
+            restitution,
+            density,
+            friction,
+            frictionAir,
+            scaleX,
+            scaleY,
+            isStatic
+        } = $.id
+        left.delegate({
+            input: updateStats
+        })
+        function updateStats() {
+            entityname.styles.textDecorationColor = color.value
+            game.postMessage({
+                name: 'updateStats',
+                value: {
+                    scale: {
+                        x: +scaleX.value || 1,
+                        y: +scaleY.value || 1
+                    },
+                    color: color.value,
+                    friction: +friction.value || 1,
+                    frictionAir: +frictionAir.value || 1,
+                    isStatic: isStatic.checked,
+                    density: +density.value || 1,
+                    restitution: +restitution.value || 1,
+                    angle: +angleSlider.angle || 0,
+                    label: entityname.textContent
+                }
+            })
+        }
+        let game = frames[0]
+        let active = false
+        h.on(window, {
+            message(e) {
+                let { data } = e
+                switch (data.name) {
+                    case 'showEntityControls': showEntityControls(data.value)
+                        break
+                }
+            }
+        })
+        function showEntityControls(e) {
+            let { body } = e
+            isStatic.indeterminate = false
+            angleSlider.setAngle(body.angle)
+            angleAsDegrees.value = toDeg(body.angle) % 360
+            restitution.value = body.restitution
+            friction.value = body.friction
+            frictionAir.value = body.frictionAir
+            density.value = body.density
+            scaleX.value = body.scale.x
+            scaleY.value = body.scale.y
+            color.value = body.color
+            isStatic.checked = body.isStatic
+            entityname.styles.textDecorationColor = body.color
+            entityname.textContent = body.label
+        }
+        placing.on({
+            change() {
+                setPlacingEntity(this.value)
+            }
+        })
+        startgame.debounce({
+            click() {
+                toggleGame(active = !active)
+            }
+        }, 200)
+        function toggleGame(value) {
+            game.postMessage({
+                name: 'gametoggle',
+                value: !!value
+            })
+        }
+        function setPlacingEntity(value) {
+            game.postMessage({
+                name: 'setPlacingEntity',
+                value
+            })
+        }
+        angleAsDegrees.on({
+            input() {
+                let val = (parseFloat(this.value) || 0) % 180
+                angleSlider.setAngleDeg(val)
+            }
+        })
+        angleSlider.on({
+            move() {
+                angleAsDegrees.value = toDeg(this.angle)
+                updateStats()
+            }
+        })
+    </script>
+</body>
+
+</html>

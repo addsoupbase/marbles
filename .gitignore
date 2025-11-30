@@ -16,3 +16,5 @@ schemaparser.js
 schemaparser2.js
 uint8.js
 decomp.min.js
+json.js
+server.js

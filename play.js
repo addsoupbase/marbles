@@ -9,7 +9,6 @@ const serverURL = 'http://localhost:8000/'
 // onerror = onunhandledrejection = onrejectionhandled = alert
 import * as m from '../num.js'
 import random from '../random.js'
-delete window.Matter
 // bg music
 let audioImported = false
 const music = []
@@ -1394,10 +1393,10 @@ function frameUpdate() {
                     )[Math.floor(marbs.length / 2)]
                 }
                     break
-                case 'last':
+                case 'first':
                     var comparison = (a, b) => vect.distance(a.position, game.goal.position) - vect.distance(b.position, game.goal.position)
-                case 'first': {
-                    comparison = (b, a) => vect.distance(a.position, game.goal.position) - vect.distance(b.position, game.goal.position)
+                case 'last': {
+                    comparison ??= (b, a) => vect.distance(a.position, game.goal.position) - vect.distance(b.position, game.goal.position)
                     cameraFollowing = marbs.sort(
                         comparison
                     )[0]

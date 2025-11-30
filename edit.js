@@ -219,8 +219,8 @@ function updateStats() {
         name: 'updateStats',
         value: {
             scale: {
-                x: m.clamp(+scaleX.value || 1, .01, 9999),
-                y: m.clamp(+scaleY.value || 1, .01, 9999)
+                x: m.clamp(+scaleX.value || 1, -9999, 9999),
+                y: m.clamp(+scaleY.value || 1, -9999, 9999)
             },
             color: color.value,
             friction: +friction.value || 1,

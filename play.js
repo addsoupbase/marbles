@@ -76,11 +76,12 @@ let spectateType = lstorage.spectate ??= 'manual'
 spectate.value = spectateType
 let volume = audio.volume = +(lstorage.volume ??= .6)
 volumeControl.value = (volume * 100) | 0
-volumeControl.debounce({
+volumeControl.on({
     change() {
         lstorage.volume = this.value / 100
+        debugger
     }
-}, 100)
+})
 h.on(window, {
     storage(e) {
         if (e.storageArea === localStorage) {
@@ -305,6 +306,7 @@ let mouse = {
             }
             if (mouse.rightclick.isValid && !key && !game.editorMode && !joystickEnabled) {
                 cam.add(mouse.position.clone.subtract(mouse.rightclick))
+                cameraFollowing = null
             }
             mouse.position.set(translateWithCamera(offsetX, offsetY))
             if (mouse.dragging) {
@@ -402,6 +404,7 @@ function setScale(body, width, height) {
     body.scale.x = +width || 1
     body.scale.y = +height || 1
     Matter.Body.scale(body, width, height)
+
     calculateSizeByBounds(body)
     Matter.Body.setAngle(body, angle)
 }
@@ -1676,7 +1679,10 @@ function draw() {
         rotate(this.angle)
         ctx.clip()
         const { width, height } = this.cachedSize
+        ctx.save()
+        ctx.scale(Math.sign(this.scale.x), Math.sign(this.scale.y))
         ctx.drawImage(image, -width / 2, -height / 2, width, height)
+        ctx.restore()
         // console.log(width,height)
         ctx.restore()
     }

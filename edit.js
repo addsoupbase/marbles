@@ -182,7 +182,7 @@ searchform.debounce({
             for (let { id, label, color } of data.result) {
                 let col = C(color)
                 col.opacity = .18
-                searchresults.push($`<samp data-id="${id}" title="Click to focus ${label}" role="link" style="text-decoration-color: ${color}; --tap-highlight-color: ${col.toString('rgba')}">${label}</samp>`)
+                searchresults.push($`<samp tabindex="0" data-id="${id}" title="Click to focus ${label}" role="link" style="text-decoration-color: ${color}; --tap-highlight-color: ${col.toString('rgba')}">${label}</samp>`)
             }
         else searchresults.push($('<p class="none">No results</p>'))
     }
@@ -224,7 +224,7 @@ function updateStats() {
             },
             color: color.value,
             friction: +friction.value || 1,
-            frictionAir: m.clamp(+frictionAir.value || 1, -1, 1),
+            frictionAir: m.clamp(+frictionAir.value, 0, 1),
             isStatic: isStatic.checked,
             isSensor: isSensor.checked,
             density: +density.value || 1,
@@ -501,8 +501,7 @@ h.on(game, {
         dialog.style.display = ''
         dialog.showModal()
         dialog.destroyChildren()
-        dialog.push(
-            $`<div style="display:grid"></div>`.push($('button .cute-green-button', {
+        let button = $('button .cute-green-button', {
                 textContent: 'Start',
                 events: {
                     _click() {
@@ -511,8 +510,11 @@ h.on(game, {
                         game.postMessage({ name: 'startAudio' })
                     }
                 }
-            }))
+            })
+        dialog.push(
+            $`<div style="display:grid"></div>`.push(button)
         )
+        setTimeout(()=>button.focus(),100);
     }
 }, new AbortController)
 setTimeout(() => { 

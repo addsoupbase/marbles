@@ -21,11 +21,12 @@ function startMusicLoop() {
     }
 }
 function loopMusic() {
+    if (new URLSearchParams(location.search).get('muted') === 'true') return
     let choice = random.chooseFrom(music)
     if (choice === lastmusic)
         for (let i = 10; i--;)choice = random.chooseFrom(music)
     console.log(`Now playing: ${new URL('audio/' + choice, location)}`)
-    audio.play(lastmusic = choice).then(() => setTimeout(loopMusic, 3000))
+    audio.play(lastmusic = choice, false, .2).then(() => setTimeout(loopMusic, 3000))
 }
 async function importAudio() {
     if (audio.volume === 0 || audioImported) return
@@ -55,7 +56,7 @@ let testlevel = top.document.getElementById('testlevel')
 testlevel && $(testlevel).on({
     async $click() {
         sessionStorage.setItem('importedLevel', await exportLevelJSON())
-        open('./?level=_local', '_blank').audio.volume = 0
+        open('./?level=_local&muted=true', '_blank')
     }
 })
 spectate.on({
@@ -70,16 +71,15 @@ document.body.requestFullscreen && document.fullscreenEnabled ? fullscreen.debou
 }, 300) : fullscreen.hide(3)
 let namespace = 'marbles:'
 const lstorage = new local(localStorage, namespace)
-if (lstorage.spectate?.startsWith('racer:')) 
+if (lstorage.spectate?.startsWith('racer:'))
     lstorage.spectate = 'manual'
 let spectateType = lstorage.spectate ??= 'manual'
 spectate.value = spectateType
-let volume = audio.volume = +(lstorage.volume ??= .6)
+let volume = audio.volume = +(lstorage.volume ??= .3)
 volumeControl.value = (volume * 100) | 0
 volumeControl.on({
     change() {
         lstorage.volume = this.value / 100
-        debugger
     }
 })
 h.on(window, {
@@ -1218,6 +1218,7 @@ async function leaderboard() {
                 parent: div
             })
             let outline = n.render.strokeStyle
+            
             if (image) {
                 // image.setAttribute('title', n.label)
                 image.setAttribute('alt', n.label)
@@ -1327,7 +1328,7 @@ function drawGoal() {
 }
 function setColor(body, col) {
     let { render } = body
-    render.strokeStyle = color.dhk(color(col), 40)
+    render.strokeStyle = color.dhk(col, 40)
     render.fillStyle = col
     return body
 }
@@ -1367,7 +1368,7 @@ function frameUpdate() {
     ++Time.frame
     requestAnimationFrame(frameUpdate)
     zoom = m.lerp(zoom, targetZoom, 0.07)
-    if (runner.enabled) {
+    if (runner.enabled && !game.editorMode) {
         if (spectateType !== 'manual') {
             let marbs = all().filter(o => o.entityType === 'marble')
             if (marbs.length) switch (spectateType) {
@@ -1496,14 +1497,14 @@ function frameUpdate() {
         ctx.fillRect(21, 10, 7, 20)
         ctx.strokeRect(10, 10, 7, 20)
         ctx.strokeRect(21, 10, 7, 20)
-        if (placingPhase === '1st' && mouse.clickedThisFrame && !constraintsToPlace[0]) {
+     /*   if (placingPhase === '1st' && mouse.clickedThisFrame && !constraintsToPlace[0]) {
             constraintsToPlace[0] = { x: mouse.click.x, y: mouse.click.y }
             placingPhase = '2nd'
         }
         else if (placingPhase === '2nd' && mouse.clickedThisFrame && !constraintsToPlace[1]) {
             constraintsToPlace[1] = { x: mouse.click.x, y: mouse.click.y }
             placeConstraint()
-        }
+        }*/
         if (placingPhase !== 'none') {
             ctx.font = `20px monospace`
             fillStyle('black')
